@@ -41,3 +41,8 @@ export function formatDateTimeCopenhagen(iso: string): string {
 export function formatMonthCopenhagen(iso: string): string {
   return parseISO(iso).setLocale('da').toFormat('LLLL yyyy');
 }
+
+/** Dagens dato i Copenhagen som ÅÅÅÅ-MM-DD (til dato-tekstfelter). */
+export function todayISODate(): string {
+  return DateTime.now().setZone(APP_TIMEZONE).toFormat('yyyy-MM-dd');
+}

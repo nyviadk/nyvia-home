@@ -14,6 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'nyvia-home',
   slug: 'nyvia-home',
+  owner: 'nyvia.dk',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -24,7 +25,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: 'nyvia.home',
-    googleServicesFile: './google-services.json',
+    // Lokalt: filen i projektroden. På EAS: en "file"-env-variabel (GOOGLE_SERVICES_JSON),
+    // da google-services.json er git-ignoreret og derfor ikke følger med til cloud-build.
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -34,7 +37,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: 'static',
+    // SPA frem for statisk SSG: appen er client-only (Firebase i browseren),
+    // så vi vil ikke server-rendere ruterne i Node.
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
@@ -69,5 +74,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    ...config.extra,
+    eas: {
+      projectId: '32217862-113c-4d9c-ad99-e9108ce99c4b',
+    },
   },
 });
