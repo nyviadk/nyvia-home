@@ -27,8 +27,10 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
   const submit = handleSubmit(async (values) => {
     const actuals: Record<string, number> = {};
     for (const [ym, str] of Object.entries(values)) {
+      // Tom/slettet felt → parseKronerInput giver null → springes over (måneden
+      // bruger så forventet afdrag). "0" gemmes derimod som 0.
       const ore = parseKronerInput(str);
-      if (str.trim() !== '' && ore !== null) actuals[ym] = ore;
+      if (ore !== null) actuals[ym] = ore;
     }
     await updateCustomActuals(loan.id, actuals);
   });

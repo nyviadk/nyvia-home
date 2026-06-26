@@ -49,13 +49,6 @@ export function monthlyPaymentOre(loan: PaymentInput): number {
   return BigNumber.maximum(0, new BigNumber(monthlyAvailableOre(loan)).minus(buffer)).toNumber();
 }
 
-/** Antal måneder til lånet er betalt (Infinity hvis afdrag ≤ 0). */
-export function payoffMonths(loan: PaymentInput): number {
-  const payment = monthlyPaymentOre(loan);
-  if (payment <= 0) return Infinity;
-  return new BigNumber(principalOre(loan.lineItems)).div(payment).integerValue(BigNumber.ROUND_CEIL).toNumber();
-}
-
 /** Opsparing efter n måneder = n × afdrag − hovedstol (øre; negativ = stadig gæld). */
 export function savingsAfterOre(loan: PaymentInput, months: number): number {
   return new BigNumber(monthlyPaymentOre(loan))
@@ -75,31 +68,36 @@ export type ScheduleRow = {
   remaining: number;
 };
 
-/** Hvor mange måneder tabellen viser, ud fra horisont. */
-export function scheduleLength(loan: PaymentInput): number {
-  if (loan.horizon === 'm24') return 24;
-  if (loan.horizon === 'm48') return 48;
-  const payoff = payoffMonths(loan);
-  return Number.isFinite(payoff) ? payoff : 0;
-}
+/** Fail-safe så tabellen ikke kan loope uendeligt ved 0-afdrag. */
+const MAX_MONTHS = 600;
 
 /**
- * Afbetalingstabel måned for måned. Restgæld nedskrives med det faktiske afdrag
- * hvis det er indtastet for måneden, ellers det forventede.
+ * Afbetalingstabel måned for måned — DYNAMISK længde. Hver måned nedskrives
+ * restgælden med det faktiske afdrag hvis indtastet, ellers det forventede, og
+ * tabellen kører til gælden er betalt. Betaler man fx 0 i en måned, forlænges
+ * planen tilsvarende i bunden (og afkortes hvis man betaler ekstra).
  */
 export function buildSchedule(loan: CustomLoan): ScheduleRow[] {
   const expected = monthlyPaymentOre(loan);
-  const months = scheduleLength(loan);
   const start = DateTime.fromISO(`${loan.startMonth}-01`, { zone: APP_TIMEZONE });
 
   let remaining = new BigNumber(principalOre(loan.lineItems));
   const rows: ScheduleRow[] = [];
-  for (let k = 0; k < months; k++) {
+  for (let k = 0; k < MAX_MONTHS && remaining.gt(0); k++) {
     const ym = start.plus({ months: k }).toFormat('yyyy-MM');
     const actual = loan.actuals[ym] ?? null;
     const paid = actual ?? expected;
+    // Intet afdrag og intet indtastet → ingen fremgang mulig; stop.
+    if (paid <= 0 && actual === null) break;
     remaining = remaining.minus(paid);
     rows.push({ ym, expected, actual, remaining: remaining.toNumber() });
   }
   return rows;
+}
+
+/** Antal måneder til lånet er betalt ud fra den dynamiske plan (Infinity hvis ikke). */
+export function payoffMonths(loan: CustomLoan): number {
+  const rows = buildSchedule(loan);
+  const last = rows[rows.length - 1];
+  return last && last.remaining <= 0 ? rows.length : Infinity;
 }

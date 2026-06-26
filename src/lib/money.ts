@@ -29,21 +29,27 @@ export function oreToKroner(ore: BigNumber.Value): BigNumber {
   return new BigNumber(ore).div(100);
 }
 
+/** Undgå "-0" (og "-0,00"): hvis værdien afrunder til nul, returnér positivt 0. */
+function normalizeZero(value: number, fractionDigits: number): number {
+  return Number(value.toFixed(fractionDigits)) === 0 ? 0 : value;
+}
+
 /** Formatér øre som dansk valuta, fx 4200000 → "42.000,00 kr." */
 export function formatDKK(ore: number): string {
-  return dkk.format(oreToKroner(ore).toNumber());
+  return dkk.format(normalizeZero(oreToKroner(ore).toNumber(), 2));
 }
 
 /** Formatér øre uden ører, fx 4200000 → "42.000 kr." */
 export function formatDKKWhole(ore: number): string {
-  return dkkWhole.format(oreToKroner(ore).toNumber());
+  return dkkWhole.format(normalizeZero(oreToKroner(ore).toNumber(), 0));
 }
 
 /**
  * Parse brugerinput (dansk format med komma eller punktum) til øre.
  * Returnerer null hvis input ikke er et gyldigt tal.
  */
-export function parseKronerInput(input: string): number | null {
+export function parseKronerInput(input: string | null | undefined): number | null {
+  if (typeof input !== 'string') return null;
   const cleaned = input
     .replace(/\s|kr\.?|DKK/gi, '')
     .replace(/\./g, '')
