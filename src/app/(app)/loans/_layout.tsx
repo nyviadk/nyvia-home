@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
 
 // Forankrer stakken til listen, så et direkte hit på /loans/[id] (reload/deep link)
-// altid har lån-listen under sig → tilbage-knap virker, og man kan nå oversigten.
+// altid har lån-listen under sig → tilbage går til oversigten, ikke ud til en anden fane.
+// (Hed `initialRouteName` før expo-router v4 — nu `anchor`.)
 export const unstable_settings = {
-  initialRouteName: 'index',
+  anchor: 'index',
 };
 
 export default function LoansLayout() {

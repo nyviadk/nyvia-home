@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { auth, type AuthUser } from '@/lib/firebase';
+import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
 
 interface AuthState {
   user: AuthUser | null;
@@ -13,11 +14,14 @@ export const useAuthStore = create<AuthState>(() => ({
   initializing: true,
 }));
 
-// Lytteren startes én gang ved module-init (uden komponent-effect, jf. "You Might
-// Not Need an Effect" → app-init hører til på modul-niveau).
-auth.onAuthStateChanged((user) => {
-  useAuthStore.setState({ user, initializing: false });
-});
+// Lytteren startes ved module-init (uden komponent-effect, jf. "You Might Not Need
+// an Effect" → app-init hører til på modul-niveau). hotReloadSubscribe forhindrer
+// leak ved Fast Refresh.
+hotReloadSubscribe('nyvia.auth', () =>
+  auth.onAuthStateChanged((user) => {
+    useAuthStore.setState({ user, initializing: false });
+  })
+);
 
 export const signIn = auth.signInWithEmail;
 export const signOut = auth.signOut;

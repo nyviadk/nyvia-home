@@ -68,7 +68,7 @@ function ReadView({ table }: { table: ExpenseTable }) {
           </View>
         ))
       )}
-      <View className="mt-1 flex-row justify-between border-t border-selected pt-2">
+      <View className="mt-1 flex-row justify-between border-t border-border pt-2">
         <AppText variant="label">I alt</AppText>
         <MoneyText ore={expenseTotalOre(table)} whole variant="label" />
       </View>
@@ -119,7 +119,7 @@ function EditForm({
         )}
       />
       {fields.map((field, index) => (
-        <View key={field.id} className="gap-2 rounded-xl bg-surface p-2">
+        <View key={field.id} className="gap-2 rounded-xl bg-element p-2">
           <View className="flex-row items-center gap-2">
             <View className="flex-1">
               <Controller
@@ -140,7 +140,7 @@ function EditForm({
               />
             </View>
             <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-              <AppText className="text-red-500">✕</AppText>
+              <AppText className="text-danger">✕</AppText>
             </Pressable>
           </View>
           <Controller

@@ -28,8 +28,12 @@ export function CustomSummary({ loan }: { loan: WithId<CustomLoan> }) {
   return (
     <Card className="gap-3">
       <View className="gap-1">
-        <AppText className="text-white/80">Restgæld</AppText>
-        <MoneyText ore={currentRemainingOre(loan)} whole className="text-3xl font-bold text-fg" />
+        <AppText variant="muted">Restgæld</AppText>
+        <MoneyText
+          ore={currentRemainingOre(loan)}
+          whole
+          className="text-3xl font-bold text-accent-loans"
+        />
       </View>
       <Row label="Hovedstol" ore={principalOre(loan.lineItems)} />
       <Row label="Rådighedsbeløb / md." ore={monthlyAvailableOre(loan)} />
@@ -38,7 +42,7 @@ export function CustomSummary({ loan }: { loan: WithId<CustomLoan> }) {
         <AppText variant="muted">Betalt om</AppText>
         <AppText variant="label">{Number.isFinite(months) ? `${months} mdr` : '—'}</AppText>
       </View>
-      <View className="mt-1 gap-1 border-t border-selected pt-2">
+      <View className="mt-1 gap-1 border-t border-border pt-2">
         <Row label="Opsparing efter 12 mdr" ore={savingsAfterOre(loan, 12)} />
         <Row label="Opsparing efter 24 mdr" ore={savingsAfterOre(loan, 24)} />
         <Row label="Opsparing efter 48 mdr" ore={savingsAfterOre(loan, 48)} />

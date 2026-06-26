@@ -15,12 +15,15 @@ export type Loan = {
   /** Månedlig ydelse. */
   monthlyPayment: number;
   startDate: string;
+  /** Afdrags-log i selve dokumentet (ingen subcollection → kun én listener). */
+  payments?: Payment[];
   createdAt: string;
   updatedAt: string;
 };
 
-/** Et registreret afdrag på et lån. */
+/** Et registreret afdrag på et lån (gemmes i lån-dokumentets payments-array). */
 export type Payment = {
+  id: string;
   amount: number;
   date: string;
   note?: string;

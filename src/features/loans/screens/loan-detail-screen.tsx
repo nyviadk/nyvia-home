@@ -14,13 +14,11 @@ import { PaymentForm } from '../components/payment-form';
 import { PaymentRow } from '../components/payment-row';
 import { addPayment } from '../data/loans.repository';
 import { useLoan } from '../hooks/use-loan';
-import { usePayments } from '../hooks/use-payments';
 import { loanProgress, progressPercent } from '../loans.utils';
 import { isCustomLoan } from '../types';
 
 export function LoanDetailScreen({ id }: { id: string }) {
   const { loan, loading } = useLoan(id);
-  const payments = usePayments(id);
 
   if (loading && !loan) {
     return (
@@ -42,6 +40,7 @@ export function LoanDetailScreen({ id }: { id: string }) {
   if (isCustomLoan(loan)) return null;
 
   const progress = loanProgress(loan);
+  const payments = [...(loan.payments ?? [])].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <Screen>
@@ -83,7 +82,7 @@ export function LoanDetailScreen({ id }: { id: string }) {
       <View className="gap-3">
         <AppText variant="heading">Registrér afdrag</AppText>
         <PaymentForm
-          onSubmit={(input) => addPayment(id, loan.currentBalance, input)}
+          onSubmit={(input) => addPayment(id, loan.currentBalance, loan.payments ?? [], input)}
         />
       </View>
 

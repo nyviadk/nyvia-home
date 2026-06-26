@@ -1,9 +1,9 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Toaster } from '@/components/toaster';
 import { useAuthStore } from '@/lib/auth/auth-store';
 import { ActivityIndicator, View } from '@/tw';
 
@@ -33,11 +33,12 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
+  // Light-only for nu → fast DefaultTheme (lyse nav-headers uanset system-tema).
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={DefaultTheme}>
         <RootNavigator />
+        <Toaster />
       </ThemeProvider>
     </SafeAreaProvider>
   );

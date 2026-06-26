@@ -69,7 +69,7 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
             )}
           />
           <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-            <AppText className="text-red-500">Fjern</AppText>
+            <AppText className="text-danger">Fjern</AppText>
           </Pressable>
         </View>
       ))}

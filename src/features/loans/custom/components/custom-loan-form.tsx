@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
-import { Switch, View } from '@/tw';
+import { View } from '@/tw';
 import type { CustomLoanInput } from '../../data/loans.repository';
 import { type CustomFormValues, customFormSchema, toCustomLoanInput, toFormValues } from '../form';
 import type { CustomLoan } from '../types';
@@ -95,31 +95,9 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
 
       <View className="gap-3">
         <AppText variant="heading">Afbetaling</AppText>
-        <AppText variant="muted">Tidshorisont (hurtigst/24/48 mdr) vælges i afbetalingsplanen.</AppText>
-
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-3">
-            <Controller
-              control={control}
-              name="bufferAmount"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormField label="Buffer / md. (kr.)">
-                  <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="500" />
-                </FormField>
-              )}
-            />
-          </View>
-          <View className="items-center gap-1">
-            <AppText variant="muted">Aktiv</AppText>
-            <Controller
-              control={control}
-              name="bufferEnabled"
-              render={({ field: { onChange, value } }) => (
-                <Switch value={value} onValueChange={onChange} />
-              )}
-            />
-          </View>
-        </View>
+        <AppText variant="muted">
+          Tidshorisont (hurtigst/24/48 mdr) og buffer vælges i afbetalingsplanen.
+        </AppText>
 
         <Controller
           control={control}

@@ -3,18 +3,31 @@
 @import 'tailwindcss/utilities.css';
 
 /* ---------------------------------------------------------------------------
- * Semantic color tokens (afstemt med src/constants/theme.ts Colors).
- * Lyse værdier i :root, mørke via prefers-color-scheme (virker web + native).
+ * NyviaHome — varmt/hyggeligt light-tema (Apple-agtigt, INGEN transparency/glas).
+ * Light-only for nu; dark kan tilføjes senere via en prefers-color-scheme-blok.
  * ------------------------------------------------------------------------- */
 :root {
-  --color-fg: #000000;
-  --color-fg-muted: #60646c;
-  --color-surface: #ffffff;
-  --color-element: #f0f0f3;
-  --color-selected: #e0e1e6;
-  --color-primary: #208aef;
+  --color-surface: #f6f4ef; /* app-baggrund (sand) */
+  --color-card: #ffffff; /* kort/flader */
+  --color-element: #efebe3; /* sekundær flade (input, track) */
+  --color-selected: #e3ddd1; /* valgt/hover */
+  --color-border: #e8e3da; /* kanter/separatorer */
+  --color-fg: #2a2a28; /* primær tekst */
+  --color-fg-muted: #7a756c; /* sekundær tekst */
+  --color-primary: #2f7d6b; /* brand/primær (teal-grøn) */
+  --color-on-primary: #ffffff;
 
-  /* Fonts (genbrugt fra det oprindelige tema) */
+  /* Dæmpede per-feature accenter (samme mætning) */
+  --color-accent-loans: #2f7d6b; /* teal */
+  --color-accent-budget: #3b6ea5; /* blå */
+  --color-accent-savings: #4e8d5b; /* grøn */
+  --color-accent-moving: #c2752f; /* orange */
+
+  /* Status */
+  --color-danger: #b3261e;
+  --color-success: #2e7d32;
+
+  /* Fonts */
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
@@ -22,17 +35,6 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-fg: #ffffff;
-    --color-fg-muted: #b0b4ba;
-    --color-surface: #000000;
-    --color-element: #212225;
-    --color-selected: #2e3135;
-    --color-primary: #4aa3ff;
-  }
 }
 
 /* Platform-specifikke font-familier */
@@ -44,14 +46,23 @@
   }
 }
 
-/* Registrér tokens som Tailwind-tema (inline = lad runtime-var'erne bestå) */
+/* Registrér tokens som Tailwind-tema (inline = behold runtime-var'erne) */
 @theme inline {
-  --color-fg: var(--color-fg);
-  --color-fg-muted: var(--color-fg-muted);
   --color-surface: var(--color-surface);
+  --color-card: var(--color-card);
   --color-element: var(--color-element);
   --color-selected: var(--color-selected);
+  --color-border: var(--color-border);
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
   --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-accent-loans: var(--color-accent-loans);
+  --color-accent-budget: var(--color-accent-budget);
+  --color-accent-savings: var(--color-accent-savings);
+  --color-accent-moving: var(--color-accent-moving);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
 
   --font-sans: var(--font-display);
   --font-mono: var(--font-mono);

@@ -63,7 +63,7 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
             <MoneyText
               ore={row.remaining}
               whole
-              className={cn('text-xs', row.remaining <= 0 ? 'text-green-600' : 'text-fg-muted')}
+              className={cn('text-xs', row.remaining <= 0 ? 'text-success' : 'text-fg-muted')}
             />
           </View>
           <MoneyText ore={row.expected} whole variant="muted" className="w-20 text-right" />

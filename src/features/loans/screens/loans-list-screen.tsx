@@ -10,19 +10,25 @@ import { LoanCard } from '../components/loan-card';
 import { LoansSummary } from '../components/loans-summary';
 import { CustomLoanCard } from '../custom/components/custom-loan-card';
 import { useLoansStore } from '../data/loans-store';
+import { usePendingDeletes } from '../data/pending-deletes';
 import { isCustomLoan } from '../types';
 
 export function LoansListScreen() {
   const loans = useLoansStore((s) => s.loans);
   const loading = useLoansStore((s) => s.loading);
   const fromCache = useLoansStore((s) => s.fromCache);
+  const pendingIds = usePendingDeletes((s) => s.ids);
   const insets = useSafeAreaInsets();
+
+  // Skjul lån der er optimistisk slettet (afventer fortryd-vindue).
+  const visibleLoans = loans.filter((loan) => !pendingIds.has(loan.id));
 
   return (
     <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
       <FlashList
-        data={loans}
+        data={visibleLoans}
         keyExtractor={(item) => item.id}
+        style={{ width: '100%', maxWidth: 900, alignSelf: 'center' }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         renderItem={({ item }) => (
           <View className="px-4 pb-3">
@@ -37,7 +43,7 @@ export function LoansListScreen() {
                 <Button title="Tilføj" className="h-10 px-4" />
               </Link>
             </View>
-            {loans.length > 0 ? <LoansSummary loans={loans} /> : null}
+            {visibleLoans.length > 0 ? <LoansSummary loans={visibleLoans} /> : null}
             {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
           </View>
         }

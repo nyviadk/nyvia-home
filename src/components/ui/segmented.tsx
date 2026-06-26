@@ -15,7 +15,7 @@ export interface SegmentedProps<T extends string> {
 /** Simpel segmenteret kontrol (cross-platform) til få gensidigt udelukkende valg. */
 export function Segmented<T extends string>({ value, options, onChange }: SegmentedProps<T>) {
   return (
-    <View className="flex-row rounded-xl bg-element p-1">
+    <View className="flex-row rounded-xl bg-element p-1" style={{ borderCurve: 'continuous' }}>
       {options.map((opt) => {
         const active = opt.value === value;
         return (
@@ -23,7 +23,12 @@ export function Segmented<T extends string>({ value, options, onChange }: Segmen
             key={opt.value}
             accessibilityRole="button"
             onPress={() => onChange(opt.value)}
-            className={cn('flex-1 items-center rounded-lg py-2', active && 'bg-surface')}>
+            style={
+              active
+                ? { borderCurve: 'continuous', boxShadow: '0 1px 2px rgba(40, 40, 38, 0.08)' }
+                : undefined
+            }
+            className={cn('flex-1 items-center rounded-lg py-2', active && 'bg-card')}>
             <Text className={cn('text-sm', active ? 'font-semibold text-fg' : 'text-fg-muted')}>
               {opt.label}
             </Text>

@@ -42,7 +42,7 @@ export function LineItemsEditor({ control }: { control: Control<CustomFormValues
               />
             </View>
             <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-              <AppText className="text-red-500">Fjern</AppText>
+              <AppText className="text-danger">Fjern</AppText>
             </Pressable>
           </View>
         </View>

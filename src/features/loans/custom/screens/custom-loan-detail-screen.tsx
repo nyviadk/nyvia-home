@@ -8,6 +8,7 @@ import { View } from '@/tw';
 import { DeleteLoanLink } from '../../components/delete-loan-link';
 import { useLoan } from '../../hooks/use-loan';
 import { isCustomLoan } from '../../types';
+import { BufferControl } from '../components/buffer-control';
 import { CustomSummary } from '../components/custom-summary';
 import { EditableExpenseTable } from '../components/editable-expense-table';
 import { EditableLineItems } from '../components/editable-line-items';
@@ -52,6 +53,7 @@ export function CustomLoanDetailScreen({ id }: { id: string }) {
 
       <AppText variant="heading">Afbetalingsplan</AppText>
       <HorizonSelect loan={loan} />
+      {loan.horizon === 'asap' ? <BufferControl loan={loan} /> : null}
       <ScheduleActuals loan={loan} />
 
       <DeleteLoanLink id={id} name={loan.name || 'Flytte-lån'} />

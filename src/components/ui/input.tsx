@@ -8,13 +8,14 @@ export interface InputProps extends TextInputProps {
 }
 
 /** Styled tekstfelt. */
-export function Input({ invalid, className, ...props }: InputProps) {
+export function Input({ invalid, className, style, ...props }: InputProps) {
   return (
     <TextInput
-      placeholderTextColor="#9ca3af"
+      placeholderTextColor="#a8a29a"
+      style={[{ borderCurve: 'continuous' }, style]}
       className={cn(
-        'h-12 rounded-xl border bg-surface px-4 text-base text-fg',
-        invalid ? 'border-red-500' : 'border-selected',
+        'h-12 rounded-xl border bg-card px-4 text-base text-fg',
+        invalid ? 'border-danger' : 'border-border',
         className
       )}
       {...props}

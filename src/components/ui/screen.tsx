@@ -19,7 +19,7 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   const inner = (
-    <View className={cn('w-full max-w-2xl flex-1 gap-4 self-center p-4', className)}>
+    <View className={cn('w-full max-w-225 flex-1 gap-4 self-center p-4', className)}>
       {children}
     </View>
   );

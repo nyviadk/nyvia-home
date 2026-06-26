@@ -64,7 +64,7 @@ function ReadView({ loan }: { loan: WithId<CustomLoan> }) {
           <Switch value={item.included} onValueChange={() => toggle(loan, item.id)} />
         </View>
       ))}
-      <View className="mt-1 flex-row justify-between border-t border-selected pt-2">
+      <View className="mt-1 flex-row justify-between border-t border-border pt-2">
         <AppText variant="label">Hovedstol</AppText>
         <MoneyText ore={principalOre(loan.lineItems)} whole variant="label" />
       </View>
@@ -121,7 +121,7 @@ function EditForm({ loan, onDone }: { loan: WithId<CustomLoan>; onDone: () => vo
             />
           </View>
           <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-            <AppText className="text-red-500">✕</AppText>
+            <AppText className="text-danger">✕</AppText>
           </Pressable>
         </View>
       ))}

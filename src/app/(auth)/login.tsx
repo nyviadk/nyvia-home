@@ -92,7 +92,7 @@ export default function LoginScreen() {
               )}
             />
 
-            {submitError ? <AppText className="text-red-500">{submitError}</AppText> : null}
+            {submitError ? <AppText className="text-danger">{submitError}</AppText> : null}
 
             <Button title="Log ind" onPress={onSubmit} loading={isSubmitting} />
           </View>

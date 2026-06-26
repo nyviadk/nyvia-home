@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
 import type { AnyLoan } from '../types';
 import { subscribeLoans } from './loans.repository';
 
@@ -34,8 +35,15 @@ function stop() {
 }
 
 // Listeneren følger login-status (uden komponent-effect). Starter når der er en
-// bruger (requireUid er da gyldig), rydder op ved log ud.
-auth.onAuthStateChanged((user) => {
-  if (user) start();
-  else stop();
+// bruger (requireUid er da gyldig), rydder op ved log ud. hotReloadSubscribe sikrer
+// at både auth- og loans-listeneren ryddes ved Fast Refresh (ingen leak).
+hotReloadSubscribe('nyvia.loans', () => {
+  const unsubAuth = auth.onAuthStateChanged((user) => {
+    if (user) start();
+    else stop();
+  });
+  return () => {
+    unsubAuth();
+    stop();
+  };
 });

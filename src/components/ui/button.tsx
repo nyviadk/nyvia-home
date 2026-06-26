@@ -7,12 +7,12 @@ type Variant = 'primary' | 'secondary' | 'ghost';
 
 const containerClass: Record<Variant, string> = {
   primary: 'bg-primary',
-  secondary: 'bg-selected',
+  secondary: 'border border-border bg-card',
   ghost: 'bg-transparent',
 };
 
 const labelClass: Record<Variant, string> = {
-  primary: 'text-white',
+  primary: 'text-on-primary',
   secondary: 'text-fg',
   ghost: 'text-primary',
 };
@@ -23,13 +23,14 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
   loading?: boolean;
 }
 
-/** Primær handlingsknap. Brug Pressable (ikke TouchableOpacity) jf. RN-skill. */
+/** Primær handlingsknap. Pressable (ikke TouchableOpacity) jf. RN-skill. */
 export function Button({
   title,
   variant = 'primary',
   loading = false,
   disabled,
   className,
+  style,
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
@@ -37,6 +38,11 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       disabled={isDisabled}
+      style={
+        typeof style === 'function'
+          ? (state) => [{ borderCurve: 'continuous' as const }, style(state)]
+          : [{ borderCurve: 'continuous' as const }, style]
+      }
       className={cn(
         'h-12 flex-row items-center justify-center rounded-xl px-4',
         containerClass[variant],

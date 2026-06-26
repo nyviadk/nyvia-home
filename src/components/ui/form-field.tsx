@@ -15,7 +15,7 @@ export function FormField({ label, error, children }: FormFieldProps) {
     <View className="gap-1.5">
       <AppText variant="label">{label}</AppText>
       {children}
-      {error ? <AppText className="text-red-500">{error}</AppText> : null}
+      {error ? <AppText className="text-danger">{error}</AppText> : null}
     </View>
   );
 }
