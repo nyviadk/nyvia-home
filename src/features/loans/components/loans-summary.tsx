@@ -4,10 +4,10 @@ import { AppText } from "@/components/ui/text";
 import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
 import { totalBalance, totalMonthlyPayment } from '../loans.utils';
-import type { Loan } from '../types';
+import type { AnyLoan } from '../types';
 
 /** Topkort: samlet restgæld + samlet månedlig ydelse over alle lån. */
-export function LoansSummary({ loans }: { loans: WithId<Loan>[] }) {
+export function LoansSummary({ loans }: { loans: WithId<AnyLoan>[] }) {
   return (
     <Card className="gap-4 bg-primary">
       <View className="gap-1">

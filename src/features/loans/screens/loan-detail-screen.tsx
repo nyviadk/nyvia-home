@@ -16,6 +16,7 @@ import { addPayment, deleteLoan } from '../data/loans.repository';
 import { useLoan } from '../hooks/use-loan';
 import { usePayments } from '../hooks/use-payments';
 import { loanProgress, progressPercent } from '../loans.utils';
+import { isCustomLoan } from '../types';
 
 export function LoanDetailScreen({ id }: { id: string }) {
   const { loan, loading } = useLoan(id);
@@ -36,6 +37,9 @@ export function LoanDetailScreen({ id }: { id: string }) {
       </Screen>
     );
   }
+
+  // Custom-lån håndteres af CustomLoanDetailScreen (ruten brancher).
+  if (isCustomLoan(loan)) return null;
 
   const progress = loanProgress(loan);
 

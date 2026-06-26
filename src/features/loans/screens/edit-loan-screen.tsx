@@ -5,6 +5,7 @@ import { AppText } from "@/components/ui/text";
 import { LoanForm } from '../components/loan-form';
 import { updateLoan } from '../data/loans.repository';
 import { useLoan } from '../hooks/use-loan';
+import { isCustomLoan } from '../types';
 
 export function EditLoanScreen({ id }: { id: string }) {
   const { loan, loading } = useLoan(id);
@@ -16,6 +17,9 @@ export function EditLoanScreen({ id }: { id: string }) {
       </Screen>
     );
   }
+
+  // Custom-lån redigeres af CustomLoanFormScreen (ruten brancher).
+  if (isCustomLoan(loan)) return null;
 
   return (
     <Screen>

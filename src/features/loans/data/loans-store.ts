@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
-import type { Loan } from '../types';
+import type { AnyLoan } from '../types';
 import { subscribeLoans } from './loans.repository';
 
 interface LoansState {
-  loans: WithId<Loan>[];
+  loans: WithId<AnyLoan>[];
   loading: boolean;
   fromCache: boolean;
 }

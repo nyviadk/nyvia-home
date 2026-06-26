@@ -8,7 +8,9 @@ import { AppText } from "@/components/ui/text";
 import { View } from '@/tw';
 import { LoanCard } from '../components/loan-card';
 import { LoansSummary } from '../components/loans-summary';
+import { CustomLoanCard } from '../custom/components/custom-loan-card';
 import { useLoansStore } from '../data/loans-store';
+import { isCustomLoan } from '../types';
 
 export function LoansListScreen() {
   const loans = useLoansStore((s) => s.loans);
@@ -24,7 +26,7 @@ export function LoansListScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         renderItem={({ item }) => (
           <View className="px-4 pb-3">
-            <LoanCard loan={item} />
+            {isCustomLoan(item) ? <CustomLoanCard loan={item} /> : <LoanCard loan={item} />}
           </View>
         )}
         ListHeaderComponent={
