@@ -2,14 +2,18 @@ import { FlashList } from '@shopify/flash-list';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText, Button, EmptyState } from '@/components/ui';
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AppText } from "@/components/ui/text";
 import { View } from '@/tw';
 import { LoanCard } from '../components/loan-card';
 import { LoansSummary } from '../components/loans-summary';
-import { useLoans } from '../hooks/use-loans';
+import { useLoansStore } from '../data/loans-store';
 
 export function LoansListScreen() {
-  const { loans, loading, fromCache } = useLoans();
+  const loans = useLoansStore((s) => s.loans);
+  const loading = useLoansStore((s) => s.loading);
+  const fromCache = useLoansStore((s) => s.fromCache);
   const insets = useSafeAreaInsets();
 
   return (

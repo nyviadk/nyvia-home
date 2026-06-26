@@ -1,17 +1,25 @@
 import { Link, router } from 'expo-router';
 
-import { AppText, Button, Card, EmptyState, MoneyText, ProgressBar, Screen } from '@/components/ui';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MoneyText } from "@/components/ui/money-text";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
 import { formatDateCopenhagen } from '@/lib/datetime';
 import { confirmAction } from '@/lib/confirm';
 import { View } from '@/tw';
 import { PaymentForm } from '../components/payment-form';
 import { PaymentRow } from '../components/payment-row';
 import { addPayment, deleteLoan } from '../data/loans.repository';
-import { useLoanDetail } from '../hooks/use-loan-detail';
-import { loanProgress } from '../loans.utils';
+import { useLoan } from '../hooks/use-loan';
+import { usePayments } from '../hooks/use-payments';
+import { loanProgress, progressPercent } from '../loans.utils';
 
 export function LoanDetailScreen({ id }: { id: string }) {
-  const { loan, payments, loading } = useLoanDetail(id);
+  const { loan, loading } = useLoan(id);
+  const payments = usePayments(id);
 
   if (loading && !loan) {
     return (
@@ -59,7 +67,7 @@ export function LoanDetailScreen({ id }: { id: string }) {
           </View>
         </View>
         <ProgressBar value={progress} />
-        <AppText variant="muted">{Math.round(progress * 100)}% afdraget</AppText>
+        <AppText variant="muted">{progressPercent(loan)}% afdraget</AppText>
 
         <View className="mt-2 flex-row justify-between">
           <AppText variant="muted">Rente</AppText>

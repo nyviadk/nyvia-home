@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
-import { AppText, Screen } from '@/components/ui';
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
 import { LoanForm } from '../components/loan-form';
 import { createLoan } from '../data/loans.repository';
 

@@ -1,14 +1,17 @@
 import { Link } from 'expo-router';
 
-import { AppText, Card, MoneyText, ProgressBar } from '@/components/ui';
+import { Card } from "@/components/ui/card";
+import { MoneyText } from "@/components/ui/money-text";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { AppText } from "@/components/ui/text";
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
-import { loanProgress } from '../loans.utils';
+import { loanProgress, progressPercent } from '../loans.utils';
 import type { Loan } from '../types';
 
 export function LoanCard({ loan }: { loan: WithId<Loan> }) {
   const progress = loanProgress(loan);
-  const pct = Math.round(progress * 100);
+  const pct = progressPercent(loan);
 
   return (
     <Link href={{ pathname: '/loans/[id]', params: { id: loan.id } }} asChild>

@@ -3,8 +3,12 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { AppText, Button, FormField, Input, Screen } from '@/components/ui';
-import { useAuth } from '@/lib/auth/auth-context';
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
+import { signIn } from '@/lib/auth/auth-store';
 import { View } from '@/tw';
 
 const schema = z.object({
@@ -15,7 +19,6 @@ const schema = z.object({
 type LoginForm = z.infer<typeof schema>;
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {

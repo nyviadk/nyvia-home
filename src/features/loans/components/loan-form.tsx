@@ -1,7 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import BigNumber from 'bignumber.js';
 import { Controller, useForm } from 'react-hook-form';
 
-import { Button, FormField, Input } from '@/components/ui';
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { todayISODate } from '@/lib/datetime';
 import { oreToKroner, parseKronerInput } from '@/lib/money';
 import { View } from '@/tw';
@@ -53,7 +56,7 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
       lender: values.lender.trim(),
       originalAmount: parseKronerInput(values.originalAmount) ?? 0,
       currentBalance: parseKronerInput(values.currentBalance) ?? 0,
-      interestRate: Number((values.interestRate || '0').replace(',', '.')) || 0,
+      interestRate: new BigNumber((values.interestRate || '0').replace(',', '.')).toNumber() || 0,
       monthlyPayment: parseKronerInput(values.monthlyPayment) ?? 0,
       startDate: values.startDate,
     });

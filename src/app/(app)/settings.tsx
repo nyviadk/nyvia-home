@@ -1,9 +1,12 @@
-import { AppText, Button, Card, Screen } from '@/components/ui';
-import { useAuth } from '@/lib/auth/auth-context';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
+import { signOut, useAuthStore } from '@/lib/auth/auth-store';
 import { View } from '@/tw';
 
 export default function SettingsScreen() {
-  const { user, signOut } = useAuth();
+  const user = useAuthStore((s) => s.user);
   return (
     <Screen>
       <AppText variant="title">Indstillinger</AppText>

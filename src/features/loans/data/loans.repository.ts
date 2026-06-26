@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js';
+
 import { nowISO } from '@/lib/datetime';
 import { auth, type CollectionSnapshot, db, type Unsubscribe, type WithId } from '@/lib/firebase';
 import type { Loan, LoanInput, Payment } from '../types';
@@ -70,8 +72,9 @@ export async function addPayment(
   const base: Payment = { amount: payment.amount, date: payment.date, createdAt: nowISO() };
   const data: Payment = payment.note ? { ...base, note: payment.note } : base;
   await db.addDoc<Payment>(paymentsPath(loanId), data);
+  const newBalance = BigNumber.maximum(0, new BigNumber(currentBalance).minus(payment.amount)).toNumber();
   await db.updateDoc(loanPath(loanId), {
-    currentBalance: Math.max(0, currentBalance - payment.amount),
+    currentBalance: newBalance,
     updatedAt: nowISO(),
   });
 }

@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 
-import { Button, FormField, Input } from '@/components/ui';
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { todayISODate } from '@/lib/datetime';
 import { parseKronerInput } from '@/lib/money';
 import { View } from '@/tw';

@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 
-import { AppText, Screen } from '@/components/ui';
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
 import { LoanForm } from '../components/loan-form';
 import { updateLoan } from '../data/loans.repository';
-import { useLoanDetail } from '../hooks/use-loan-detail';
+import { useLoan } from '../hooks/use-loan';
 
 export function EditLoanScreen({ id }: { id: string }) {
-  const { loan, loading } = useLoanDetail(id);
+  const { loan, loading } = useLoan(id);
 
   if (loading || !loan) {
     return (

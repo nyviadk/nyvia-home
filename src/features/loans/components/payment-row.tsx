@@ -1,4 +1,5 @@
-import { AppText, MoneyText } from '@/components/ui';
+import { MoneyText } from "@/components/ui/money-text";
+import { AppText } from "@/components/ui/text";
 import { formatDateCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';

@@ -12,6 +12,7 @@
     "@react-native-ml-kit/text-recognition": "^2.0.0",
     "@shopify/flash-list": "2.0.2",
     "@tailwindcss/postcss": "^4.3.1",
+    "bignumber.js": "^11.1.4",
     "clsx": "^2.1.1",
     "expo": "~56.0.12",
     "expo-build-properties": "~56.0.19",
@@ -59,7 +60,8 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.1",
     "tesseract.js": "^7.0.0",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/luxon": "^3.7.2",
