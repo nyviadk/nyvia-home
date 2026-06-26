@@ -6,19 +6,44 @@ import type { CustomLoanInput } from '../data/loans.repository';
 import { emptyCustomLoan } from './default';
 import type { CustomLoan } from './types';
 
+/** Fortegn = kategori: negativt øre-beløb = indtægt, positivt = udgift. */
+export type EntryKind = 'expense' | 'income';
+
+export function kindOf(ore: number): EntryKind {
+  return ore < 0 ? 'income' : 'expense';
+}
+function absStr(ore: number): string {
+  return String(oreToKroner(Math.abs(ore)).toNumber());
+}
+export function toSignedOre(amountStr: string, kind: EntryKind): number {
+  const magnitude = parseKronerInput(amountStr) ?? 0;
+  return kind === 'income' ? -Math.abs(magnitude) : Math.abs(magnitude);
+}
+
+const kindSchema = z.enum(['expense', 'income']);
+
+// Underposter arver postens kind (sættes af kassen posten ligger i) — ingen egen toggle.
+const childSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  amount: z.string(),
+});
+
 const rowSchema = z.object({
   label: z.string(),
   amount: z.string(),
+  kind: kindSchema,
   note: z.string().optional(),
 });
 
 const lineItemSchema = z.object({
-  // id + included round-trippes gennem formularen (redigeres i oversigtens filter,
-  // ikke her), så de bevares når label/beløb redigeres.
+  // id/included/children round-trippes (redigeres i oversigten, ikke i hovedformularen).
   id: z.string(),
   label: z.string(),
   amount: z.string(),
+  kind: kindSchema,
   included: z.boolean(),
+  children: z.array(childSchema),
 });
 
 export const customFormSchema = z.object({
@@ -40,9 +65,8 @@ export const customFormSchema = z.object({
 export type CustomFormValues = z.infer<typeof customFormSchema>;
 
 const oreToStr = (ore: number) => String(oreToKroner(ore).toNumber());
-const parse = (s: string) => parseKronerInput(s) ?? 0;
 
-/** Eksisterende lån (eller tomt) → formularværdier (beløb som tekst). */
+/** Eksisterende lån (eller tomt) → formularværdier (positivt beløb + kind). */
 export function toFormValues(loan?: CustomLoan): CustomFormValues {
   const base = loan ?? { ...emptyCustomLoan(), createdAt: '', updatedAt: '' };
   return {
@@ -53,19 +77,27 @@ export function toFormValues(loan?: CustomLoan): CustomFormValues {
     lineItems: base.lineItems.map((i) => ({
       id: i.id,
       label: i.label,
-      amount: oreToStr(i.amount),
+      amount: absStr(i.amount),
+      kind: kindOf(i.amount),
       included: i.included,
+      children: (i.children ?? []).map((c) => ({
+        id: c.id,
+        label: c.label,
+        amount: absStr(c.amount),
+      })),
     })),
     newHomeTitle: base.newHome.title,
     newHomeRows: base.newHome.rows.map((r) => ({
       label: r.label,
-      amount: oreToStr(r.amount),
+      amount: absStr(r.amount),
+      kind: kindOf(r.amount),
       note: r.note ?? '',
     })),
     oldHomeTitle: base.oldHome.title,
     oldHomeRows: base.oldHome.rows.map((r) => ({
       label: r.label,
-      amount: oreToStr(r.amount),
+      amount: absStr(r.amount),
+      kind: kindOf(r.amount),
       note: r.note ?? '',
     })),
     bufferAmount: oreToStr(base.buffer.amount),
@@ -76,8 +108,8 @@ export function toFormValues(loan?: CustomLoan): CustomFormValues {
 }
 
 /**
- * Formularværdier → gemt model (parser beløb til øre, genererer id'er).
- * `existingActuals` bevares ved redigering (faktiske afdrag må ikke nulstilles).
+ * Formularværdier → gemt model. Beløb signes ud fra kind. Har en post børn,
+ * bliver dens beløb summen af dem. `existingActuals` bevares ved redigering.
  */
 export function toCustomLoanInput(
   values: CustomFormValues,
@@ -91,18 +123,29 @@ export function toCustomLoanInput(
       accountNo: values.payeeAccountNo.trim(),
       bankName: values.payeeBankName.trim(),
     },
-    lineItems: values.lineItems.map((i) => ({
-      id: i.id || genId(),
-      label: i.label.trim(),
-      amount: parse(i.amount),
-      included: i.included,
-    })),
+    lineItems: values.lineItems.map((i) => {
+      const children = i.children.map((c) => ({
+        id: c.id || genId(),
+        label: c.label.trim(),
+        amount: toSignedOre(c.amount, i.kind),
+      }));
+      const amount = children.length
+        ? children.reduce((sum, c) => sum + c.amount, 0)
+        : toSignedOre(i.amount, i.kind);
+      return {
+        id: i.id || genId(),
+        label: i.label.trim(),
+        amount,
+        included: i.included,
+        ...(children.length ? { children } : {}),
+      };
+    }),
     newHome: {
       title: values.newHomeTitle.trim() || 'Ny bolig',
       rows: values.newHomeRows.map((r) => ({
         id: genId(),
         label: r.label.trim(),
-        amount: parse(r.amount),
+        amount: toSignedOre(r.amount, r.kind),
         ...(r.note?.trim() ? { note: r.note.trim() } : {}),
       })),
     },
@@ -111,11 +154,11 @@ export function toCustomLoanInput(
       rows: values.oldHomeRows.map((r) => ({
         id: genId(),
         label: r.label.trim(),
-        amount: parse(r.amount),
+        amount: toSignedOre(r.amount, r.kind),
         ...(r.note?.trim() ? { note: r.note.trim() } : {}),
       })),
     },
-    buffer: { amount: parse(values.bufferAmount), enabled: values.bufferEnabled },
+    buffer: { amount: parseKronerInput(values.bufferAmount) ?? 0, enabled: values.bufferEnabled },
     horizon: values.horizon,
     startMonth: values.startMonth,
     actuals: existingActuals,

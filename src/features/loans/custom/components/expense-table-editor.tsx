@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
 import { Pressable, View } from '@/tw';
-import type { CustomFormValues } from '../form';
+import type { CustomFormValues, EntryKind } from '../form';
 
 type RowsName = 'newHomeRows' | 'oldHomeRows';
 type TitleName = 'newHomeTitle' | 'oldHomeTitle';
@@ -15,9 +15,57 @@ export interface ExpenseTableEditorProps {
   titleName: TitleName;
 }
 
-/** Redigér en udgiftstabel: titel + rækker (label, beløb, fritekst-note). */
+/** Redigér en udgiftstabel: titel + to kasser (Udgifter / Indtægter). Type via kassen. */
 export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTableEditorProps) {
   const { fields, append, remove } = useFieldArray({ control, name: rowsName });
+  const rows = fields.map((field, index) => ({ field, index }));
+
+  const renderBox = (kind: EntryKind, title: string, addLabel: string) => (
+    <View className="gap-2 rounded-xl border border-border p-3">
+      <AppText variant="label">{title}</AppText>
+      {rows
+        .filter((r) => r.field.kind === kind)
+        .map(({ field, index }) => (
+          <View key={field.id} className="gap-2 rounded-xl bg-element p-2">
+            <View className="flex-row items-center gap-2">
+              <View className="flex-1">
+                <Controller
+                  control={control}
+                  name={`${rowsName}.${index}.label`}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Post" />
+                  )}
+                />
+              </View>
+              <View className="w-24">
+                <Controller
+                  control={control}
+                  name={`${rowsName}.${index}.amount`}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
+                  )}
+                />
+              </View>
+              <Pressable accessibilityRole="button" onPress={() => remove(index)}>
+                <AppText className="text-danger">✕</AppText>
+              </Pressable>
+            </View>
+            <Controller
+              control={control}
+              name={`${rowsName}.${index}.note`}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input value={value ?? ''} onChangeText={onChange} onBlur={onBlur} placeholder="Note (valgfri)" />
+              )}
+            />
+          </View>
+        ))}
+      <Button
+        title={addLabel}
+        variant="secondary"
+        onPress={() => append({ label: '', amount: '', kind, note: '' })}
+      />
+    </View>
+  );
 
   return (
     <View className="gap-3">
@@ -28,56 +76,8 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
           <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Tabel-titel" />
         )}
       />
-      {fields.map((field, index) => (
-        <View key={field.id} className="gap-2 rounded-xl bg-element p-3">
-          <View className="flex-row gap-2">
-            <View className="flex-1">
-              <Controller
-                control={control}
-                name={`${rowsName}.${index}.label`}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Post" />
-                )}
-              />
-            </View>
-            <View className="w-28">
-              <Controller
-                control={control}
-                name={`${rowsName}.${index}.amount`}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="decimal-pad"
-                    placeholder="kr."
-                  />
-                )}
-              />
-            </View>
-          </View>
-          <Controller
-            control={control}
-            name={`${rowsName}.${index}.note`}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                value={value ?? ''}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Note (valgfri)"
-              />
-            )}
-          />
-          <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-            <AppText className="text-danger">Fjern</AppText>
-          </Pressable>
-        </View>
-      ))}
-      <Button
-        title="Tilføj række"
-        variant="secondary"
-        onPress={() => append({ label: '', amount: '', note: '' })}
-      />
+      {renderBox('expense', 'Udgifter', 'Tilføj udgift')}
+      {renderBox('income', 'Indtægter', 'Tilføj indtægt')}
     </View>
   );
 }

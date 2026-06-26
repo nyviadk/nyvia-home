@@ -24,7 +24,9 @@ export function BufferControl({ loan }: { loan: WithId<CustomLoan> }) {
   });
 
   function save(amount: string, enabled: boolean) {
-    void updateCustomBuffer(loan.id, { amount: parseKronerInput(amount) ?? 0, enabled });
+    const amountOre = parseKronerInput(amount) ?? 0;
+    if (amountOre === loan.buffer.amount && enabled === loan.buffer.enabled) return;
+    void updateCustomBuffer(loan.id, { amount: amountOre, enabled });
   }
 
   return (

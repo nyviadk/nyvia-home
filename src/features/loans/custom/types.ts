@@ -1,11 +1,23 @@
 /** Custom flytte-lån (rigere model end standard-lånet). Beløb i øre, datoer ISO. */
 
-/** En post der indgår i lånets hovedstol; kan slås til/fra (med/uden). */
+/** En underpost (fx vaskemaskine under "Salg"). Beløb signed (negativt = indtægt). */
+export type LineItemChild = {
+  id: string;
+  label: string;
+  amount: number; // øre, signed
+};
+
+/**
+ * En post der indgår i lånets hovedstol; kan slås til/fra (med/uden).
+ * Beløb er signed: negativt = indtægt (fx salg/depositum-refusion), positivt = udgift.
+ * Har posten `children`, er dens beløb summen af dem (amount ignoreres).
+ */
 export type LoanLineItem = {
   id: string;
   label: string;
-  amount: number; // øre (kan være negativ, fx salg/depositum-refusion)
+  amount: number; // øre, signed (bruges hvis ingen children)
   included: boolean;
+  children?: LineItemChild[];
 };
 
 /** En udgiftsrække med valgfri fritekst-note. */

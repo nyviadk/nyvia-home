@@ -62,11 +62,11 @@ export default function AppWebLayout() {
     </TabList>
   );
 
+  // Ingen max-width her: scroll-container + Stack-header skal fylde hele bredden
+  // (scrollbar i kanten). Bredde-begrænsning sker på selve indholdet (Screen/list).
   const content = (
     <View className="flex-1 bg-surface">
-      <View className="mx-auto w-full max-w-400 flex-1">
-        <TabSlot />
-      </View>
+      <TabSlot />
     </View>
   );
 

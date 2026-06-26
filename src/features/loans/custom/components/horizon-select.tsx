@@ -15,7 +15,9 @@ export function HorizonSelect({ loan }: { loan: WithId<CustomLoan> }) {
     <Segmented
       value={loan.horizon}
       options={options}
-      onChange={(horizon: RepaymentHorizon) => void updateCustomHorizon(loan.id, horizon)}
+      onChange={(horizon: RepaymentHorizon) => {
+        if (horizon !== loan.horizon) void updateCustomHorizon(loan.id, horizon);
+      }}
     />
   );
 }

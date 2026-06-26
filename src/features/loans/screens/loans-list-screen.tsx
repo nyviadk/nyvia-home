@@ -28,8 +28,12 @@ export function LoansListScreen() {
       <FlashList
         data={visibleLoans}
         keyExtractor={(item) => item.id}
-        style={{ width: '100%', maxWidth: 900, alignSelf: 'center' }}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 900,
+          alignSelf: 'center',
+          paddingBottom: insets.bottom + 24,
+        }}
         renderItem={({ item }) => (
           <View className="px-4 pb-3">
             {isCustomLoan(item) ? <CustomLoanCard loan={item} /> : <LoanCard loan={item} />}

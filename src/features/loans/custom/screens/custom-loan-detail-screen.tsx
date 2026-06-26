@@ -13,6 +13,7 @@ import { CustomSummary } from '../components/custom-summary';
 import { EditableExpenseTable } from '../components/editable-expense-table';
 import { EditableLineItems } from '../components/editable-line-items';
 import { HorizonSelect } from '../components/horizon-select';
+import { PayeeCard } from '../components/payee-card';
 import { ScheduleActuals } from '../components/schedule-actuals';
 
 export function CustomLoanDetailScreen({ id }: { id: string }) {
@@ -47,6 +48,7 @@ export function CustomLoanDetailScreen({ id }: { id: string }) {
       </View>
 
       <CustomSummary loan={loan} />
+      <PayeeCard payee={loan.payee} />
       <EditableLineItems loan={loan} />
       <EditableExpenseTable loan={loan} tableKey="newHome" defaultTitle="Ny bolig" />
       <EditableExpenseTable loan={loan} tableKey="oldHome" defaultTitle="Nuværende bolig" />

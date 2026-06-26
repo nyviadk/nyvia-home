@@ -7,9 +7,19 @@ import type { CustomLoan, ExpenseTable, LoanLineItem, RepaymentHorizon } from '.
 const ZERO = new BigNumber(0);
 const ROUND = BigNumber.ROUND_HALF_UP;
 
-/** Hovedstol = sum af inkluderede poster (øre). */
+/** En posts beløb (øre, signed) — summen af children hvis de findes, ellers amount. */
+export function lineItemTotalOre(item: LoanLineItem): number {
+  if (item.children && item.children.length > 0) {
+    return item.children.reduce((sum, c) => sum.plus(c.amount), ZERO).toNumber();
+  }
+  return item.amount;
+}
+
+/** Hovedstol = sum af inkluderede posters beløb (øre, signed). */
 export function principalOre(items: LoanLineItem[]): number {
-  return items.reduce((sum, i) => (i.included ? sum.plus(i.amount) : sum), ZERO).toNumber();
+  return items
+    .reduce((sum, i) => (i.included ? sum.plus(lineItemTotalOre(i)) : sum), ZERO)
+    .toNumber();
 }
 
 /** Sum af en udgiftstabels rækker (øre). */

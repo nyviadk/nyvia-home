@@ -4,54 +4,59 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
 import { Pressable, View } from '@/tw';
-import type { CustomFormValues } from '../form';
+import type { CustomFormValues, EntryKind } from '../form';
 
 /**
- * Redigér lånets poster: label + beløb. Om en post medregnes (med/uden) styres
- * som et filter i oversigten — ikke her — så det kan justeres bagefter.
+ * Opretter lånets poster, opdelt i to kasser (Udgifter / Indtægter). Typen sættes
+ * af kassen — ingen toggle. Underposter tilføjes senere via oversigtens redigering.
  */
 export function LineItemsEditor({ control }: { control: Control<CustomFormValues> }) {
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' });
+  const rows = fields.map((field, index) => ({ field, index }));
 
-  return (
-    <View className="gap-3">
-      <AppText variant="heading">Poster i lånet</AppText>
-      {fields.map((field, index) => (
-        <View key={field.id} className="gap-2 rounded-xl bg-element p-3">
-          <Controller
-            control={control}
-            name={`lineItems.${index}.label`}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Beskrivelse" />
-            )}
-          />
-          <View className="flex-row items-center gap-3">
+  const renderBox = (kind: EntryKind, title: string, addLabel: string) => (
+    <View className="gap-2 rounded-xl border border-border p-3">
+      <AppText variant="label">{title}</AppText>
+      {rows
+        .filter((r) => r.field.kind === kind)
+        .map(({ field, index }) => (
+          <View key={field.id} className="flex-row items-center gap-2 rounded-xl bg-element p-2">
             <View className="flex-1">
+              <Controller
+                control={control}
+                name={`lineItems.${index}.label`}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Beskrivelse" />
+                )}
+              />
+            </View>
+            <View className="w-24">
               <Controller
                 control={control}
                 name={`lineItems.${index}.amount`}
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="decimal-pad"
-                    placeholder="kr."
-                  />
+                  <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
                 )}
               />
             </View>
             <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-              <AppText className="text-danger">Fjern</AppText>
+              <AppText className="text-danger">✕</AppText>
             </Pressable>
           </View>
-        </View>
-      ))}
+        ))}
       <Button
-        title="Tilføj post"
+        title={addLabel}
         variant="secondary"
-        onPress={() => append({ id: '', label: '', amount: '', included: true })}
+        onPress={() => append({ id: '', label: '', amount: '', kind, included: true, children: [] })}
       />
+    </View>
+  );
+
+  return (
+    <View className="gap-3">
+      <AppText variant="heading">Poster i lånet</AppText>
+      {renderBox('expense', 'Udgifter', 'Tilføj udgift')}
+      {renderBox('income', 'Indtægter', 'Tilføj indtægt')}
     </View>
   );
 }

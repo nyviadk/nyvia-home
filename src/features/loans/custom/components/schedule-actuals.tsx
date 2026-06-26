@@ -29,6 +29,9 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
   /** Gem ét månedsafdrag (merge ind i de eksisterende). Tomt felt → fjern. */
   function saveMonth(ym: string, raw: string) {
     const ore = parseKronerInput(raw);
+    const prev = loan.actuals[ym];
+    // Skip hvis uændret (undgår unødige writes + toasts på blur).
+    if ((ore === null && prev === undefined) || ore === prev) return;
     const next = { ...loan.actuals };
     if (ore === null) {
       delete next[ym];

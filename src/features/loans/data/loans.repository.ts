@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { nowISO } from '@/lib/datetime';
 import { auth, type CollectionSnapshot, db, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { genId } from '@/lib/id';
+import { toastAfter } from '@/lib/toast/notify';
 import type { CustomLoan } from '../custom/types';
 import type { AnyLoan, Loan, LoanInput, Payment } from '../types';
 
@@ -40,25 +41,34 @@ export function subscribeLoan(
 
 export function createLoan(input: LoanInput): Promise<string> {
   const now = nowISO();
-  return db.addDoc<Loan>(loansPath(), { ...input, type: 'standard', createdAt: now, updatedAt: now });
+  return toastAfter(
+    db.addDoc<Loan>(loansPath(), { ...input, type: 'standard', createdAt: now, updatedAt: now }),
+    'Lån oprettet'
+  );
 }
 
 export function updateLoan(id: string, input: LoanInput): Promise<void> {
-  return db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() });
+  return toastAfter(db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
 }
 
 export function createCustomLoan(input: CustomLoanInput): Promise<string> {
   const now = nowISO();
-  return db.addDoc<CustomLoan>(loansPath(), { ...input, createdAt: now, updatedAt: now });
+  return toastAfter(
+    db.addDoc<CustomLoan>(loansPath(), { ...input, createdAt: now, updatedAt: now }),
+    'Lån oprettet'
+  );
 }
 
 export function updateCustomLoan(id: string, input: CustomLoanInput): Promise<void> {
-  return db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() });
+  return toastAfter(db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
 }
 
 /** Gem kun de faktiske afdrag (faktisk-vs-forventet). */
 export function updateCustomActuals(id: string, actuals: Record<string, number>): Promise<void> {
-  return db.updateDoc(loanPath(id), { actuals, updatedAt: nowISO() });
+  return toastAfter(
+    db.updateDoc(loanPath(id), { actuals, updatedAt: nowISO() }),
+    'Faktisk afdrag gemt'
+  );
 }
 
 /** Gem kun posterne (bruges af medtag/fravælg-filteret i oversigten). */
@@ -66,17 +76,23 @@ export function updateCustomLineItems(
   id: string,
   lineItems: CustomLoan['lineItems']
 ): Promise<void> {
-  return db.updateDoc(loanPath(id), { lineItems, updatedAt: nowISO() });
+  return toastAfter(
+    db.updateDoc(loanPath(id), { lineItems, updatedAt: nowISO() }),
+    'Poster opdateret'
+  );
 }
 
 /** Gem kun afbetalings-horisonten (vælges dynamisk i afbetalingsplanen). */
 export function updateCustomHorizon(id: string, horizon: CustomLoan['horizon']): Promise<void> {
-  return db.updateDoc(loanPath(id), { horizon, updatedAt: nowISO() });
+  return toastAfter(
+    db.updateDoc(loanPath(id), { horizon, updatedAt: nowISO() }),
+    'Tidshorisont opdateret'
+  );
 }
 
 /** Gem kun buffer (vælges i afbetalingsplanen, kun relevant ved 'asap'). */
 export function updateCustomBuffer(id: string, buffer: CustomLoan['buffer']): Promise<void> {
-  return db.updateDoc(loanPath(id), { buffer, updatedAt: nowISO() });
+  return toastAfter(db.updateDoc(loanPath(id), { buffer, updatedAt: nowISO() }), 'Buffer opdateret');
 }
 
 /** Gem kun én udgiftstabel (ny/nuværende bolig) — inline-redigering i oversigten. */
@@ -85,7 +101,7 @@ export function updateCustomExpenseTable(
   key: 'newHome' | 'oldHome',
   table: CustomLoan['newHome']
 ): Promise<void> {
-  return db.updateDoc(loanPath(id), { [key]: table, updatedAt: nowISO() });
+  return toastAfter(db.updateDoc(loanPath(id), { [key]: table, updatedAt: nowISO() }), 'Udgifter gemt');
 }
 
 export function deleteLoan(id: string): Promise<void> {
@@ -105,9 +121,12 @@ export function addPayment(
   const base: Payment = { id: genId(), amount: payment.amount, date: payment.date, createdAt: nowISO() };
   const entry: Payment = payment.note ? { ...base, note: payment.note } : base;
   const newBalance = BigNumber.maximum(0, new BigNumber(currentBalance).minus(payment.amount)).toNumber();
-  return db.updateDoc(loanPath(loanId), {
-    payments: [...existingPayments, entry],
-    currentBalance: newBalance,
-    updatedAt: nowISO(),
-  });
+  return toastAfter(
+    db.updateDoc(loanPath(loanId), {
+      payments: [...existingPayments, entry],
+      currentBalance: newBalance,
+      updatedAt: nowISO(),
+    }),
+    'Afdrag registreret'
+  );
 }
