@@ -1,19 +1,21 @@
 import { Controller, useForm } from 'react-hook-form';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoneyText } from '@/components/ui/money-text';
 import { AppText } from '@/components/ui/text';
+import { cn } from '@/lib/cn';
 import { formatMonthCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { oreToKroner, parseKronerInput } from '@/lib/money';
-import { cn } from '@/lib/cn';
 import { View } from '@/tw';
 import { updateCustomActuals } from '../../data/loans.repository';
 import { buildSchedule } from '../calc';
 import type { CustomLoan } from '../types';
 
-/** Afbetalingstabel: forventet afdrag + faktisk (redigerbart) + restgæld pr. måned. */
+/**
+ * Afbetalingstabel: forventet + faktisk afdrag (redigerbart) + restgæld pr. måned.
+ * Faktiske afdrag gemmes automatisk når et felt forlades (on blur) — ingen Gem-knap.
+ */
 export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
   const rows = buildSchedule(loan);
 
@@ -22,18 +24,19 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
     defaultValues[row.ym] = row.actual != null ? String(oreToKroner(row.actual).toNumber()) : '';
   }
 
-  const { control, handleSubmit, formState } = useForm<Record<string, string>>({ defaultValues });
+  const { control } = useForm<Record<string, string>>({ defaultValues });
 
-  const submit = handleSubmit(async (values) => {
-    const actuals: Record<string, number> = {};
-    for (const [ym, str] of Object.entries(values)) {
-      // Tom/slettet felt → parseKronerInput giver null → springes over (måneden
-      // bruger så forventet afdrag). "0" gemmes derimod som 0.
-      const ore = parseKronerInput(str);
-      if (ore !== null) actuals[ym] = ore;
+  /** Gem ét månedsafdrag (merge ind i de eksisterende). Tomt felt → fjern. */
+  function saveMonth(ym: string, raw: string) {
+    const ore = parseKronerInput(raw);
+    const next = { ...loan.actuals };
+    if (ore === null) {
+      delete next[ym];
+    } else {
+      next[ym] = ore;
     }
-    await updateCustomActuals(loan.id, actuals);
-  });
+    void updateCustomActuals(loan.id, next);
+  }
 
   if (rows.length === 0) {
     return <AppText variant="muted">Udfyld poster og udgifter for at se afbetalingsplanen.</AppText>;
@@ -72,7 +75,10 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
                 <Input
                   value={value ?? ''}
                   onChangeText={onChange}
-                  onBlur={onBlur}
+                  onBlur={() => {
+                    onBlur();
+                    saveMonth(row.ym, value ?? '');
+                  }}
                   keyboardType="decimal-pad"
                   placeholder="—"
                 />
@@ -81,8 +87,6 @@ export function ScheduleActuals({ loan }: { loan: WithId<CustomLoan> }) {
           </View>
         </View>
       ))}
-
-      <Button title="Gem faktiske afdrag" onPress={submit} loading={formState.isSubmitting} />
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,11 +8,11 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import { formatDateCopenhagen } from '@/lib/datetime';
-import { confirmAction } from '@/lib/confirm';
 import { View } from '@/tw';
+import { DeleteLoanLink } from '../components/delete-loan-link';
 import { PaymentForm } from '../components/payment-form';
 import { PaymentRow } from '../components/payment-row';
-import { addPayment, deleteLoan } from '../data/loans.repository';
+import { addPayment } from '../data/loans.repository';
 import { useLoan } from '../hooks/use-loan';
 import { usePayments } from '../hooks/use-payments';
 import { loanProgress, progressPercent } from '../loans.utils';
@@ -42,13 +42,6 @@ export function LoanDetailScreen({ id }: { id: string }) {
   if (isCustomLoan(loan)) return null;
 
   const progress = loanProgress(loan);
-
-  async function handleDelete() {
-    const ok = await confirmAction('Slet lån', `Vil du slette "${loan!.name}"?`, 'Slet');
-    if (!ok) return;
-    await deleteLoan(id);
-    router.back();
-  }
 
   return (
     <Screen>
@@ -103,7 +96,7 @@ export function LoanDetailScreen({ id }: { id: string }) {
         )}
       </View>
 
-      <Button title="Slet lån" variant="ghost" onPress={handleDelete} className="mt-2" />
+      <DeleteLoanLink id={id} name={loan.name} />
     </Screen>
   );
 }

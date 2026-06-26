@@ -1,12 +1,11 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
 import { View } from '@/tw';
-import { deleteLoan } from '../../data/loans.repository';
+import { DeleteLoanLink } from '../../components/delete-loan-link';
 import { useLoan } from '../../hooks/use-loan';
 import { isCustomLoan } from '../../types';
 import { CustomSummary } from '../components/custom-summary';
@@ -34,14 +33,6 @@ export function CustomLoanDetailScreen({ id }: { id: string }) {
     );
   }
 
-  const loanName = loan.name || 'Flytte-lån';
-  async function handleDelete() {
-    const ok = await confirmAction('Slet lån', `Vil du slette "${loanName}"?`, 'Slet');
-    if (!ok) return;
-    await deleteLoan(id);
-    router.back();
-  }
-
   return (
     <Screen>
       <View className="flex-row items-start justify-between gap-2">
@@ -63,7 +54,7 @@ export function CustomLoanDetailScreen({ id }: { id: string }) {
       <HorizonSelect loan={loan} />
       <ScheduleActuals loan={loan} />
 
-      <Button title="Slet lån" variant="ghost" onPress={handleDelete} className="mt-2" />
+      <DeleteLoanLink id={id} name={loan.name || 'Flytte-lån'} />
     </Screen>
   );
 }
