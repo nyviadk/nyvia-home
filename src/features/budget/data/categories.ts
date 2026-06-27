@@ -1,3 +1,5 @@
+import Fuse from 'fuse.js';
+
 import type { WithId } from '@/lib/firebase';
 import type { BudgetEntry, BudgetEntryType } from '../types';
 
@@ -38,8 +40,8 @@ export function presetCategories(type: BudgetEntryType): string[] {
 }
 
 /**
- * Forslag = presets ∪ kategorier brugt i eksisterende poster (samme type), filtreret
- * på søgetekst (case-insensitivt "indeholder"). Ingen ekstra Firestore-samling.
+ * Forslag = presets ∪ kategorier brugt i eksisterende poster (samme type), fuzzy-
+ * filtreret på søgetekst (tåler slåfejl via Fuse.js). Ingen ekstra Firestore-samling.
  */
 export function categorySuggestions(
   type: BudgetEntryType,
@@ -48,7 +50,11 @@ export function categorySuggestions(
 ): string[] {
   const used = entries.filter((e) => e.type === type).map((e) => e.category.trim());
   const merged = Array.from(new Set([...presetCategories(type), ...used])).filter(Boolean);
-  const q = query.trim().toLowerCase();
-  const filtered = q ? merged.filter((c) => c.toLowerCase().includes(q)) : merged;
-  return filtered.slice(0, 8);
+  const q = query.trim();
+  if (!q) return merged.slice(0, 8);
+
+  // ignoreLocation: match hvor som helst i ordet; threshold 0.45 tåler et par slåfejl
+  // uden at blive for løst (fx "huslej"/"hsleje" → "Husleje", "div" → "Diverse").
+  const fuse = new Fuse(merged, { threshold: 0.45, ignoreLocation: true });
+  return fuse.search(q).map((r) => r.item).slice(0, 8);
 }
