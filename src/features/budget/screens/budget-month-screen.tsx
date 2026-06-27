@@ -69,8 +69,10 @@ export function BudgetMonthScreen({ ym }: { ym: string }) {
   const loans = useLoansStore((s) => s.loans);
   const loanMonthly = totalMonthlyPayment(loans);
 
-  const incomes = rows.filter((r) => r.type === 'income');
-  const expenses = rows.filter((r) => r.type === 'expense');
+  const effectiveOf = (r: MonthEntryRow) => r.actualOre ?? r.forventetOre;
+  const byAmountDesc = (a: MonthEntryRow, b: MonthEntryRow) => effectiveOf(b) - effectiveOf(a);
+  const incomes = rows.filter((r) => r.type === 'income').sort(byAmountDesc);
+  const expenses = rows.filter((r) => r.type === 'expense').sort(byAmountDesc);
 
   const sum = (list: MonthEntryRow[]) => list.reduce((t, r) => t + (r.actualOre ?? r.forventetOre), 0);
   const incomeTotal = sum(incomes);

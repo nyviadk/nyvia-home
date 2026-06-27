@@ -33,8 +33,9 @@ export function BudgetScreen() {
   const pendingIds = usePendingBudgetDeletes((s) => s.ids);
 
   const visible = entries.filter((e) => !pendingIds.has(e.id));
-  const incomes = visible.filter((e) => e.type === 'income');
-  const expenses = visible.filter((e) => e.type === 'expense');
+  const byAmountDesc = (a: WithId<BudgetEntry>, b: WithId<BudgetEntry>) => b.amount - a.amount;
+  const incomes = visible.filter((e) => e.type === 'income').sort(byAmountDesc);
+  const expenses = visible.filter((e) => e.type === 'expense').sort(byAmountDesc);
 
   return (
     <Screen>
