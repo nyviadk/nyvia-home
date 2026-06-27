@@ -1,63 +1,146 @@
-import { Card } from '@/components/ui/card';
-import { MoneyText } from '@/components/ui/money-text';
-import { AppText } from '@/components/ui/text';
-import { formatMonthCopenhagen } from '@/lib/datetime';
-import { cn } from '@/lib/cn';
-import { View } from '@/tw';
-import { averageDisposableOre, forecastMonths } from '../forecast';
-import { useForecastInput } from '../hooks/use-forecast';
+import { Link } from "expo-router";
 
-function Row({ label, ore, strong }: { label: string; ore: number; strong?: boolean }) {
+import { Card } from "@/components/ui/card";
+import { MoneyText } from "@/components/ui/money-text";
+import { Segmented } from "@/components/ui/segmented";
+import { AppText } from "@/components/ui/text";
+import { cn } from "@/lib/cn";
+import { formatMonthCopenhagen, todayISODate } from "@/lib/datetime";
+import { Pressable, View } from "@/tw";
+import { useBudgetSettingsStore } from "../data/budget-settings-store";
+import {
+  setBudgetViewMode,
+  useBudgetViewStore,
+} from "../data/budget-view-store";
+import {
+  forecastAnchorISO,
+  type ForecastMode,
+  forecastMonths,
+} from "../forecast";
+import { useBudgetOverview } from "../hooks/use-budget-overview";
+import { useForecastInput } from "../hooks/use-forecast";
+
+const MODE_OPTIONS = [
+  { value: "realistic" as const, label: "Realistisk" },
+  { value: "smoothed" as const, label: "Hensat" },
+];
+
+function Row({
+  label,
+  ore,
+  sign,
+  strong,
+}: {
+  label: string;
+  ore: number;
+  sign?: "+" | "−";
+  strong?: boolean;
+}) {
   return (
     <View className="flex-row items-baseline justify-between">
-      <AppText variant={strong ? 'label' : 'muted'}>{label}</AppText>
-      <MoneyText ore={ore} whole variant={strong ? 'label' : 'muted'} />
+      <AppText variant={strong ? "label" : "muted"}>
+        {sign ? `${sign} ` : ""}
+        {label}
+      </AppText>
+      <MoneyText ore={ore} whole variant={strong ? "label" : "muted"} />
     </View>
   );
 }
 
-/** Forecast-overblik: rådighedsbeløb denne md + gennemsnit + kommende måneder. */
+/** Forecast-overblik: rådighedsbeløb i ankermåneden + gennemsnits-nedbrydning + kommende måneder. */
 export function ForecastSummary() {
   const input = useForecastInput();
-  const months = forecastMonths(12, input);
-  const current = months[0];
-  const average = averageDisposableOre(input);
+  const overview = useBudgetOverview();
+  const startDate = useBudgetSettingsStore((s) => s.startDate);
+  const mode = useBudgetViewStore((s) => s.mode);
+
+  const anchorISO = forecastAnchorISO(startDate);
+  const months = forecastMonths(12, input, anchorISO, mode);
+  const anchor = months[0];
+  const isThisMonth = anchorISO.slice(0, 7) === todayISODate().slice(0, 7);
+  const yearlyDisposable = overview.disposableOre * 12;
 
   return (
     <View className="gap-3">
       <Card className="gap-3 border-0 bg-primary">
         <View className="gap-1">
-          <AppText className="text-on-primary/80">Rådighedsbeløb denne måned</AppText>
-          <MoneyText ore={current.net} whole className="text-3xl font-bold text-on-primary" />
+          <AppText className="text-on-primary/80">
+            Rådighedsbeløb{" "}
+            {isThisMonth
+              ? "denne måned"
+              : `· ${formatMonthCopenhagen(`${anchorISO.slice(0, 7)}-01`)}`}
+          </AppText>
+          <MoneyText
+            ore={anchor.net}
+            whole
+            className="text-3xl font-bold text-on-primary"
+          />
         </View>
         <View className="flex-row items-baseline justify-between">
           <AppText className="text-on-primary/80">Gennemsnit / md.</AppText>
-          <MoneyText ore={average} whole className="font-semibold text-on-primary" />
+          <MoneyText
+            ore={overview.disposableOre}
+            whole
+            className="font-semibold text-on-primary"
+          />
         </View>
       </Card>
 
       <Card className="gap-2">
-        <Row label="Indtægter" ore={current.income} />
-        <Row label="Faste udgifter (inkl. lån)" ore={current.expenses} />
+        <AppText variant="heading">Gennemsnit pr. måned</AppText>
+        <Row label="Indtægter" ore={overview.incomeOre} sign="+" />
+        <Row label="Faste udgifter" ore={overview.expenseOre} sign="−" />
+        <Row label="Abonnementer" ore={overview.subscriptionsOre} sign="−" />
+        <Row label="Lån" ore={overview.loansOre} sign="−" />
+        <Row label="Opsparing" ore={overview.savingsOre} sign="−" />
         <View className="mt-1 border-t border-border pt-2">
-          <Row label="= Rådighedsbeløb" ore={current.net} strong />
+          <Row
+            label="Rådighedsbeløb / md."
+            ore={overview.disposableOre}
+            strong
+          />
+        </View>
+        <View className="flex-row items-baseline justify-between">
+          <AppText variant="muted">Rådighedsbeløb / år</AppText>
+          <MoneyText ore={yearlyDisposable} whole variant="muted" />
         </View>
       </Card>
 
-      <Card className="gap-1">
-        <AppText variant="heading">Kommende måneder</AppText>
+      <Card className="gap-2">
+        <View className="flex-row items-center justify-between">
+          <AppText variant="heading">Kommende måneder</AppText>
+        </View>
+        <Segmented<ForecastMode>
+          value={mode}
+          options={MODE_OPTIONS}
+          onChange={setBudgetViewMode}
+        />
+        <AppText variant="muted">
+          {mode === "smoothed"
+            ? "Periodiske beløb spredes som hensættelse — ingen måned dykker."
+            : "Beløb vises i den måned de falder; faktiske beløb overstyrer forventet."}
+        </AppText>
         {months.map((m) => (
-          <View key={m.ym} className="flex-row items-baseline justify-between py-0.5">
-            <AppText variant="muted" className="capitalize">
-              {formatMonthCopenhagen(`${m.ym}-01`)}
-            </AppText>
-            <MoneyText
-              ore={m.net}
-              whole
-              variant="label"
-              className={cn(m.net < 0 && 'text-danger')}
-            />
-          </View>
+          <Link
+            key={m.ym}
+            href={{ pathname: "/budget/month/[ym]", params: { ym: m.ym } }}
+            asChild
+          >
+            <Pressable
+              accessibilityRole="button"
+              className="flex-row items-baseline justify-between border-t border-border py-1.5"
+            >
+              <AppText variant="muted" className="capitalize">
+                {formatMonthCopenhagen(`${m.ym}-01`)}
+              </AppText>
+              <MoneyText
+                ore={m.net}
+                whole
+                variant="label"
+                className={cn(m.net < 0 && "text-danger")}
+              />
+            </Pressable>
+          </Link>
         ))}
       </Card>
     </View>

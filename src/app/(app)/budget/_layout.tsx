@@ -11,6 +11,9 @@ export default function BudgetLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="new" options={{ title: 'Ny budgetpost' }} />
+      <Stack.Screen name="settings" options={{ title: 'Budget-indstillinger' }} />
+      <Stack.Screen name="month/[ym]" options={{ title: 'Måned' }} />
+      <Stack.Screen name="actuals" options={{ title: 'Faktisk beløb' }} />
       <Stack.Screen name="[id]" options={{ title: 'Redigér post' }} />
     </Stack>
   );

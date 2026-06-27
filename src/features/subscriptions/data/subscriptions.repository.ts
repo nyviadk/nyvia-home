@@ -1,6 +1,7 @@
 import { nowISO } from '@/lib/datetime';
 import { auth, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
 import { toastAfter } from '@/lib/toast/notify';
+import type { PriceChange } from '@/features/budget/types';
 import type { Subscription, SubscriptionInput } from '../types';
 
 function requireUid(): string {
@@ -40,6 +41,16 @@ export function setSubscriptionActive(id: string, active: boolean): Promise<void
   return toastAfter(
     db.updateDoc(docPath(id), { active, updatedAt: nowISO() }),
     active ? 'Aktiveret' : 'Sat på pause'
+  );
+}
+
+export function updateSubscriptionPriceChanges(
+  id: string,
+  priceChanges: PriceChange[]
+): Promise<void> {
+  return toastAfter(
+    db.updateDoc(docPath(id), { priceChanges, updatedAt: nowISO() }),
+    'Prisændring gemt'
   );
 }
 

@@ -31,6 +31,8 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
       return true;
     case 'quarterly':
       return diff % 3 === 0;
+    case 'half_yearly':
+      return diff % 6 === 0;
     case 'yearly':
       return diff % 12 === 0;
   }
@@ -47,7 +49,10 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
 
   if (rule.cadence === 'monthly') {
     const md = rule.monthlyDay ?? start.day;
-    if (md === 'lastBank') {
+    if (md === 'month') {
+      // Ingen bestemt dag (kun måneden tæller).
+      return null;
+    } else if (md === 'lastBank') {
       // Allerede en bankdag → previousBankDay nedenfor er et no-op.
       date = lastBankDayOfMonth(year, month);
     } else if (md === 'firstBank') {
@@ -56,7 +61,7 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
       date = base.set({ day: Math.min(md, daysInMonth) });
     }
   } else {
-    // kvartal/år/engang: brug ankerdatoens dag-i-måneden
+    // kvartal/halvår/år/engang: brug ankerdatoens dag-i-måneden
     date = base.set({ day: Math.min(start.day, daysInMonth) });
   }
 
@@ -68,9 +73,27 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
   return date.toFormat('yyyy-MM-dd');
 }
 
+/** Forekomster pr. år for en cadence (engang = 0 → indgår ikke i månedsgennemsnit). */
+function occurrencesPerYear(cadence: Recurrence['cadence']): number {
+  switch (cadence) {
+    case 'monthly':
+      return 12;
+    case 'quarterly':
+      return 4;
+    case 'half_yearly':
+      return 2;
+    case 'yearly':
+      return 1;
+    case 'once':
+      return 0;
+  }
+}
+
 /** Gennemsnitligt månedligt bidrag (øre): forekomster pr. år ÷ 12. */
 export function monthlyAverageOre(amountOre: number, rule: Recurrence): number {
-  const perYear =
-    rule.cadence === 'monthly' ? 12 : rule.cadence === 'quarterly' ? 4 : rule.cadence === 'yearly' ? 1 : 0;
-  return new BigNumber(amountOre).times(perYear).div(12).integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+  return new BigNumber(amountOre)
+    .times(occurrencesPerYear(rule.cadence))
+    .div(12)
+    .integerValue(BigNumber.ROUND_HALF_UP)
+    .toNumber();
 }

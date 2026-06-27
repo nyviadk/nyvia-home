@@ -8,6 +8,7 @@ import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
 import { BudgetEntryRow } from '../components/budget-entry-row';
 import { ForecastSummary } from '../components/forecast-summary';
+import { LoanBudgetCard } from '../components/loan-budget-card';
 import { useBudgetStore } from '../data/budget-store';
 import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import type { BudgetEntry } from '../types';
@@ -39,9 +40,14 @@ export function BudgetScreen() {
     <Screen>
       <View className="flex-row items-center justify-between">
         <AppText variant="title">Budget</AppText>
-        <Link href="/budget/new" asChild>
-          <Button title="Tilføj" className="h-10 px-4" />
-        </Link>
+        <View className="flex-row items-center gap-2">
+          <Link href="/budget/settings" asChild>
+            <Button title="Startdato" variant="secondary" className="h-10 px-4" />
+          </Link>
+          <Link href="/budget/new" asChild>
+            <Button title="Tilføj" className="h-10 px-4" />
+          </Link>
+        </View>
       </View>
 
       {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
@@ -56,6 +62,7 @@ export function BudgetScreen() {
       ) : (
         <>
           <ForecastSummary />
+          <LoanBudgetCard />
           <Section title="Indtægter" entries={incomes} />
           <Section title="Udgifter" entries={expenses} />
         </>

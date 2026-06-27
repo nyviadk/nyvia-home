@@ -6,6 +6,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
 import { RecurrencePicker } from '@/components/recurrence-picker';
+import { useBudgetSettingsStore } from '@/features/budget/data/budget-settings-store';
 import { cn } from '@/lib/cn';
 import { Pressable, Switch, View } from '@/tw';
 import {
@@ -23,13 +24,15 @@ export interface SubscriptionFormProps {
 }
 
 export function SubscriptionForm({ subscription, submitLabel, onSubmit }: SubscriptionFormProps) {
+  const budgetStart = useBudgetSettingsStore((s) => s.startDate);
+
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionFormSchema),
-    defaultValues: toSubscriptionFormValues(subscription),
+    defaultValues: toSubscriptionFormValues(subscription, budgetStart),
   });
 
   const submit = handleSubmit(async (values) => {
@@ -87,7 +90,7 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
         control={control}
         name="recurrence"
         render={({ field: { onChange, value } }) => (
-          <RecurrencePicker value={value} onChange={onChange} />
+          <RecurrencePicker value={value} onChange={onChange} minDate={budgetStart ?? undefined} />
         )}
       />
 
@@ -107,7 +110,15 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
         name="note"
         render={({ field: { onChange, onBlur, value } }) => (
           <FormField label="Note (valgfri)">
-            <Input value={value ?? ''} onChangeText={onChange} onBlur={onBlur} placeholder="" />
+            <Input
+              value={value ?? ''}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="Fx vilkår, kontekst…"
+              multiline
+              className="h-auto min-h-24 py-3"
+              textAlignVertical="top"
+            />
           </FormField>
         )}
       />
