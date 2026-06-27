@@ -14,7 +14,7 @@ const CADENCE_OPTIONS = [
 
 const DAY_KIND_OPTIONS = [
   { value: 'day' as const, label: 'Dag' },
-  { value: 'last' as const, label: 'Sidste' },
+  { value: 'firstBank' as const, label: 'Første bankdag' },
   { value: 'lastBank' as const, label: 'Sidste bankdag' },
 ];
 

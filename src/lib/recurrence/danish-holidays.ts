@@ -73,6 +73,13 @@ export function lastBankDayOfMonth(year: number, month: number): DateTime {
   return d;
 }
 
+/** Første bankdag i måneden (første dag, der ikke er lukket). */
+export function firstBankDayOfMonth(year: number, month: number): DateTime {
+  let d = DateTime.fromObject({ year, month, day: 1 }, { zone: APP_TIMEZONE }).startOf('day');
+  while (isBankClosed(d)) d = d.plus({ days: 1 });
+  return d;
+}
+
 /** Ryk en dato bagud til foregående bankdag (overførsler kan ikke ske på lukkedage). */
 export function previousBankDay(date: DateTime): DateTime {
   let d = date;

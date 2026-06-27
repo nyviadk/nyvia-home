@@ -13,8 +13,8 @@ export function recurrenceLabel(rule: Recurrence): string {
     case 'monthly': {
       const day = rule.monthlyDay;
       const dayLabel =
-        day === 'last'
-          ? 'sidste dag'
+        day === 'firstBank'
+          ? 'første bankdag'
           : day === 'lastBank'
             ? 'sidste bankdag'
             : `d. ${day ?? ''}`;

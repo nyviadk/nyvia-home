@@ -1,8 +1,8 @@
 /** Gentagelses-model (delt af budget + abonnementer). */
 export type Cadence = 'monthly' | 'quarterly' | 'yearly' | 'once';
 
-/** Dag i måneden for månedlige poster: et tal 1–28, sidste dag, eller sidste bankdag. */
-export type MonthlyDay = number | 'last' | 'lastBank';
+/** Dag i måneden for månedlige poster: et tal 1–28, første bankdag eller sidste bankdag. */
+export type MonthlyDay = number | 'firstBank' | 'lastBank';
 
 export type Recurrence = {
   cadence: Cadence;

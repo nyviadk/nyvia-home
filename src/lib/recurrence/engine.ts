@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { DateTime } from 'luxon';
 
 import { APP_TIMEZONE } from '@/lib/datetime';
-import { lastBankDayOfMonth, previousBankDay } from './danish-holidays';
+import { firstBankDayOfMonth, lastBankDayOfMonth, previousBankDay } from './danish-holidays';
 import type { Recurrence } from './types';
 
 function monthStart(year: number, month: number): DateTime {
@@ -44,15 +44,14 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
   const daysInMonth = base.daysInMonth ?? 28;
 
   let date: DateTime;
-  let isLastDay = false;
 
   if (rule.cadence === 'monthly') {
     const md = rule.monthlyDay ?? start.day;
-    if (md === 'last') {
-      date = base.endOf('month').startOf('day');
-      isLastDay = true;
-    } else if (md === 'lastBank') {
+    if (md === 'lastBank') {
+      // Allerede en bankdag → previousBankDay nedenfor er et no-op.
       date = lastBankDayOfMonth(year, month);
+    } else if (md === 'firstBank') {
+      date = firstBankDayOfMonth(year, month);
     } else {
       date = base.set({ day: Math.min(md, daysInMonth) });
     }
@@ -62,8 +61,9 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
   }
 
   // En fast dag der falder på en bank-lukket dag rykkes til foregående bankdag
-  // (overførsler kan ikke ske på helligdage). "Sidste dag" beholdes som kalenderdag.
-  if (!isLastDay) date = previousBankDay(date);
+  // (overførsler kan ikke ske på helligdage). Bankdag-valgene rammer allerede en
+  // bankdag, så previousBankDay er da et no-op.
+  date = previousBankDay(date);
 
   return date.toFormat('yyyy-MM-dd');
 }
