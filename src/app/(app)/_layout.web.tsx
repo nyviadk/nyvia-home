@@ -7,7 +7,9 @@ import { View } from '@/tw';
 
 const ITEMS = [
   { name: 'index', href: '/', label: 'I Dag', accent: 'text-primary' },
+  { name: 'budget', href: '/budget', label: 'Budget', accent: 'text-accent-budget' },
   { name: 'loans', href: '/loans', label: 'Lån', accent: 'text-accent-loans' },
+  { name: 'subscriptions', href: '/subscriptions', label: 'Abonnementer', accent: 'text-primary' },
   { name: 'settings', href: '/settings', label: 'Indstillinger', accent: 'text-fg' },
 ] as const;
 

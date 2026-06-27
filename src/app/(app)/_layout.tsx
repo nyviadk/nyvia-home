@@ -8,9 +8,19 @@ export default function AppTabsLayout() {
         <NativeTabs.Trigger.Icon sf="house.fill" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="budget">
+        <NativeTabs.Trigger.Label>Budget</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="chart.pie.fill" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="loans">
         <NativeTabs.Trigger.Label>Lån</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="creditcard.fill" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="subscriptions">
+        <NativeTabs.Trigger.Label>Abonnementer</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="arrow.triangle.2.circlepath" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="settings">
