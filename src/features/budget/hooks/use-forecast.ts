@@ -1,4 +1,4 @@
-import { totalMonthlyPayment } from '@/features/loans/loans.utils';
+import { loanStartMonth, monthlyOre, remainingOre } from '@/features/loans/loans.utils';
 import { useLoansStore } from '@/features/loans/data/loans-store';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
 import { useBudgetStore } from '../data/budget-store';
@@ -33,6 +33,10 @@ export function useForecastInput(): ForecastInput {
         .filter((s) => s.active)
         .map((s) => ({ amount: s.amount, recurrence: s.recurrence, priceChanges: s.priceChanges })),
     ],
-    fixedMonthlyExpenseOre: totalMonthlyPayment(loans),
+    loans: loans.map((l) => ({
+      remainingOre: remainingOre(l),
+      monthlyOre: monthlyOre(l),
+      startMonth: loanStartMonth(l),
+    })),
   };
 }

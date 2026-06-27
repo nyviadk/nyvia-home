@@ -36,3 +36,8 @@ export function totalBalance(loans: WithId<AnyLoan>[]): number {
 export function totalMonthlyPayment(loans: WithId<AnyLoan>[]): number {
   return loans.reduce((sum, l) => sum.plus(monthlyOre(l)), new BigNumber(0)).toNumber();
 }
+
+/** Første afbetalingsmåned (ÅÅÅÅ-MM): custom har startMonth; standard bruger startDate. */
+export function loanStartMonth(loan: AnyLoan): string {
+  return isCustomLoan(loan) ? loan.startMonth : loan.startDate.slice(0, 7);
+}

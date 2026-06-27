@@ -26,15 +26,23 @@ export type ForecastRule = {
  */
 export type ForecastMode = "realistic" | "smoothed";
 
+/** Et lån i forecasten: restgæld + månedlig ydelse + første afbetalingsmåned (ÅÅÅÅ-MM). */
+export type LoanForecast = {
+  remainingOre: number;
+  monthlyOre: number;
+  /** Første afbetalingsmåned (ÅÅÅÅ-MM). Ydelsen starter her (eller nu, hvis allerede i gang). */
+  startMonth: string;
+};
+
 /**
  * Afkoblet input til forecasten. Dashboardet samler det fra budget-poster,
- * aktive abonnementer og lån-ydelser.
+ * aktive abonnementer og lån.
  */
 export type ForecastInput = {
   incomeRules: ForecastRule[];
   expenseRules: ForecastRule[];
-  /** Faste månedlige udgifter uden egen regel (fx lån-ydelser) — trækkes hver måned. */
-  fixedMonthlyExpenseOre: number;
+  /** Lån — ydelsen trækkes kun indtil restgælden er afdraget (sidste måned = resten). */
+  loans: LoanForecast[];
 };
 
 export type MonthForecast = {
@@ -43,6 +51,37 @@ export type MonthForecast = {
   expenses: number;
   net: number;
 };
+
+/**
+ * Samlet lån-ydelse for en given måned. Afbetalingen starter i lånets `startMonth`
+ * (eller nu, hvis lånet allerede er i gang) og løber til restgælden er afdraget —
+ * den sidste måned trækker kun resten (ikke hele ydelsen), og derefter 0.
+ */
+export function loanPaymentForMonth(
+  loans: LoanForecast[],
+  year: number,
+  month: number
+): number {
+  const now = DateTime.now().setZone(APP_TIMEZONE).startOf('month');
+  const target = DateTime.fromObject({ year, month }, { zone: APP_TIMEZONE }).startOf('month');
+
+  return loans
+    .reduce((sum, l) => {
+      if (l.monthlyOre <= 0) return sum;
+      // Afbetaling begynder ved startMonth — eller nu, hvis lånet allerede er i gang
+      // (restgælden afspejler da allerede de betalinger der er foretaget).
+      const start = DateTime.fromISO(`${l.startMonth}-01`, { zone: APP_TIMEZONE }).startOf('month');
+      const begin = start > now ? start : now;
+      const i = Math.round(target.diff(begin, 'months').months);
+      if (i < 0) return sum; // før afbetalingen begynder
+      const balanceAtStart = new BigNumber(l.remainingOre).minus(
+        new BigNumber(l.monthlyOre).times(i)
+      );
+      if (balanceAtStart.lte(0)) return sum;
+      return sum.plus(BigNumber.min(l.monthlyOre, balanceAtStart));
+    }, new BigNumber(0))
+    .toNumber();
+}
 
 /** Forventet beløb for en regel i en given budgetmåned (efter evt. prisændringer). */
 function expectedForMonth(rule: ForecastRule, monthYm: string): number {
@@ -98,7 +137,7 @@ export function monthForecast(
   const expenses = new BigNumber(
     sumForMonth(input.expenseRules, year, month, mode, useActuals),
   )
-    .plus(input.fixedMonthlyExpenseOre)
+    .plus(loanPaymentForMonth(input.loans, year, month))
     .toNumber();
   return {
     ym: toYm(year, month),
@@ -207,8 +246,12 @@ export function averageDisposableOre(input: ForecastInput): number {
       (sum, r) => sum.plus(monthlyAverageOre(r.amount, r.recurrence)),
       new BigNumber(0),
     );
+  const loanMonthly = input.loans.reduce(
+    (sum, l) => sum.plus(l.monthlyOre),
+    new BigNumber(0),
+  );
   return avg(input.incomeRules)
     .minus(avg(input.expenseRules))
-    .minus(input.fixedMonthlyExpenseOre)
+    .minus(loanMonthly)
     .toNumber();
 }

@@ -92,9 +92,13 @@ export function ForecastSummary() {
         <AppText variant="heading">Gennemsnit pr. måned</AppText>
         <Row label="Indtægter" ore={overview.incomeOre} sign="+" />
         <Row label="Faste udgifter" ore={overview.expenseOre} sign="−" />
-        <Row label="Abonnementer" ore={overview.subscriptionsOre} sign="−" />
-        <Row label="Lån" ore={overview.loansOre} sign="−" />
-        <Row label="Opsparing" ore={overview.savingsOre} sign="−" />
+        {overview.subscriptionsOre !== 0 ? (
+          <Row label="Abonnementer" ore={overview.subscriptionsOre} sign="−" />
+        ) : null}
+        {overview.loansOre !== 0 ? <Row label="Lån" ore={overview.loansOre} sign="−" /> : null}
+        {overview.savingsOre !== 0 ? (
+          <Row label="Opsparing" ore={overview.savingsOre} sign="−" />
+        ) : null}
         <View className="mt-1 border-t border-border pt-2">
           <Row
             label="Rådighedsbeløb / md."

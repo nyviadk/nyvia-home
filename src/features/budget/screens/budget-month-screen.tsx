@@ -5,8 +5,9 @@ import { MoneyText } from '@/components/ui/money-text';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { useLoansStore } from '@/features/loans/data/loans-store';
-import { totalMonthlyPayment } from '@/features/loans/loans.utils';
+import { loanStartMonth, monthlyOre, remainingOre } from '@/features/loans/loans.utils';
 import { formatMonthCopenhagen } from '@/lib/datetime';
+import { loanPaymentForMonth } from '../forecast';
 import { formatDKKWhole } from '@/lib/money';
 import { cn } from '@/lib/cn';
 import { Pressable, View } from '@/tw';
@@ -67,7 +68,16 @@ function EntryRow({ row, ym }: { row: MonthEntryRow; ym: string }) {
 export function BudgetMonthScreen({ ym }: { ym: string }) {
   const rows = useMonthEntries(ym);
   const loans = useLoansStore((s) => s.loans);
-  const loanMonthly = totalMonthlyPayment(loans);
+  const [year, month] = ym.split('-').map((n) => Number.parseInt(n, 10));
+  const loanMonthly = loanPaymentForMonth(
+    loans.map((l) => ({
+      remainingOre: remainingOre(l),
+      monthlyOre: monthlyOre(l),
+      startMonth: loanStartMonth(l),
+    })),
+    year,
+    month
+  );
 
   const effectiveOf = (r: MonthEntryRow) => r.actualOre ?? r.forventetOre;
   const byAmountDesc = (a: MonthEntryRow, b: MonthEntryRow) => effectiveOf(b) - effectiveOf(a);
