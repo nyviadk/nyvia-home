@@ -1,24 +1,24 @@
-import { Link } from "expo-router";
-
 import { Card } from "@/components/ui/card";
 import { MoneyText } from "@/components/ui/money-text";
 import { Segmented } from "@/components/ui/segmented";
 import { AppText } from "@/components/ui/text";
 import { cn } from "@/lib/cn";
 import { formatMonthCopenhagen, todayISODate } from "@/lib/datetime";
-import { Pressable, View } from "@/tw";
+import { View } from "@/tw";
 import { useBudgetSettingsStore } from "../data/budget-settings-store";
 import {
   setBudgetViewMode,
   useBudgetViewStore,
 } from "../data/budget-view-store";
 import {
+  carriedBalanceOre,
   forecastAnchorISO,
   type ForecastMode,
-  forecastMonths,
+  runningForecast,
 } from "../forecast";
 import { useBudgetOverview } from "../hooks/use-budget-overview";
 import { useForecastInput } from "../hooks/use-forecast";
+import { ForecastMonthRow } from "./forecast-month-row";
 
 const MODE_OPTIONS = [
   { value: "realistic" as const, label: "Realistisk" },
@@ -55,10 +55,12 @@ export function ForecastSummary() {
   const mode = useBudgetViewStore((s) => s.mode);
 
   const anchorISO = forecastAnchorISO(startDate);
-  const months = forecastMonths(12, input, anchorISO, mode);
+  const months = runningForecast(12, input, anchorISO, mode);
   const anchor = months[0];
   const isThisMonth = anchorISO.slice(0, 7) === todayISODate().slice(0, 7);
   const yearlyDisposable = overview.disposableOre * 12;
+  // Overført saldo fra måneder der allerede er omme (carry-over sker først når måneden er omme).
+  const carried = carriedBalanceOre(input, startDate);
 
   return (
     <View className="gap-3">
@@ -71,7 +73,7 @@ export function ForecastSummary() {
               : `· ${formatMonthCopenhagen(`${anchorISO.slice(0, 7)}-01`)}`}
           </AppText>
           <MoneyText
-            ore={anchor.net}
+            ore={anchor.aktuelNet}
             whole
             className="text-3xl font-bold text-on-primary"
           />
@@ -118,29 +120,33 @@ export function ForecastSummary() {
         <AppText variant="muted">
           {mode === "smoothed"
             ? "Periodiske beløb spredes som hensættelse — ingen måned dykker."
-            : "Beløb vises i den måned de falder; faktiske beløb overstyrer forventet."}
+            : "Beløb vises i den måned de falder; faktiske beløb overstyrer forventet."}{" "}
+          Net pr. måned — overskud/underskud bæres først videre når måneden er omme.
         </AppText>
+        {carried !== 0 ? (
+          <View className="flex-row items-baseline justify-between border-t border-border pt-1">
+            <AppText variant="muted">Overført fra afsluttede måneder</AppText>
+            <MoneyText
+              ore={carried}
+              whole
+              variant="label"
+              className={cn(carried < 0 && "text-danger")}
+            />
+          </View>
+        ) : null}
+        <View className="flex-row items-baseline pb-1">
+          <AppText variant="muted" className="flex-1 text-xs">
+            Måned
+          </AppText>
+          <AppText variant="muted" className="flex-1 text-right text-xs">
+            Forventet
+          </AppText>
+          <AppText variant="muted" className="flex-1 text-right text-xs">
+            Aktuel
+          </AppText>
+        </View>
         {months.map((m) => (
-          <Link
-            key={m.ym}
-            href={{ pathname: "/budget/month/[ym]", params: { ym: m.ym } }}
-            asChild
-          >
-            <Pressable
-              accessibilityRole="button"
-              className="flex-row items-baseline justify-between border-t border-border py-1.5"
-            >
-              <AppText variant="muted" className="capitalize">
-                {formatMonthCopenhagen(`${m.ym}-01`)}
-              </AppText>
-              <MoneyText
-                ore={m.net}
-                whole
-                variant="label"
-                className={cn(m.net < 0 && "text-danger")}
-              />
-            </Pressable>
-          </Link>
+          <ForecastMonthRow key={m.ym} month={m} />
         ))}
       </Card>
     </View>

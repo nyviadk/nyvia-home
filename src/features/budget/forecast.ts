@@ -60,6 +60,7 @@ function sumForMonth(
   year: number,
   month: number,
   mode: ForecastMode,
+  useActuals = true,
 ): number {
   const monthYm = toYm(year, month);
   const prev = DateTime.fromObject(
@@ -79,22 +80,23 @@ function sumForMonth(
         ? occursInMonth(r.recurrence, prev.year, prev.month)
         : occursInMonth(r.recurrence, year, month);
       if (!occurs) return sum;
-      const actual = actualTotalOre(r.actuals, monthYm);
+      const actual = useActuals ? actualTotalOre(r.actuals, monthYm) : null;
       return sum.plus(actual ?? expectedForMonth(r, monthYm));
     }, new BigNumber(0))
     .toNumber();
 }
 
-/** Forecast for én måned i valgt mode. */
+/** Forecast for én måned i valgt mode. `useActuals=false` giver det rene forventede. */
 export function monthForecast(
   year: number,
   month: number,
   input: ForecastInput,
   mode: ForecastMode = "realistic",
+  useActuals = true,
 ): MonthForecast {
-  const income = sumForMonth(input.incomeRules, year, month, mode);
+  const income = sumForMonth(input.incomeRules, year, month, mode, useActuals);
   const expenses = new BigNumber(
-    sumForMonth(input.expenseRules, year, month, mode),
+    sumForMonth(input.expenseRules, year, month, mode, useActuals),
   )
     .plus(input.fixedMonthlyExpenseOre)
     .toNumber();
@@ -104,6 +106,66 @@ export function monthForecast(
     expenses,
     net: new BigNumber(income).minus(expenses).toNumber(),
   };
+}
+
+/** En måned med både forventet og aktuel net (per måned, ikke akkumuleret). */
+export type RunningMonth = {
+  ym: string;
+  forventetNet: number;
+  aktuelNet: number;
+  hasActuals: boolean;
+};
+
+/**
+ * Forecast pr. måned: hver måneds eget net (forventet og aktuel). IKKE akkumuleret —
+ * et overskud/underskud bæres først videre når måneden i virkeligheden er omme
+ * (se `carriedBalanceOre`). Aktuel bruger faktiske beløb hvor de er registreret.
+ */
+export function runningForecast(
+  count: number,
+  input: ForecastInput,
+  fromMonthISO?: string,
+  mode: ForecastMode = "realistic",
+): RunningMonth[] {
+  const base = fromMonthISO
+    ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
+    : DateTime.now().setZone(APP_TIMEZONE);
+  const start = base.startOf("month");
+
+  const out: RunningMonth[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = start.plus({ months: i });
+    const forventetNet = monthForecast(d.year, d.month, input, mode, false).net;
+    const aktuelNet = monthForecast(d.year, d.month, input, mode, true).net;
+    out.push({
+      ym: toYm(d.year, d.month),
+      forventetNet,
+      aktuelNet,
+      hasActuals: aktuelNet !== forventetNet,
+    });
+  }
+  return out;
+}
+
+/**
+ * Overført saldo fra AFSLUTTEDE måneder: summen af realiserede (aktuelle) net for
+ * hver måned fra budgetstart til og med sidste hele måned før denne måned. Måneder
+ * der endnu ikke er omme tæller ikke med (carry-over sker først når måneden er omme).
+ */
+export function carriedBalanceOre(
+  input: ForecastInput,
+  budgetStartDate: string | null
+): number {
+  if (!budgetStartDate) return 0;
+  const start = DateTime.fromISO(budgetStartDate, { zone: APP_TIMEZONE }).startOf("month");
+  const current = DateTime.now().setZone(APP_TIMEZONE).startOf("month");
+  let balance = new BigNumber(0);
+  let d = start;
+  while (d < current) {
+    balance = balance.plus(monthForecast(d.year, d.month, input, "realistic", true).net);
+    d = d.plus({ months: 1 });
+  }
+  return balance.toNumber();
 }
 
 /**

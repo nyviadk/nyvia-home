@@ -7,30 +7,57 @@ import { AppText } from '@/components/ui/text';
 import { useLoansStore } from '@/features/loans/data/loans-store';
 import { totalMonthlyPayment } from '@/features/loans/loans.utils';
 import { formatMonthCopenhagen } from '@/lib/datetime';
+import { formatDKKWhole } from '@/lib/money';
 import { cn } from '@/lib/cn';
 import { Pressable, View } from '@/tw';
 import { useMonthEntries, type MonthEntryRow } from '../hooks/use-month-entries';
 
 function EntryRow({ row, ym }: { row: MonthEntryRow; ym: string }) {
+  const hasActual = row.actualOre !== null;
   const effective = row.actualOre ?? row.forventetOre;
+  // Effekt på rådighedsbeløbet: + = bedre (mindre udgift / mere indtægt), − = værre.
+  const delta =
+    row.type === 'income' ? effective - row.forventetOre : row.forventetOre - effective;
+  const deltaLabel = `${delta >= 0 ? '+' : '−'}${formatDKKWhole(Math.abs(delta))}`;
+
   return (
     <Link href={{ pathname: '/budget/actuals', params: { id: row.id, ym } }} asChild>
       <Pressable
         accessibilityRole="button"
-        className="flex-row items-center justify-between gap-3 border-t border-border py-2">
+        className={cn(
+          'flex-row items-center justify-between gap-3 py-2',
+          hasActual
+            ? 'my-0.5 rounded-xl border border-border bg-element px-3'
+            : 'border-t border-border'
+        )}>
         <View className="flex-1">
           <AppText variant="label">{row.name}</AppText>
-          <AppText variant="muted">
-            {row.actualOre === null ? 'forventet' : 'faktisk'}
-            {row.categories.length ? ` · ${row.categories.join(', ')}` : ''}
-          </AppText>
+          {hasActual ? (
+            <View className="flex-row flex-wrap items-baseline gap-x-2">
+              <AppText variant="muted">Forventet {formatDKKWhole(row.forventetOre)}</AppText>
+              {delta !== 0 ? (
+                <AppText className={cn('text-sm', delta > 0 ? 'text-success' : 'text-danger')}>
+                  {deltaLabel}
+                </AppText>
+              ) : (
+                <AppText variant="muted">som forventet</AppText>
+              )}
+            </View>
+          ) : (
+            <AppText variant="muted">
+              forventet{row.categories.length ? ` · ${row.categories.join(', ')}` : ''}
+            </AppText>
+          )}
         </View>
-        <MoneyText
-          ore={effective}
-          whole
-          variant="label"
-          className={cn(row.type === 'income' && 'text-accent-savings')}
-        />
+        <View className="items-end">
+          {hasActual ? <AppText variant="muted" className="text-xs">faktisk</AppText> : null}
+          <MoneyText
+            ore={effective}
+            whole
+            variant="label"
+            className={cn(row.type === 'income' && 'text-accent-savings')}
+          />
+        </View>
       </Pressable>
     </Link>
   );
