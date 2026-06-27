@@ -2,6 +2,7 @@ import { loanStartMonth, monthlyOre, remainingOre } from '@/features/loans/loans
 import { useLoansStore } from '@/features/loans/data/loans-store';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
 import { useBudgetStore } from '../data/budget-store';
+import { useBudgetSettingsStore } from '../data/budget-settings-store';
 import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import type { ForecastInput, ForecastRule } from '../forecast';
 
@@ -14,6 +15,9 @@ export function useForecastInput(): ForecastInput {
   const pending = usePendingBudgetDeletes((s) => s.ids);
   const subscriptions = useSubscriptionsStore((s) => s.subscriptions);
   const loans = useLoansStore((s) => s.loans);
+  const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
+  const savingsPercentChanges = useBudgetSettingsStore((s) => s.savingsPercentChanges);
+  const savingsActuals = useBudgetSettingsStore((s) => s.savingsActuals);
 
   const visible = entries.filter((e) => !pending.has(e.id));
 
@@ -38,5 +42,8 @@ export function useForecastInput(): ForecastInput {
       monthlyOre: monthlyOre(l),
       startMonth: loanStartMonth(l),
     })),
+    savingsPercent,
+    savingsPercentChanges,
+    savingsActuals,
   };
 }

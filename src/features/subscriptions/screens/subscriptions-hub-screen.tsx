@@ -18,7 +18,9 @@ export function SubscriptionsHubScreen() {
   const fromCache = useSubscriptionsStore((s) => s.fromCache);
   const pendingIds = usePendingSubscriptionDeletes((s) => s.ids);
 
-  const visible = subscriptions.filter((s) => !pendingIds.has(s.id));
+  const visible = subscriptions
+    .filter((s) => !pendingIds.has(s.id))
+    .sort((a, b) => b.amount - a.amount);
   const totalMonthly = totalMonthlyAverageOre(visible);
 
   return (

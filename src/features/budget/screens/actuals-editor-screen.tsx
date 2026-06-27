@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { MoneyText } from '@/components/ui/money-text';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { formatMonthCopenhagen } from '@/lib/datetime';
+import { formatMonthCopenhagen, todayISODate } from '@/lib/datetime';
 import { cn } from '@/lib/cn';
 import { View } from '@/tw';
 import { ActualLinesEditor } from '../components/actual-lines-editor';
@@ -24,6 +24,8 @@ export function ActualsEditorScreen({ id, ym }: { id: string; ym: string }) {
   const forventet = effectivePriceOre(entry.amount, entry.priceChanges, ym);
   const actual = actualTotalOre(entry.actuals, ym);
   const diff = actual === null ? 0 : actual - forventet;
+  // Faktisk kan først indtastes når måneden i virkeligheden er begyndt.
+  const isFuture = ym > todayISODate().slice(0, 7);
 
   return (
     <Screen>
@@ -55,12 +57,19 @@ export function ActualsEditorScreen({ id, ym }: { id: string; ym: string }) {
         ) : null}
       </Card>
 
-      <ActualLinesEditor
-        entryId={id}
-        monthYm={ym}
-        allActuals={entry.actuals ?? {}}
-        lines={entry.actuals?.[ym] ?? []}
-      />
+      {isFuture ? (
+        <AppText variant="muted">
+          Du kan først indtaste faktiske beløb når måneden er begyndt. Indtil da bruges det
+          forventede.
+        </AppText>
+      ) : (
+        <ActualLinesEditor
+          entryId={id}
+          monthYm={ym}
+          allActuals={entry.actuals ?? {}}
+          lines={entry.actuals?.[ym] ?? []}
+        />
+      )}
     </Screen>
   );
 }

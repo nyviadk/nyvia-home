@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 
-import type { ActualLine, PriceChange } from './types';
+import type { ActualLine, PriceChange, SavingsPercentChange } from './types';
 
 /** ÅÅÅÅ-MM for en forekomst (budgetmåned). */
 export function ym(year: number, month: number): string {
@@ -21,6 +21,22 @@ export function effectivePriceOre(
     .filter((p) => p.fromYm <= monthYm)
     .sort((a, b) => a.fromYm.localeCompare(b.fromYm));
   return applicable.length ? applicable[applicable.length - 1].amountOre : baseOre;
+}
+
+/**
+ * Gældende opsparingsprocent for en måned: seneste ændring med fromYm <= ym, ellers
+ * grund-procenten. Fremadrettet — påvirker ikke fortiden.
+ */
+export function effectiveSavingsPercent(
+  basePercent: number,
+  changes: SavingsPercentChange[] | undefined,
+  monthYm: string
+): number {
+  if (!changes || changes.length === 0) return basePercent;
+  const applicable = changes
+    .filter((c) => c.fromYm <= monthYm)
+    .sort((a, b) => a.fromYm.localeCompare(b.fromYm));
+  return applicable.length ? applicable[applicable.length - 1].percent : basePercent;
 }
 
 /** Summen af faktiske linjer for en måned, eller null hvis ingen er registreret. */

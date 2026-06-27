@@ -1,18 +1,14 @@
 import { useLoansStore } from '@/features/loans/data/loans-store';
 import { totalMonthlyPayment } from '@/features/loans/loans.utils';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
-import type { WithId } from '@/lib/firebase';
+import { todayISODate } from '@/lib/datetime';
 import { useBudgetStore } from '../data/budget-store';
-import { entryCategories } from '../data/categories';
+import { useBudgetSettingsStore } from '../data/budget-settings-store';
 import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import { budgetOverview, type BudgetOverview } from '../overview';
+import { effectiveSavingsPercent } from '../pricing';
 import type { BudgetEntry } from '../types';
 
-/** Opsparing-poster matches på kategori, så de kan vises som egen linje. */
-const SAVINGS_CATEGORY = 'opsparing';
-
-const isSavings = (e: WithId<BudgetEntry>) =>
-  entryCategories(e).some((c) => c.trim().toLowerCase() === SAVINGS_CATEGORY);
 const toRule = (e: { amount: number; recurrence: BudgetEntry['recurrence'] }) => ({
   amount: e.amount,
   recurrence: e.recurrence,
@@ -24,15 +20,22 @@ export function useBudgetOverview(): BudgetOverview {
   const pending = usePendingBudgetDeletes((s) => s.ids);
   const subscriptions = useSubscriptionsStore((s) => s.subscriptions);
   const loans = useLoansStore((s) => s.loans);
+  const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
+  const savingsPercentChanges = useBudgetSettingsStore((s) => s.savingsPercentChanges);
 
   const visible = entries.filter((e) => !pending.has(e.id));
-  const expenses = visible.filter((e) => e.type === 'expense');
+  // Overblikket viser "nu" → brug den gældende procent for indeværende måned.
+  const currentPercent = effectiveSavingsPercent(
+    savingsPercent,
+    savingsPercentChanges,
+    todayISODate().slice(0, 7)
+  );
 
   return budgetOverview({
     incomeRules: visible.filter((e) => e.type === 'income').map(toRule),
-    expenseRules: expenses.filter((e) => !isSavings(e)).map(toRule),
-    savingsRules: expenses.filter(isSavings).map(toRule),
+    expenseRules: visible.filter((e) => e.type === 'expense').map(toRule),
     subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
     loansMonthlyOre: totalMonthlyPayment(loans),
+    savingsPercent: currentPercent,
   });
 }

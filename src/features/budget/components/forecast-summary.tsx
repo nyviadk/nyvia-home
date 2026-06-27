@@ -15,6 +15,7 @@ import {
   forecastAnchorISO,
   type ForecastMode,
   runningForecast,
+  totalSavedOre,
 } from "../forecast";
 import { useBudgetOverview } from "../hooks/use-budget-overview";
 import { useForecastInput } from "../hooks/use-forecast";
@@ -52,6 +53,7 @@ export function ForecastSummary() {
   const input = useForecastInput();
   const overview = useBudgetOverview();
   const startDate = useBudgetSettingsStore((s) => s.startDate);
+  const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
   const mode = useBudgetViewStore((s) => s.mode);
 
   const anchorISO = forecastAnchorISO(startDate);
@@ -61,6 +63,9 @@ export function ForecastSummary() {
   const yearlyDisposable = overview.disposableOre * 12;
   // Overført saldo fra måneder der allerede er omme (carry-over sker først når måneden er omme).
   const carried = carriedBalanceOre(input, startDate);
+  // Samlet opsparet hidtil (faktisk hvor indtastet, ellers forventet).
+  const totalSaved = totalSavedOre(input, startDate);
+  const showSavings = savingsPercent > 0 || totalSaved !== 0;
 
   return (
     <View className="gap-3">
@@ -87,6 +92,13 @@ export function ForecastSummary() {
           />
         </View>
       </Card>
+
+      {showSavings ? (
+        <Card className="flex-row items-baseline justify-between border-0 bg-accent-savings">
+          <AppText className="text-on-primary/80">Opsparet hidtil</AppText>
+          <MoneyText ore={totalSaved} whole className="text-xl font-bold text-on-primary" />
+        </Card>
+      ) : null}
 
       <Card className="gap-2">
         <AppText variant="heading">Gennemsnit pr. måned</AppText>

@@ -1,33 +1,53 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { View } from '@/tw';
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { AppText } from "@/components/ui/text";
+import { View } from "@/tw";
 
 const schema = z.object({
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Brug formatet ÅÅÅÅ-MM-DD'),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Brug formatet ÅÅÅÅ-MM-DD"),
+  savingsPercent: z.string().refine((s) => {
+    if (s.trim() === "") return true; // tomt = ingen opsparing (0)
+    const n = Number.parseFloat(s.replace(",", ".").trim());
+    return Number.isFinite(n) && n >= 0 && n <= 100;
+  }, "0–100"),
 });
 
 type Values = z.infer<typeof schema>;
 
 export function BudgetStartForm({
   startDate,
+  savingsPercent,
   onSubmit,
 }: {
   startDate: string;
-  onSubmit: (startDate: string) => Promise<void>;
+  savingsPercent: number;
+  onSubmit: (values: {
+    startDate: string;
+    savingsPercent: number;
+  }) => Promise<void>;
 }) {
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { startDate } });
+  } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { startDate, savingsPercent: savingsPercent ? String(savingsPercent) : "" },
+  });
 
   const submit = handleSubmit(async (values) => {
-    await onSubmit(values.startDate);
+    await onSubmit({
+      startDate: values.startDate,
+      savingsPercent:
+        Number.parseFloat(values.savingsPercent.replace(",", ".")) || 0,
+    });
   });
 
   return (
@@ -36,7 +56,10 @@ export function BudgetStartForm({
         control={control}
         name="startDate"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Budgettets startdato (ÅÅÅÅ-MM-DD)" error={errors.startDate?.message}>
+          <FormField
+            label="Budgettets startdato (ÅÅÅÅ-MM-DD)"
+            error={errors.startDate?.message}
+          >
             <Input
               value={value}
               onChangeText={onChange}
@@ -44,6 +67,28 @@ export function BudgetStartForm({
               placeholder="2026-01-01"
               autoCapitalize="none"
             />
+          </FormField>
+        )}
+      />
+      <Controller
+        control={control}
+        name="savingsPercent"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <FormField
+            label="Automatisk opsparing (%)"
+            error={errors.savingsPercent?.message}
+          >
+            <Input
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              keyboardType="decimal-pad"
+              placeholder="0"
+            />
+            <AppText variant="muted">
+              Trækkes automatisk som opsparing af månedens rådighedsbeløb. Lad
+              feltet stå tomt for ingen opsparing.
+            </AppText>
           </FormField>
         )}
       />

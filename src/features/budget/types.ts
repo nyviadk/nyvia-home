@@ -29,6 +29,12 @@ export type PriceChange = {
   amountOre: number;
 };
 
+/** Ændring af opsparingsprocent fra og med en given måned (ÅÅÅÅ-MM) — fremadrettet. */
+export type SavingsPercentChange = {
+  fromYm: string;
+  percent: number;
+};
+
 /** En fast budgetpost (forecast). Beløb i øre, altid positivt; fortegn følger `type`. */
 export type BudgetEntry = {
   name: string;
@@ -69,5 +75,14 @@ export type BudgetEntryInput = Pick<
 export type BudgetSettings = {
   /** Budgettets startdato (ÅÅÅÅ-MM-DD). Poster kan ikke starte før denne. */
   startDate: string;
+  /** Automatisk opsparing: grund-procent (0–100) af månedens resterende rådighedsbeløb. */
+  savingsPercent?: number;
+  /** Fremadrettede ændringer af opsparingsprocenten (påvirker ikke fortiden). */
+  savingsPercentChanges?: SavingsPercentChange[];
+  /**
+   * Faktisk opsparing pr. måned (ÅÅÅÅ-MM → øre). Overstyrer procent-beregningen:
+   * positivt = sparet det beløb, negativt = hævet fra opsparing (frigør rådighed).
+   */
+  savingsActuals?: Record<string, number>;
   updatedAt: string;
 };

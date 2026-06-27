@@ -6,13 +6,12 @@ import type { ForecastRule } from './forecast';
 /** Strukturerede regler så nedbrydningen kan vises pr. linje (modsat den flade ForecastInput). */
 export type OverviewInput = {
   incomeRules: ForecastRule[];
-  /** Faste budget-udgifter UDEN opsparing. */
   expenseRules: ForecastRule[];
-  /** Budget-udgifter i kategorien opsparing (vises som egen linje). */
-  savingsRules: ForecastRule[];
   subscriptionRules: ForecastRule[];
   /** Lån-ydelser (allerede månedligt beløb i øre). */
   loansMonthlyOre: number;
+  /** Automatisk opsparing i procent af resterende rådighedsbeløb. */
+  savingsPercent: number;
 };
 
 /** Udjævnede månedlige gennemsnit (øre) pr. linje + rådighedsbeløb. */
@@ -32,14 +31,19 @@ function sumAvg(rules: ForecastRule[]): BigNumber {
   );
 }
 
-/** Gennemsnitligt månedligt overblik (udjævner kvartal/år via monthlyAverageOre). */
+/** Gennemsnitligt månedligt overblik (udjævner kvartal/halvår/år via monthlyAverageOre). */
 export function budgetOverview(input: OverviewInput): BudgetOverview {
   const income = sumAvg(input.incomeRules);
   const expense = sumAvg(input.expenseRules);
   const subscriptions = sumAvg(input.subscriptionRules);
-  const savings = sumAvg(input.savingsRules);
   const loans = new BigNumber(input.loansMonthlyOre);
-  const disposable = income.minus(expense).minus(subscriptions).minus(loans).minus(savings);
+  // Opsparing = procent af resterende rådighedsbeløb (kun hvis positivt).
+  const base = income.minus(expense).minus(subscriptions).minus(loans);
+  const savings =
+    input.savingsPercent > 0 && base.gt(0)
+      ? base.times(input.savingsPercent).div(100).integerValue(BigNumber.ROUND_HALF_UP)
+      : new BigNumber(0);
+  const disposable = base.minus(savings);
   return {
     incomeOre: income.toNumber(),
     expenseOre: expense.toNumber(),

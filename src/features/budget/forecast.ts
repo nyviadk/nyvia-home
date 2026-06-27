@@ -4,8 +4,13 @@ import { DateTime } from "luxon";
 import { APP_TIMEZONE } from "@/lib/datetime";
 import { monthlyAverageOre, occursInMonth } from "@/lib/recurrence/engine";
 import type { Recurrence } from "@/lib/recurrence/types";
-import { actualTotalOre, effectivePriceOre, ym as toYm } from "./pricing";
-import type { ActualLine, PriceChange } from "./types";
+import {
+  actualTotalOre,
+  effectivePriceOre,
+  effectiveSavingsPercent,
+  ym as toYm,
+} from "./pricing";
+import type { ActualLine, PriceChange, SavingsPercentChange } from "./types";
 
 /** En gentaget regel med beløb (øre, positivt). */
 export type ForecastRule = {
@@ -43,14 +48,43 @@ export type ForecastInput = {
   expenseRules: ForecastRule[];
   /** Lån — ydelsen trækkes kun indtil restgælden er afdraget (sidste måned = resten). */
   loans: LoanForecast[];
+  /** Automatisk opsparing: grund-procent (0–100) af månedens resterende rådighedsbeløb. */
+  savingsPercent?: number;
+  /** Fremadrettede ændringer af opsparingsprocenten (påvirker ikke fortiden). */
+  savingsPercentChanges?: SavingsPercentChange[];
+  /** Faktisk opsparing pr. måned (ÅÅÅÅ-MM → øre); overstyrer procenten. */
+  savingsActuals?: Record<string, number>;
 };
 
 export type MonthForecast = {
   ym: string;
   income: number;
   expenses: number;
+  /** Rådighedsbeløb FØR opsparing (income − expenses). */
+  baseNet: number;
+  /** Beløb sat til side til opsparing denne måned. */
+  savings: number;
+  /** Rådighedsbeløb efter opsparing (baseNet − savings). */
   net: number;
 };
+
+/** Planlagt opsparing for en måned: faktisk (override) eller procent af resterende rådighed. */
+function savingsForMonth(
+  input: ForecastInput,
+  monthYm: string,
+  baseNet: number,
+  useActuals: boolean
+): number {
+  const override = useActuals ? input.savingsActuals?.[monthYm] : undefined;
+  if (override !== undefined) return override;
+  const pct = effectiveSavingsPercent(
+    input.savingsPercent ?? 0,
+    input.savingsPercentChanges,
+    monthYm
+  );
+  if (pct <= 0 || baseNet <= 0) return 0;
+  return new BigNumber(baseNet).times(pct).div(100).integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+}
 
 /**
  * Samlet lån-ydelse for en given måned. Afbetalingen starter i lånets `startMonth`
@@ -133,17 +167,22 @@ export function monthForecast(
   mode: ForecastMode = "realistic",
   useActuals = true,
 ): MonthForecast {
+  const monthYm = toYm(year, month);
   const income = sumForMonth(input.incomeRules, year, month, mode, useActuals);
   const expenses = new BigNumber(
     sumForMonth(input.expenseRules, year, month, mode, useActuals),
   )
     .plus(loanPaymentForMonth(input.loans, year, month))
     .toNumber();
+  const baseNet = new BigNumber(income).minus(expenses).toNumber();
+  const savings = savingsForMonth(input, monthYm, baseNet, useActuals);
   return {
-    ym: toYm(year, month),
+    ym: monthYm,
     income,
     expenses,
-    net: new BigNumber(income).minus(expenses).toNumber(),
+    baseNet,
+    savings,
+    net: new BigNumber(baseNet).minus(savings).toNumber(),
   };
 }
 
@@ -205,6 +244,25 @@ export function carriedBalanceOre(
     d = d.plus({ months: 1 });
   }
   return balance.toNumber();
+}
+
+/**
+ * Samlet opsparet hidtil: summen af opsparingen for hver måned fra budgetstart til og
+ * med DENNE måned. Bruger faktisk opsparing hvor den er indtastet, ellers forventet
+ * (procent). Fremtidige måneder tæller ikke med.
+ */
+export function totalSavedOre(input: ForecastInput, budgetStartDate: string | null): number {
+  if (!budgetStartDate) return 0;
+  const start = DateTime.fromISO(budgetStartDate, { zone: APP_TIMEZONE }).startOf("month");
+  const current = DateTime.now().setZone(APP_TIMEZONE).startOf("month");
+  if (current < start) return 0;
+  let total = new BigNumber(0);
+  let d = start;
+  while (d <= current) {
+    total = total.plus(monthForecast(d.year, d.month, input, "realistic", true).savings);
+    d = d.plus({ months: 1 });
+  }
+  return total.toNumber();
 }
 
 /**
