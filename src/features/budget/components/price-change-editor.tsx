@@ -1,26 +1,26 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { DateField } from '@/components/ui/date-field';
-import { FormField } from '@/components/ui/form-field';
-import { MoneyInput } from '@/components/ui/money-input';
-import { MoneyText } from '@/components/ui/money-text';
-import { AppText } from '@/components/ui/text';
-import { formatMonthCopenhagen } from '@/lib/datetime';
-import { parseKronerInput } from '@/lib/money';
-import { Pressable, View } from '@/tw';
-import type { PriceChange } from '../types';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DateField } from "@/components/ui/date-field";
+import { FormField } from "@/components/ui/form-field";
+import { MoneyInput } from "@/components/ui/money-input";
+import { MoneyText } from "@/components/ui/money-text";
+import { AppText } from "@/components/ui/text";
+import { formatMonthCopenhagen } from "@/lib/datetime";
+import { parseKronerInput } from "@/lib/money";
+import { Pressable, View } from "@/tw";
+import type { PriceChange } from "../types";
 
 const schema = z.object({
   // Datoen den nye pris gælder fra (måneden udledes automatisk).
-  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Vælg en dato'),
+  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Vælg en dato"),
   amount: z.string().refine((s) => {
     const ore = parseKronerInput(s);
     return ore !== null && ore >= 0;
-  }, 'Beløb kræves'),
+  }, "Beløb kræves"),
 });
 type Values = z.infer<typeof schema>;
 
@@ -44,7 +44,10 @@ export function PriceChangeEditor({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { fromDate: '', amount: '' } });
+  } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { fromDate: "", amount: "" },
+  });
 
   const add = handleSubmit(async (values) => {
     const fromYm = values.fromDate.slice(0, 7); // måneden datoen falder i
@@ -53,10 +56,11 @@ export function PriceChangeEditor({
       { fromYm, amountOre: parseKronerInput(values.amount) ?? 0 },
     ]);
     await onSave(next);
-    reset({ fromDate: '', amount: '' });
+    reset({ fromDate: "", amount: "" });
   });
 
-  const remove = (fromYm: string) => onSave(changes.filter((c) => c.fromYm !== fromYm));
+  const remove = (fromYm: string) =>
+    onSave(changes.filter((c) => c.fromYm !== fromYm));
 
   return (
     <View className="gap-3">
@@ -64,21 +68,30 @@ export function PriceChangeEditor({
       {changes.length > 0 ? (
         <View className="gap-2">
           {sortChanges(changes).map((c) => (
-            <Card key={c.fromYm} className="flex-row items-center justify-between gap-3 py-3">
+            <Card
+              key={c.fromYm}
+              className="flex-row items-center justify-between gap-3 py-3"
+            >
               <View className="flex-1">
                 <MoneyText ore={c.amountOre} whole variant="label" />
                 <AppText variant="muted" className="capitalize">
                   fra {formatMonthCopenhagen(`${c.fromYm}-01`)}
                 </AppText>
               </View>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(c.fromYm)}>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => remove(c.fromYm)}
+              >
                 <AppText className="text-sm text-danger">Fjern</AppText>
               </Pressable>
             </Card>
           ))}
         </View>
       ) : (
-        <AppText variant="muted">Ingen — prisen er den samme hele vejen.</AppText>
+        <AppText variant="muted">
+          Ingen — prisen er den samme hele vejen.
+        </AppText>
       )}
 
       <Card className="gap-3">
@@ -86,13 +99,31 @@ export function PriceChangeEditor({
           control={control}
           name="fromDate"
           render={({ field: { onChange, value } }) => (
-            <FormField label="Ny pris gælder fra (dato)" error={errors.fromDate?.message}>
-              <DateField
-                value={value}
-                onChange={onChange}
-                invalid={!!errors.fromDate}
-                placeholder="Vælg dato"
-              />
+            <FormField
+              label="Ny pris gælder fra (dato)"
+              error={errors.fromDate?.message}
+            >
+              {/* Opdateret sektion: Flex-row med input og "Fjern" knap */}
+              <View className="flex-row items-center gap-2">
+                <View className="flex-1">
+                  <DateField
+                    value={value}
+                    onChange={onChange}
+                    invalid={!!errors.fromDate}
+                    placeholder="Vælg dato"
+                  />
+                </View>
+                {/* Viser kun knappen hvis der er valgt en dato */}
+                {value ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={() => onChange("")}
+                  >
+                    <AppText className="text-sm text-danger">Fjern</AppText>
+                  </Pressable>
+                ) : null}
+              </View>
             </FormField>
           )}
         />
@@ -101,11 +132,20 @@ export function PriceChangeEditor({
           name="amount"
           render={({ field: { onChange, onBlur, value } }) => (
             <FormField label="Ny pris (kr.)" error={errors.amount?.message}>
-              <MoneyInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="0" />
+              <MoneyInput
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="0"
+              />
             </FormField>
           )}
         />
-        <Button title="Tilføj prisændring" onPress={add} loading={isSubmitting} />
+        <Button
+          title="Tilføj prisændring"
+          onPress={add}
+          loading={isSubmitting}
+        />
       </Card>
     </View>
   );
