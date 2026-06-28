@@ -1,56 +1,76 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
-import { Screen } from '@/components/ui/screen';
-import { AppText } from '@/components/ui/text';
-import { nowISO } from '@/lib/datetime';
-import { toastAfter } from '@/lib/toast/notify';
-import { Switch, View } from '@/tw';
-import { ImportBatchRow } from '../components/import-batch-row';
-import { ImportSummary } from '../components/import-summary';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
+import { nowISO } from "@/lib/datetime";
+import { toastAfter } from "@/lib/toast/notify";
+import { Switch, View } from "@/tw";
+import { ImportBatchRow } from "../components/import-batch-row";
+import { ImportSummary } from "../components/import-summary";
 import {
   ReviewFilterBar,
   type ReviewFilter,
   type ReviewFilterOption,
-} from '../components/review-filter-bar';
-import { ReviewRow } from '../components/review-row';
-import { createImportBatch } from '../data/import-batches.repository';
-import { useImportBatchesStore } from '../data/import-batches-store';
-import { setOwnAccounts } from '../data/spending-settings.repository';
-import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { importTransactions } from '../data/transactions.repository';
-import { useTransactionsStore } from '../data/transactions-store';
-import { buildImportPreview, type ImportPreview, type ReviewRow as ReviewRowData } from '../lib/build-import';
-import { pickAndReadCsv } from '../lib/import-file';
-import { makeClassifier } from '../spending.utils';
-import type { OwnAccount, TransactionKind } from '../types';
+} from "../components/review-filter-bar";
+import { ReviewRow } from "../components/review-row";
+import { useImportBatchesStore } from "../data/import-batches-store";
+import { createImportBatch } from "../data/import-batches.repository";
+import { useSpendingSettingsStore } from "../data/spending-settings-store";
+import { setOwnAccounts } from "../data/spending-settings.repository";
+import { useTransactionsStore } from "../data/transactions-store";
+import { importTransactions } from "../data/transactions.repository";
+import {
+  buildImportPreview,
+  type ImportPreview,
+  type ReviewRow as ReviewRowData,
+} from "../lib/build-import";
+import { pickAndReadCsv } from "../lib/import-file";
+import { makeClassifier } from "../spending.utils";
+import type { OwnAccount, TransactionKind } from "../types";
 
 export function ImportScreen() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<ReviewFilter>('all');
-  // Udkast for konti der først dukker op i denne CSV (number → navn + intern-kryds).
-  const [newDrafts, setNewDrafts] = useState<Record<string, { name: string; internal: boolean }>>(
-    {}
-  );
+  const [filter, setFilter] = useState<ReviewFilter>("all");
+
+  // Udkast for konti der først dukker op i denne CSV (number → navn + intern-kryds + tekst).
+  const [newDrafts, setNewDrafts] = useState<
+    Record<string, { name: string; internal: boolean; text: string }>
+  >({});
 
   const accounts = useSpendingSettingsStore((s) => s.accounts);
   const batches = useImportBatchesStore((s) => s.batches);
 
   // Konti der optræder som export-konto er helt sikkert mine egne → default intern.
   const exportNumbers = new Set((preview?.rows ?? []).map((r) => r.account));
-  const draftFor = (number: string): { name: string; internal: boolean } =>
-    newDrafts[number] ?? { name: '', internal: exportNumbers.has(number) };
 
-  // Konti til live-klassifikation: gemte konti + de nye (med udkast-navn/intern).
-  const newAccountList: OwnAccount[] = (preview?.newAccounts ?? []).map((number) => {
-    const d = draftFor(number);
-    return { number, name: d.name.trim(), internal: d.internal };
-  });
+  const draftFor = (acc: {
+    number: string;
+    text: string;
+  }): { name: string; internal: boolean; text: string } =>
+    newDrafts[acc.number] ?? {
+      name: "",
+      internal: exportNumbers.has(acc.number),
+      text: acc.text,
+    };
+
+  // Konti til live-klassifikation: gemte konti + de nye (med udkast-navn/intern/tekst).
+  const newAccountList: OwnAccount[] = (preview?.newAccounts ?? []).map(
+    (acc) => {
+      const d = draftFor(acc);
+      return {
+        number: acc.number,
+        name: d.name.trim(),
+        internal: d.internal,
+        text: d.text.trim(),
+      };
+    },
+  );
   const effectiveAccounts = [...accounts, ...newAccountList];
   const classify = makeClassifier(effectiveAccounts);
 
@@ -60,31 +80,53 @@ export function ImportScreen() {
     try {
       const file = await pickAndReadCsv();
       if (!file) return;
-      const existingIds = new Set(useTransactionsStore.getState().transactions.map((t) => t.id));
-      const result = buildImportPreview(file.content, file.name, { accounts }, existingIds);
+      const existingIds = new Set(
+        useTransactionsStore.getState().transactions.map((t) => t.id),
+      );
+      const result = buildImportPreview(
+        file.content,
+        file.name,
+        { accounts },
+        existingIds,
+      );
       if (result.total === 0) {
-        setError('Kunne ikke læse transaktioner — er det en Nykredit-CSV?');
+        setError("Kunne ikke læse transaktioner — er det en Nykredit-CSV?");
         return;
       }
       setNewDrafts({});
-      setFilter('all');
+      setFilter("all");
       setPreview(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Noget gik galt under indlæsning.');
+      setError(
+        e instanceof Error ? e.message : "Noget gik galt under indlæsning.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  function patchRow(id: string, patch: { include?: boolean; kindOverride?: TransactionKind }) {
+  function patchRow(
+    id: string,
+    patch: { include?: boolean; kindOverride?: TransactionKind },
+  ) {
     setPreview((p) =>
-      p ? { ...p, rows: p.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)) } : p
+      p
+        ? {
+            ...p,
+            rows: p.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+          }
+        : p,
     );
   }
 
   function setDuplicatesIncluded(on: boolean) {
     setPreview((p) =>
-      p ? { ...p, rows: p.rows.map((r) => (r.duplicate ? { ...r, include: on } : r)) } : p
+      p
+        ? {
+            ...p,
+            rows: p.rows.map((r) => (r.duplicate ? { ...r, include: on } : r)),
+          }
+        : p,
     );
   }
 
@@ -106,66 +148,77 @@ export function ImportScreen() {
         fileName: preview.fileName,
         importedAt: now,
         count: included.length,
-        internalCount: included.filter((r) => classify(r) === 'internal').length,
+        internalCount: included.filter((r) => classify(r) === "internal")
+          .length,
         duplicateCount: preview.duplicates,
         createdAt: now,
       });
       await importTransactions(included, batchId);
-      await toastAfter(Promise.resolve(), `${included.length} transaktioner importeret`);
+      await toastAfter(
+        Promise.resolve(),
+        `${included.length} transaktioner importeret`,
+      );
       setPreview(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Import fejlede.');
+      setError(e instanceof Error ? e.message : "Import fejlede.");
     } finally {
       setBusy(false);
     }
   }
 
   const rows = preview?.rows ?? [];
-  const isExpense = (r: ReviewRowData) => !r.duplicate && classify(r) === 'expense';
-  const isIncome = (r: ReviewRowData) => !r.duplicate && classify(r) === 'income';
-  const isInternal = (r: ReviewRowData) => !r.duplicate && classify(r) === 'internal';
+  const isExpense = (r: ReviewRowData) =>
+    !r.duplicate && classify(r) === "expense";
+  const isIncome = (r: ReviewRowData) =>
+    !r.duplicate && classify(r) === "income";
+  const isInternal = (r: ReviewRowData) =>
+    !r.duplicate && classify(r) === "internal";
 
   const willImport = rows.filter((r) => r.include).length;
   const expenseCount = rows.filter(isExpense).length;
   const incomeCount = rows.filter(isIncome).length;
   const internalCount = rows.filter(isInternal).length;
   const duplicateCount = rows.filter((r) => r.duplicate).length;
-  const allDuplicatesIncluded = duplicateCount > 0 && rows.every((r) => !r.duplicate || r.include);
+  const allDuplicatesIncluded =
+    duplicateCount > 0 && rows.every((r) => !r.duplicate || r.include);
 
   const allFilterOptions: ReviewFilterOption[] = [
-    { key: 'all', label: 'Alle', count: rows.length },
-    { key: 'included', label: 'Importeres', count: willImport },
-    { key: 'expense', label: 'Udgifter', count: expenseCount },
-    { key: 'income', label: 'Indtægter', count: incomeCount },
-    { key: 'internal', label: 'Interne', count: internalCount },
-    { key: 'duplicate', label: 'Dubletter', count: duplicateCount },
+    { key: "all", label: "Alle", count: rows.length },
+    { key: "included", label: "Importeres", count: willImport },
+    { key: "expense", label: "Udgifter", count: expenseCount },
+    { key: "income", label: "Indtægter", count: incomeCount },
+    { key: "internal", label: "Interne", count: internalCount },
+    { key: "duplicate", label: "Dubletter", count: duplicateCount },
   ];
   const filterOptions = allFilterOptions.filter((o) => {
-    if (o.key === 'all') return true;
+    if (o.key === "all") return true;
     if (o.count === 0) return false;
-    // "Importeres" er overflødig når den er lig "Alle" (intet er fravalgt).
-    if (o.key === 'included' && o.count === rows.length) return false;
+    if (o.key === "included" && o.count === rows.length) return false;
     return true;
   });
 
-  const activeFilter = filterOptions.some((o) => o.key === filter) ? filter : 'all';
+  const activeFilter = filterOptions.some((o) => o.key === filter)
+    ? filter
+    : "all";
   const matches = (r: ReviewRowData): boolean => {
     switch (activeFilter) {
-      case 'included':
+      case "included":
         return r.include;
-      case 'duplicate':
+      case "duplicate":
         return r.duplicate;
-      case 'expense':
+      case "expense":
         return isExpense(r);
-      case 'income':
+      case "income":
         return isIncome(r);
-      case 'internal':
+      case "internal":
         return isInternal(r);
       default:
         return true;
     }
   };
-  const visibleRows = rows.filter(matches).sort((a, b) => b.date.localeCompare(a.date));
+  const visibleRows = rows
+    .filter(matches)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <Screen>
@@ -190,21 +243,40 @@ export function ImportScreen() {
               <View className="gap-0.5">
                 <AppText variant="label">Nye konti fundet</AppText>
                 <AppText variant="muted">
-                  Navngiv dem, og sæt kryds i “Intern konto” ved dine egne — så tæller
-                  overførsler til/fra dem ikke som forbrug (matches sikkert på kontonummer).
+                  Navngiv dem, og sæt kryds i “Intern konto” ved dine egne — så
+                  tæller overførsler til/fra dem ikke som forbrug. Eksterne
+                  matches på transaktions-teksten.
                 </AppText>
               </View>
-              {preview.newAccounts.map((number) => {
-                const d = draftFor(number);
+              {preview.newAccounts.map((acc) => {
+                const d = draftFor(acc);
                 return (
-                  <View key={number} className="gap-1.5 border-b border-border pb-3">
-                    <AppText variant="muted">Konto {number}</AppText>
+                  <View
+                    key={acc.number}
+                    className="gap-1.5 border-b border-border pb-3"
+                  >
+                    <AppText variant="muted">ID/Konto: {acc.number}</AppText>
+
+                    <Input
+                      value={d.text}
+                      onChangeText={(t) =>
+                        setNewDrafts((m) => ({
+                          ...m,
+                          [acc.number]: { ...draftFor(acc), text: t },
+                        }))
+                      }
+                      placeholder="Transaktions-tekst (fx Netto)"
+                    />
+
                     <Input
                       value={d.name}
                       onChangeText={(t) =>
-                        setNewDrafts((m) => ({ ...m, [number]: { ...draftFor(number), name: t } }))
+                        setNewDrafts((m) => ({
+                          ...m,
+                          [acc.number]: { ...draftFor(acc), name: t },
+                        }))
                       }
-                      placeholder="Navn (fx Madkonto)"
+                      placeholder="Navn (fx Madkonto / Dagligvarer)"
                     />
                     <View className="flex-row items-center justify-between">
                       <AppText variant="label">Intern konto (min egen)</AppText>
@@ -213,7 +285,7 @@ export function ImportScreen() {
                         onValueChange={(internal) =>
                           setNewDrafts((m) => ({
                             ...m,
-                            [number]: { ...draftFor(number), internal },
+                            [acc.number]: { ...draftFor(acc), internal },
                           }))
                         }
                       />
@@ -229,10 +301,14 @@ export function ImportScreen() {
               <View className="flex-1">
                 <AppText variant="label">Opdatér allerede-importerede</AppText>
                 <AppText variant="muted">
-                  Medtag de {duplicateCount} dubletter og overskriv dem med nyeste data.
+                  Medtag de {duplicateCount} dubletter og overskriv dem med
+                  nyeste data.
                 </AppText>
               </View>
-              <Switch value={allDuplicatesIncluded} onValueChange={setDuplicatesIncluded} />
+              <Switch
+                value={allDuplicatesIncluded}
+                onValueChange={setDuplicatesIncluded}
+              />
             </Card>
           ) : null}
 
@@ -251,7 +327,11 @@ export function ImportScreen() {
             />
           </View>
 
-          <ReviewFilterBar options={filterOptions} value={activeFilter} onChange={setFilter} />
+          <ReviewFilterBar
+            options={filterOptions}
+            value={activeFilter}
+            onChange={setFilter}
+          />
 
           <View className="gap-2">
             {visibleRows.map((row) => (
@@ -260,7 +340,9 @@ export function ImportScreen() {
                 row={row}
                 kind={classify(row)}
                 onToggleInclude={(id, include) => patchRow(id, { include })}
-                onChangeKind={(id, kindOverride) => patchRow(id, { kindOverride })}
+                onChangeKind={(id, kindOverride) =>
+                  patchRow(id, { kindOverride })
+                }
               />
             ))}
           </View>
@@ -268,8 +350,9 @@ export function ImportScreen() {
       ) : (
         <>
           <AppText variant="muted">
-            Vælg en CSV-eksport fra Nykredit. Filen læses lokalt — intet sendes til en server.
-            Dubletter og interne overførsler spottes automatisk inden du godkender.
+            Vælg en CSV-eksport fra Nykredit. Filen læses lokalt — intet sendes
+            til en server. Dubletter og interne overførsler spottes automatisk
+            inden du godkender.
           </AppText>
           <Button title="Vælg CSV-fil" loading={busy} onPress={onPick} />
 

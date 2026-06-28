@@ -1,6 +1,6 @@
-import type { OwnAccount, TransactionKind } from '../types';
-import { parseNykreditCsv } from './csv';
-import { transactionId } from './transaction-id';
+import type { OwnAccount, TransactionKind } from "../types";
+import { parseNykreditCsv } from "./csv";
+import { transactionId } from "./transaction-id";
 
 /** Det buildImportPreview behøver for at finde nye konti (egne konti fra store'en). */
 export interface ImportContext {
@@ -38,8 +38,8 @@ export interface ImportPreview {
   rows: ReviewRow[];
   total: number;
   duplicates: number;
-  /** Konto-numre i filen der endnu ikke er navngivet/registreret. */
-  newAccounts: string[];
+  /** Konto-numre og tilhørende transaktions-tekster i filen der endnu ikke er registreret. */
+  newAccounts: { number: string; text: string }[];
 }
 
 /**
@@ -52,7 +52,7 @@ export function buildImportPreview(
   content: string,
   fileName: string,
   settings: ImportContext,
-  existingIds: ReadonlySet<string>
+  existingIds: ReadonlySet<string>,
 ): ImportPreview {
   const raw = parseNykreditCsv(content);
   const ownNumbers = new Set(settings.accounts.map((a) => a.number));
@@ -83,15 +83,27 @@ export function buildImportPreview(
     });
   }
 
-  // Fang ALLE kontonumre i filen (export-, afsender- og modtagerkonto) der ikke
-  // allerede er registreret — så du kan navngive dem og markere dine egne som interne.
-  const seenAccounts = new Set<string>();
+  // Fang ALLE kontonumre/ID'er i filen (export-, afsender- og modtagerkonto) der ikke
+  // allerede er registreret — og gem den tilhørende tekst fra transaktionen.
+  const seenAccounts = new Map<string, string>();
   for (const r of rows) {
-    for (const n of [r.account, r.senderAccount, r.receiverAccount]) {
-      if (n && !ownNumbers.has(n)) seenAccounts.add(n);
+    if (r.account && !ownNumbers.has(r.account)) {
+      seenAccounts.set(r.account, r.text);
+    }
+    if (r.senderAccount && !ownNumbers.has(r.senderAccount)) {
+      seenAccounts.set(r.senderAccount, r.text);
+    }
+    if (r.receiverAccount && !ownNumbers.has(r.receiverAccount)) {
+      seenAccounts.set(r.receiverAccount, r.text);
     }
   }
-  const newAccounts = Array.from(seenAccounts);
+
+  const newAccounts = Array.from(seenAccounts.entries()).map(
+    ([number, text]) => ({
+      number,
+      text,
+    }),
+  );
 
   return {
     fileName,

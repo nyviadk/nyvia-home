@@ -1,10 +1,10 @@
 /** Klassifikation af en banktransaktion. `internal` = overførsel mellem egne konti. */
-export type TransactionKind = 'expense' | 'income' | 'internal';
+export type TransactionKind = "expense" | "income" | "internal";
 
 export const TRANSACTION_KINDS: { value: TransactionKind; label: string }[] = [
-  { value: 'expense', label: 'Udgift' },
-  { value: 'income', label: 'Indtægt' },
-  { value: 'internal', label: 'Intern' },
+  { value: "expense", label: "Udgift" },
+  { value: "income", label: "Indtægt" },
+  { value: "internal", label: "Intern" },
 ];
 
 /**
@@ -35,12 +35,12 @@ export type BankTransaction = {
 };
 
 /** Kolonner som rense-regler kan virke på. */
-export type ScrubColumn = 'text' | 'payer' | 'counterparty';
+export type ScrubColumn = "text" | "payer" | "counterparty";
 
 export const SCRUB_COLUMNS: { value: ScrubColumn; label: string }[] = [
-  { value: 'payer', label: 'Indbetaler' },
-  { value: 'text', label: 'Tekst' },
-  { value: 'counterparty', label: 'Modtagernavn' },
+  { value: "payer", label: "Indbetaler" },
+  { value: "text", label: "Tekst" },
+  { value: "counterparty", label: "Modtagernavn" },
 ];
 
 /** "Hvis {column} indeholder {contains} → erstat hele feltet med {replaceWith}". */
@@ -59,6 +59,7 @@ export type OwnAccount = {
   number: string;
   name: string;
   internal: boolean;
+  text?: string;
 };
 
 /** Ét settings-dokument pr. bruger: users/{uid}/settings/spending. */

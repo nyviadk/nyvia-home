@@ -1,17 +1,12 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { View } from '@/tw';
-import { saveSpendingSettings } from '../data/spending-settings.repository';
-import type { OwnAccount, ScrubRule } from '../types';
-import { OwnAccountEditor } from './own-account-editor';
-import { ScrubRuleEditor } from './scrub-rule-editor';
+import { Button } from "@/components/ui/button";
+import { View } from "@/tw";
+import { saveSpendingSettings } from "../data/spending-settings.repository";
+import type { OwnAccount, ScrubRule } from "../types";
+import { OwnAccountEditor } from "./own-account-editor";
+import { ScrubRuleEditor } from "./scrub-rule-editor";
 
-/**
- * Holder udkast for både konti og rense-regler og gemmer dem med ÉN fælles knap
- * (så man ikke glemmer at gemme den ene). Seedes fra props — montér med en `key`
- * der ændrer sig når gemte data ankommer/ændres.
- */
 export function SpendingSettingsForm({
   accounts,
   scrubRules,
@@ -28,9 +23,15 @@ export function SpendingSettingsForm({
     try {
       await saveSpendingSettings(
         draftAccounts
-          .filter((a) => a.number.trim() || a.name.trim())
-          .map((a) => ({ number: a.number.trim(), name: a.name.trim(), internal: a.internal })),
-        draftRules.filter((r) => r.contains.trim())
+          // Sørg for at gemme, hvis enten number, name ELLER text er udfyldt
+          .filter((a) => a.number?.trim() || a.name?.trim() || a.text?.trim())
+          .map((a) => ({
+            number: a.number?.trim() || "",
+            text: a.text?.trim() || "",
+            name: a.name?.trim() || "",
+            internal: a.internal,
+          })),
+        draftRules.filter((r) => r.contains.trim()),
       );
     } finally {
       setSaving(false);
