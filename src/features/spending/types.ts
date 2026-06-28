@@ -27,8 +27,8 @@ export type BankTransaction = {
   senderAccount: string | null;
   receiverAccount: string | null;
   transferType: string | null;
-  /** Manuel overstyring af klassifikationen (vinder over den beregnede). */
-  kindOverride?: TransactionKind;
+  /** Manuel overstyring af klassifikationen (vinder over den beregnede). null = auto. */
+  kindOverride?: TransactionKind | null;
   importBatchId: string;
   importedAt: string;
   updatedAt: string;

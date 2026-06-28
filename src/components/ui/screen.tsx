@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { ReactNode } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { cn } from '@/lib/cn';
-import { ScrollView, View } from '@/tw';
+import { cn } from "@/lib/cn";
+import { ScrollView, View } from "@/tw";
 
 export interface ScreenProps {
   children: ReactNode;
@@ -19,7 +19,9 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   const inner = (
-    <View className={cn('w-full max-w-225 flex-1 gap-4 self-center p-4', className)}>
+    <View
+      className={cn("w-full max-w-225 flex-1 gap-4 self-center p-4", className)}
+    >
       {children}
     </View>
   );
@@ -28,10 +30,11 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
     <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
       {scroll ? (
         <ScrollView
-          className="flex-1"
+          className="flex-1 scrollbar-gutter-stable"
           contentContainerClassName="grow"
           contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+        >
           {inner}
         </ScrollView>
       ) : (

@@ -13,7 +13,7 @@ export function makeClassifier(accounts: readonly OwnAccount[]) {
   const internalNumbers = new Set(
     accounts.filter((a) => a.internal).map((a) => a.number).filter(Boolean)
   );
-  return (t: Classifiable & { kindOverride?: TransactionKind }): TransactionKind =>
+  return (t: Classifiable & { kindOverride?: TransactionKind | null }): TransactionKind =>
     t.kindOverride ?? classifyKind(t, internalNumbers);
 }
 

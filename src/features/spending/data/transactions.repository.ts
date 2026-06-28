@@ -57,8 +57,17 @@ function toDoc(row: ReviewRow, batchId: string, now: string): BankTransaction {
   return doc;
 }
 
-export function setTransactionKindOverride(id: string, kind: TransactionKind): Promise<void> {
+/** Sæt manuel klassifikation, eller null for at vende tilbage til den automatiske. */
+export function setTransactionKindOverride(
+  id: string,
+  kind: TransactionKind | null
+): Promise<void> {
   return db.updateDoc(docPath(id), { kindOverride: kind, updatedAt: nowISO() });
+}
+
+/** Sletter en enkelt transaktion. */
+export function deleteTransaction(id: string): Promise<void> {
+  return db.deleteDoc(docPath(id));
 }
 
 /** Sletter alle transaktioner der aktuelt ejes af et import-batch (ingen ekstra reads). */
