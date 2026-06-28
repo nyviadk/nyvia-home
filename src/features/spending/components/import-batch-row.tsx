@@ -32,16 +32,16 @@ export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
             </AppText>
             {batchAccounts.length > 0 ? (
               <AppText variant="muted" numberOfLines={1}>
-                {batchAccounts.join(' · ')}
+                Konti: {batchAccounts.join(' · ')}
               </AppText>
             ) : null}
             {earliest && latest ? (
               <AppText variant="muted">
-                {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
+                Periode: {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
               </AppText>
             ) : null}
             <AppText variant="muted">
-              {formatDateTimeCopenhagen(batch.importedAt)} · {batch.count} poster
+              Importeret {formatDateTimeCopenhagen(batch.importedAt)} · {batch.count} poster
             </AppText>
           </View>
           <AppText variant="muted">›</AppText>

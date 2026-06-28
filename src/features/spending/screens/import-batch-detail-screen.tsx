@@ -81,15 +81,17 @@ export function ImportBatchDetailScreen() {
       </AppText>
 
       <Card className="gap-1">
-        <AppText variant="muted">{formatDateTimeCopenhagen(batch.importedAt)}</AppText>
         {batchAccounts.length > 0 ? (
-          <AppText variant="label">{batchAccounts.join(' · ')}</AppText>
+          <AppText variant="label">Konti: {batchAccounts.join(' · ')}</AppText>
         ) : null}
         {earliest && latest ? (
           <AppText variant="muted">
-            {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
+            Periode: {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
           </AppText>
         ) : null}
+        <AppText variant="muted">
+          Importeret {formatDateTimeCopenhagen(batch.importedAt)}
+        </AppText>
         <AppText variant="muted">
           {batch.count} poster · {batch.internalCount} interne · {batch.duplicateCount} dubletter
           ignoreret
