@@ -34,7 +34,7 @@ export type ExpenseTable = {
   rows: ExpenseRow[];
 };
 
-/** Udlejerens betalingsoplysninger. */
+/** Kontooplysninger til udbetaling. */
 export type PayeeInfo = {
   regNo: string;
   accountNo: string;
@@ -42,7 +42,7 @@ export type PayeeInfo = {
 };
 
 /** Afbetalings-horisont: hurtigst muligt, eller fordel over 24/48 måneder. */
-export type RepaymentHorizon = 'asap' | 'm24' | 'm48';
+export type RepaymentHorizon = "asap" | "m24" | "m48";
 
 /** Buffer: behold et fast beløb pr. md. som opsparing (trækkes fra afdraget). */
 export type Buffer = {
@@ -51,7 +51,7 @@ export type Buffer = {
 };
 
 export type CustomLoan = {
-  type: 'custom';
+  type: "custom";
   name: string;
   payee: PayeeInfo;
   lineItems: LoanLineItem[];

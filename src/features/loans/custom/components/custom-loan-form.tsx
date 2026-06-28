@@ -1,17 +1,22 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 
-import { Button } from '@/components/ui/button';
-import { DateField } from '@/components/ui/date-field';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { AppText } from '@/components/ui/text';
-import { View } from '@/tw';
-import type { CustomLoanInput } from '../../data/loans.repository';
-import { type CustomFormValues, customFormSchema, toCustomLoanInput, toFormValues } from '../form';
-import type { CustomLoan } from '../types';
-import { ExpenseTableEditor } from './expense-table-editor';
-import { LineItemsEditor } from './line-items-editor';
+import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { AppText } from "@/components/ui/text";
+import { View } from "@/tw";
+import type { CustomLoanInput } from "../../data/loans.repository";
+import {
+  type CustomFormValues,
+  customFormSchema,
+  toCustomLoanInput,
+  toFormValues,
+} from "../form";
+import type { CustomLoan } from "../types";
+import { ExpenseTableEditor } from "./expense-table-editor";
+import { LineItemsEditor } from "./line-items-editor";
 
 export interface CustomLoanFormProps {
   loan?: CustomLoan;
@@ -19,7 +24,11 @@ export interface CustomLoanFormProps {
   onSubmit: (input: CustomLoanInput) => Promise<void>;
 }
 
-export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormProps) {
+export function CustomLoanForm({
+  loan,
+  submitLabel,
+  onSubmit,
+}: CustomLoanFormProps) {
   const {
     control,
     handleSubmit,
@@ -40,19 +49,29 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
         name="name"
         render={({ field: { onChange, onBlur, value } }) => (
           <FormField label="Navn" error={errors.name?.message}>
-            <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Fx Flytning Tilst" />
+            <Input
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="Fx Flytning Tilst"
+            />
           </FormField>
         )}
       />
 
       <View className="gap-3">
-        <AppText variant="heading">Udlejerens betaling</AppText>
+        <AppText variant="heading">Kontooplysninger til udbetaling</AppText>
         <Controller
           control={control}
           name="payeeBankName"
           render={({ field: { onChange, onBlur, value } }) => (
             <FormField label="Banknavn">
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Fx Danske Bank" />
+              <Input
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Fx Danske Bank"
+              />
             </FormField>
           )}
         />
@@ -63,7 +82,13 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
               name="payeeRegNo"
               render={({ field: { onChange, onBlur, value } }) => (
                 <FormField label="Reg.nr.">
-                  <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="number-pad" placeholder="1234" />
+                  <Input
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="number-pad"
+                    placeholder="1234"
+                  />
                 </FormField>
               )}
             />
@@ -74,7 +99,13 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
               name="payeeAccountNo"
               render={({ field: { onChange, onBlur, value } }) => (
                 <FormField label="Kontonr.">
-                  <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="number-pad" placeholder="0123456789" />
+                  <Input
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="number-pad"
+                    placeholder="0123456789"
+                  />
                 </FormField>
               )}
             />
@@ -86,18 +117,27 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
 
       <View className="gap-3">
         <AppText variant="heading">Udgifter — ny bolig</AppText>
-        <ExpenseTableEditor control={control} rowsName="newHomeRows" titleName="newHomeTitle" />
+        <ExpenseTableEditor
+          control={control}
+          rowsName="newHomeRows"
+          titleName="newHomeTitle"
+        />
       </View>
 
       <View className="gap-3">
         <AppText variant="heading">Udgifter — nuværende bolig</AppText>
-        <ExpenseTableEditor control={control} rowsName="oldHomeRows" titleName="oldHomeTitle" />
+        <ExpenseTableEditor
+          control={control}
+          rowsName="oldHomeRows"
+          titleName="oldHomeTitle"
+        />
       </View>
 
       <View className="gap-3">
         <AppText variant="heading">Afbetaling</AppText>
         <AppText variant="muted">
-          Tidshorisont (hurtigst/24/48 mdr) og buffer vælges i afbetalingsplanen.
+          Tidshorisont (hurtigst/24/48 mdr) og buffer vælges i
+          afbetalingsplanen.
         </AppText>
 
         <Controller
