@@ -1,25 +1,26 @@
-import { useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { MoneyText } from '@/components/ui/money-text';
-import { AppText } from '@/components/ui/text';
-import type { WithId } from '@/lib/firebase';
-import { genId } from '@/lib/id';
-import { oreToKroner } from '@/lib/money';
-import { Pressable, View } from '@/tw';
-import { updateCustomExpenseTable } from '../../data/loans.repository';
-import { expenseTotalOre } from '../calc';
-import { type EntryKind, kindOf, toSignedOre } from '../form';
-import type { CustomLoan, ExpenseRow, ExpenseTable } from '../types';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { MoneyText } from "@/components/ui/money-text";
+import { AppText } from "@/components/ui/text";
+import type { WithId } from "@/lib/firebase";
+import { genId } from "@/lib/id";
+import { oreToInput } from "@/lib/money";
+import { Pressable, View } from "@/tw";
+import { updateCustomExpenseTable } from "../../data/loans.repository";
+import { expenseTotalOre } from "../calc";
+import { type EntryKind, kindOf, toSignedOre } from "../form";
+import type { CustomLoan, ExpenseRow, ExpenseTable } from "../types";
 
-type TableKey = 'newHome' | 'oldHome';
+type TableKey = "newHome" | "oldHome";
 type RowForm = { label: string; amount: string; kind: EntryKind; note: string };
 type TableForm = { title: string; rows: RowForm[] };
 
-const absStr = (ore: number) => String(oreToKroner(Math.abs(ore)).toNumber());
+const absStr = (ore: number) => oreToInput(Math.abs(ore));
 
 export interface EditableExpenseTableProps {
   loan: WithId<CustomLoan>;
@@ -27,7 +28,11 @@ export interface EditableExpenseTableProps {
   defaultTitle: string;
 }
 
-export function EditableExpenseTable({ loan, tableKey, defaultTitle }: EditableExpenseTableProps) {
+export function EditableExpenseTable({
+  loan,
+  tableKey,
+  defaultTitle,
+}: EditableExpenseTableProps) {
   const [editing, setEditing] = useState(false);
   const table = loan[tableKey];
 
@@ -36,7 +41,10 @@ export function EditableExpenseTable({ loan, tableKey, defaultTitle }: EditableE
       <View className="flex-row items-center justify-between">
         <AppText variant="heading">{table.title || defaultTitle}</AppText>
         {!editing ? (
-          <Pressable accessibilityRole="button" onPress={() => setEditing(true)}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setEditing(true)}
+          >
             <AppText className="text-primary">Redigér</AppText>
           </Pressable>
         ) : null}
@@ -73,7 +81,9 @@ function ReadView({ table }: { table: ExpenseTable }) {
 
   return (
     <>
-      {table.rows.length === 0 ? <AppText variant="muted">Ingen poster.</AppText> : null}
+      {table.rows.length === 0 ? (
+        <AppText variant="muted">Ingen poster.</AppText>
+      ) : null}
 
       {expenses.length > 0 ? (
         <View className="gap-1">
@@ -115,11 +125,11 @@ function EditForm({
         label: r.label,
         amount: absStr(r.amount),
         kind: kindOf(r.amount),
-        note: r.note ?? '',
+        note: r.note ?? "",
       })),
     },
   });
-  const { fields, append, remove } = useFieldArray({ control, name: 'rows' });
+  const { fields, append, remove } = useFieldArray({ control, name: "rows" });
 
   const save = handleSubmit(async ({ title, rows }) => {
     const next: ExpenseTable = {
@@ -136,10 +146,16 @@ function EditForm({
   });
 
   const allRows = fields.map((field, index) => ({ field, index }));
-  const expenseRows = allRows.filter((r) => r.field.kind === 'expense');
-  const incomeRows = allRows.filter((r) => r.field.kind === 'income');
+  const expenseRows = allRows.filter((r) => r.field.kind === "expense");
+  const incomeRows = allRows.filter((r) => r.field.kind === "income");
 
-  const renderRow = ({ field, index }: { field: { id: string }; index: number }) => (
+  const renderRow = ({
+    field,
+    index,
+  }: {
+    field: { id: string };
+    index: number;
+  }) => (
     <View key={field.id} className="gap-2 rounded-xl bg-element p-2">
       <View className="flex-row items-center gap-2">
         <View className="flex-1">
@@ -147,7 +163,12 @@ function EditForm({
             control={control}
             name={`rows.${index}.label`}
             render={({ field: { onChange, onBlur, value } }) => (
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Post" />
+              <Input
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Post"
+              />
             )}
           />
         </View>
@@ -156,7 +177,12 @@ function EditForm({
             control={control}
             name={`rows.${index}.amount`}
             render={({ field: { onChange, onBlur, value } }) => (
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
+              <MoneyInput
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="kr."
+              />
             )}
           />
         </View>
@@ -168,7 +194,12 @@ function EditForm({
         control={control}
         name={`rows.${index}.note`}
         render={({ field: { onChange, onBlur, value } }) => (
-          <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Note (valgfri)" />
+          <Input
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="Note (valgfri)"
+          />
         )}
       />
     </View>
@@ -180,7 +211,12 @@ function EditForm({
         control={control}
         name="title"
         render={({ field: { onChange, onBlur, value } }) => (
-          <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Tabel-titel" />
+          <Input
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="Tabel-titel"
+          />
         )}
       />
 
@@ -190,7 +226,9 @@ function EditForm({
         <Button
           title="Tilføj udgift"
           variant="secondary"
-          onPress={() => append({ label: '', amount: '', kind: 'expense', note: '' })}
+          onPress={() =>
+            append({ label: "", amount: "", kind: "expense", note: "" })
+          }
         />
       </View>
 
@@ -200,7 +238,9 @@ function EditForm({
         <Button
           title="Tilføj indtægt"
           variant="secondary"
-          onPress={() => append({ label: '', amount: '', kind: 'income', note: '' })}
+          onPress={() =>
+            append({ label: "", amount: "", kind: "income", note: "" })
+          }
         />
       </View>
 

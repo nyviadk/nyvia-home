@@ -4,6 +4,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
 import { RecurrencePicker } from '@/components/recurrence-picker';
@@ -76,13 +77,7 @@ export function BudgetEntryForm({ entry, submitLabel, onSubmit }: BudgetEntryFor
           name="amount"
           render={({ field: { onChange, onBlur, value } }) => (
             <FormField label="Beløb / gang (kr.)" error={errors.amount?.message}>
-              <Input
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                keyboardType="decimal-pad"
-                placeholder="0"
-              />
+              <MoneyInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="0" />
             </FormField>
           )}
         />

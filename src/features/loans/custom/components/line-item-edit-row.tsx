@@ -1,9 +1,10 @@
-import { type Control, Controller, useFieldArray } from 'react-hook-form';
+import { type Control, Controller, useFieldArray } from "react-hook-form";
 
-import { Input } from '@/components/ui/input';
-import { AppText } from '@/components/ui/text';
-import { Pressable, View } from '@/tw';
-import type { EntryKind } from '../form';
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { AppText } from "@/components/ui/text";
+import { Pressable, View } from "@/tw";
+import type { EntryKind } from "../form";
 
 export type ChildForm = { id: string; label: string; amount: string };
 export type ItemForm = {
@@ -26,7 +27,10 @@ export function LineItemEditRow({
   index: number;
   onRemove: () => void;
 }) {
-  const { fields, append, remove } = useFieldArray({ control, name: `items.${index}.children` });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `items.${index}.children`,
+  });
   const hasChildren = fields.length > 0;
 
   return (
@@ -35,7 +39,12 @@ export function LineItemEditRow({
         control={control}
         name={`items.${index}.label`}
         render={({ field: { onChange, onBlur, value } }) => (
-          <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Beskrivelse" />
+          <Input
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="Beskrivelse"
+          />
         )}
       />
 
@@ -49,7 +58,12 @@ export function LineItemEditRow({
                   control={control}
                   name={`items.${index}.children.${ci}.label`}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Underpost" />
+                    <Input
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Underpost"
+                    />
                   )}
                 />
               </View>
@@ -58,7 +72,12 @@ export function LineItemEditRow({
                   control={control}
                   name={`items.${index}.children.${ci}.amount`}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
+                    <MoneyInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="kr."
+                    />
                   )}
                 />
               </View>
@@ -73,7 +92,12 @@ export function LineItemEditRow({
           control={control}
           name={`items.${index}.amount`}
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
+            <MoneyInput
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="kr."
+            />
           )}
         />
       )}
@@ -81,7 +105,8 @@ export function LineItemEditRow({
       <View className="flex-row items-center justify-between">
         <Pressable
           accessibilityRole="button"
-          onPress={() => append({ id: '', label: '', amount: '' })}>
+          onPress={() => append({ id: "", label: "", amount: "" })}
+        >
           <AppText className="text-primary">+ Underpost</AppText>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onRemove}>

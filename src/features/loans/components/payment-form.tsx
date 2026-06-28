@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { todayISODate } from '@/lib/datetime';
 import { parseKronerInput } from '@/lib/money';
 import { View } from '@/tw';
@@ -43,13 +44,12 @@ export function PaymentForm({ onSubmit }: { onSubmit: (input: PaymentInput) => P
         name="amount"
         render={({ field: { onChange, onBlur, value } }) => (
           <FormField label="Beløb (kr.)" error={errors.amount?.message}>
-            <Input
+            <MoneyInput
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               invalid={!!errors.amount}
-              keyboardType="decimal-pad"
-              placeholder="1200"
+              placeholder="1.200"
             />
           </FormField>
         )}

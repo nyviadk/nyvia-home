@@ -1,13 +1,14 @@
-import { type Control, Controller, useFieldArray } from 'react-hook-form';
+import { type Control, Controller, useFieldArray } from "react-hook-form";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { AppText } from '@/components/ui/text';
-import { Pressable, View } from '@/tw';
-import type { CustomFormValues, EntryKind } from '../form';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { AppText } from "@/components/ui/text";
+import { Pressable, View } from "@/tw";
+import type { CustomFormValues, EntryKind } from "../form";
 
-type RowsName = 'newHomeRows' | 'oldHomeRows';
-type TitleName = 'newHomeTitle' | 'oldHomeTitle';
+type RowsName = "newHomeRows" | "oldHomeRows";
+type TitleName = "newHomeTitle" | "oldHomeTitle";
 
 export interface ExpenseTableEditorProps {
   control: Control<CustomFormValues>;
@@ -16,7 +17,11 @@ export interface ExpenseTableEditorProps {
 }
 
 /** Redigér en udgiftstabel: titel + to kasser (Udgifter / Indtægter). Type via kassen. */
-export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTableEditorProps) {
+export function ExpenseTableEditor({
+  control,
+  rowsName,
+  titleName,
+}: ExpenseTableEditorProps) {
   const { fields, append, remove } = useFieldArray({ control, name: rowsName });
   const rows = fields.map((field, index) => ({ field, index }));
 
@@ -33,7 +38,12 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
                   control={control}
                   name={`${rowsName}.${index}.label`}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Post" />
+                    <Input
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Post"
+                    />
                   )}
                 />
               </View>
@@ -42,11 +52,19 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
                   control={control}
                   name={`${rowsName}.${index}.amount`}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="kr." />
+                    <MoneyInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="kr."
+                    />
                   )}
                 />
               </View>
-              <Pressable accessibilityRole="button" onPress={() => remove(index)}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => remove(index)}
+              >
                 <AppText className="text-danger">✕</AppText>
               </Pressable>
             </View>
@@ -54,7 +72,12 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
               control={control}
               name={`${rowsName}.${index}.note`}
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input value={value ?? ''} onChangeText={onChange} onBlur={onBlur} placeholder="Note (valgfri)" />
+                <Input
+                  value={value ?? ""}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="Note (valgfri)"
+                />
               )}
             />
           </View>
@@ -62,7 +85,7 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
       <Button
         title={addLabel}
         variant="secondary"
-        onPress={() => append({ label: '', amount: '', kind, note: '' })}
+        onPress={() => append({ label: "", amount: "", kind, note: "" })}
       />
     </View>
   );
@@ -73,11 +96,16 @@ export function ExpenseTableEditor({ control, rowsName, titleName }: ExpenseTabl
         control={control}
         name={titleName}
         render={({ field: { onChange, onBlur, value } }) => (
-          <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Tabel-titel" />
+          <Input
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="Tabel-titel"
+          />
         )}
       />
-      {renderBox('expense', 'Udgifter', 'Tilføj udgift')}
-      {renderBox('income', 'Indtægter', 'Tilføj indtægt')}
+      {renderBox("expense", "Udgifter", "Tilføj udgift")}
+      {renderBox("income", "Indtægter", "Tilføj indtægt")}
     </View>
   );
 }

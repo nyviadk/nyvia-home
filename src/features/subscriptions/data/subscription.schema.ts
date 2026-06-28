@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { recurrenceWithBudgetStart } from "@/features/budget/data/recurrence-validation";
 import { defaultStartDate } from "@/features/budget/data/budget-start";
-import { oreToKroner, parseKronerInput } from "@/lib/money";
+import { oreToInput, parseKronerInput } from "@/lib/money";
 import {
   defaultRecurrenceForm,
   fromRecurrence,
@@ -54,7 +54,7 @@ export function toSubscriptionFormValues(
   }
   return {
     name: sub.name,
-    amount: String(oreToKroner(sub.amount).toNumber()),
+    amount: oreToInput(sub.amount),
     category: sub.category,
     active: sub.active,
     note: sub.note ?? "",

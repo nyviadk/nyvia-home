@@ -44,6 +44,19 @@ export function formatDKKWhole(ore: number): string {
   return dkkWhole.format(normalizeZero(oreToKroner(ore).toNumber(), 0));
 }
 
+const dkkInput = new Intl.NumberFormat('da-DK', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+/**
+ * Øre → redigerbar dansk streng til input-felter: tusind-separator "." og komma som
+ * decimal, fx 580000 → "5.800", 15295 → "152,95". Ingen "kr."-suffiks.
+ */
+export function oreToInput(ore: number): string {
+  return dkkInput.format(normalizeZero(oreToKroner(ore).toNumber(), 2));
+}
+
 /**
  * Parse brugerinput (dansk format med komma eller punktum) til øre.
  * Returnerer null hvis input ikke er et gyldigt tal.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { oreToKroner, parseKronerInput } from '@/lib/money';
+import { oreToInput, parseKronerInput } from '@/lib/money';
 import {
   defaultRecurrenceForm,
   fromRecurrence,
@@ -105,10 +105,10 @@ export function toBudgetFormValues(entry?: BudgetEntry, budgetStart: string | nu
     name: entry.name,
     type: entry.type,
     amountMode: calc ? 'gross' : 'net',
-    amount: String(oreToKroner(entry.amount).toNumber()),
-    gross: calc ? String(oreToKroner(calc.grossOre).toNumber()) : '',
+    amount: oreToInput(entry.amount),
+    gross: calc ? oreToInput(calc.grossOre) : '',
     amBidragPct: calc ? String(calc.amBidragPct) : '8',
-    fradrag: calc ? String(oreToKroner(calc.fradragOre).toNumber()) : '',
+    fradrag: calc ? oreToInput(calc.fradragOre) : '',
     traekPct: calc ? String(calc.traekPct) : '',
     categories: entryCategories(entry),
     advanceMonth: entry.advanceMonth ?? false,

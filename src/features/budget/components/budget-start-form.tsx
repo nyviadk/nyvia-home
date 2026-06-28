@@ -39,7 +39,10 @@ export function BudgetStartForm({
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { startDate, savingsPercent: savingsPercent ? String(savingsPercent) : "" },
+    defaultValues: {
+      startDate,
+      savingsPercent: savingsPercent ? String(savingsPercent) : "",
+    },
   });
 
   const submit = handleSubmit(async (values) => {

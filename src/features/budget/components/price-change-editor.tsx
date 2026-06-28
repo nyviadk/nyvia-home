@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { MoneyText } from '@/components/ui/money-text';
 import { AppText } from '@/components/ui/text';
 import { formatMonthCopenhagen } from '@/lib/datetime';
@@ -99,7 +100,7 @@ export function PriceChangeEditor({
           name="amount"
           render={({ field: { onChange, onBlur, value } }) => (
             <FormField label="Ny pris (kr.)" error={errors.amount?.message}>
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="0" />
+              <MoneyInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="0" />
             </FormField>
           )}
         />

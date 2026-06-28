@@ -6,12 +6,12 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { MoneyText } from '@/components/ui/money-text';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { formatMonthCopenhagen, todayISODate } from '@/lib/datetime';
-import { parseKronerInput } from '@/lib/money';
+import { oreToInput, parseKronerInput } from '@/lib/money';
 import { View } from '@/tw';
 import { setSavingsActuals } from '../data/budget-settings.repository';
 import { useBudgetSettingsStore } from '../data/budget-settings-store';
@@ -42,7 +42,7 @@ export function SavingsEditorScreen({ ym }: { ym: string }) {
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { amount: override !== undefined ? String(override / 100) : String(plannedSavings / 100) },
+    defaultValues: { amount: override !== undefined ? oreToInput(override) : oreToInput(plannedSavings) },
   });
 
   const save = handleSubmit(async (values) => {
@@ -91,7 +91,7 @@ export function SavingsEditorScreen({ ym }: { ym: string }) {
               <FormField
                 label="Faktisk opsparing (kr.) — negativ = hævet"
                 error={errors.amount?.message}>
-                <Input
+                <MoneyInput
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}

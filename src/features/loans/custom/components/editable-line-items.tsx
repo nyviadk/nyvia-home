@@ -8,7 +8,7 @@ import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { genId } from '@/lib/id';
-import { oreToKroner } from '@/lib/money';
+import { oreToInput } from '@/lib/money';
 import { Pressable, Switch, View } from '@/tw';
 import { updateCustomLineItems } from '../../data/loans.repository';
 import { lineItemTotalOre, principalOre } from '../calc';
@@ -16,7 +16,7 @@ import { kindOf, toSignedOre } from '../form';
 import type { CustomLoan, LoanLineItem } from '../types';
 import { type ItemsForm, LineItemEditRow } from './line-item-edit-row';
 
-const absStr = (ore: number) => String(oreToKroner(Math.abs(ore)).toNumber());
+const absStr = (ore: number) => oreToInput(Math.abs(ore));
 
 export function EditableLineItems({ loan }: { loan: WithId<CustomLoan> }) {
   const [editing, setEditing] = useState(false);

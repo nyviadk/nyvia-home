@@ -1,35 +1,36 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import BigNumber from 'bignumber.js';
-import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import BigNumber from "bignumber.js";
+import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import { todayISODate } from '@/lib/datetime';
-import { oreToKroner, parseKronerInput } from '@/lib/money';
-import { View } from '@/tw';
-import { type LoanFormValues, loanFormSchema } from '../data/loans.schema';
-import type { Loan, LoanInput } from '../types';
+import { MoneyInput } from "@/components/ui/money-input";
+import { todayISODate } from "@/lib/datetime";
+import { oreToInput, parseKronerInput } from "@/lib/money";
+import { View } from "@/tw";
+import { type LoanFormValues, loanFormSchema } from "../data/loans.schema";
+import type { Loan, LoanInput } from "../types";
 
 function toFormValues(loan?: Loan): LoanFormValues {
   if (!loan) {
     return {
-      name: '',
-      lender: '',
-      originalAmount: '',
-      currentBalance: '',
-      interestRate: '',
-      monthlyPayment: '',
+      name: "",
+      lender: "",
+      originalAmount: "",
+      currentBalance: "",
+      interestRate: "",
+      monthlyPayment: "",
       startDate: todayISODate(),
     };
   }
   return {
     name: loan.name,
     lender: loan.lender,
-    originalAmount: String(oreToKroner(loan.originalAmount)),
-    currentBalance: String(oreToKroner(loan.currentBalance)),
+    originalAmount: oreToInput(loan.originalAmount),
+    currentBalance: oreToInput(loan.currentBalance),
     interestRate: String(loan.interestRate),
-    monthlyPayment: String(oreToKroner(loan.monthlyPayment)),
+    monthlyPayment: oreToInput(loan.monthlyPayment),
     startDate: loan.startDate,
   };
 }
@@ -56,7 +57,10 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
       lender: values.lender.trim(),
       originalAmount: parseKronerInput(values.originalAmount) ?? 0,
       currentBalance: parseKronerInput(values.currentBalance) ?? 0,
-      interestRate: new BigNumber((values.interestRate || '0').replace(',', '.')).toNumber() || 0,
+      interestRate:
+        new BigNumber(
+          (values.interestRate || "0").replace(",", "."),
+        ).toNumber() || 0,
       monthlyPayment: parseKronerInput(values.monthlyPayment) ?? 0,
       startDate: values.startDate,
     });
@@ -100,14 +104,16 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
         control={control}
         name="originalAmount"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Oprindeligt beløb (kr.)" error={errors.originalAmount?.message}>
-            <Input
+          <FormField
+            label="Oprindeligt beløb (kr.)"
+            error={errors.originalAmount?.message}
+          >
+            <MoneyInput
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               invalid={!!errors.originalAmount}
-              keyboardType="decimal-pad"
-              placeholder="80000"
+              placeholder="80.000"
             />
           </FormField>
         )}
@@ -117,14 +123,16 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
         control={control}
         name="currentBalance"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Restgæld (kr.)" error={errors.currentBalance?.message}>
-            <Input
+          <FormField
+            label="Restgæld (kr.)"
+            error={errors.currentBalance?.message}
+          >
+            <MoneyInput
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               invalid={!!errors.currentBalance}
-              keyboardType="decimal-pad"
-              placeholder="42000"
+              placeholder="42.000"
             />
           </FormField>
         )}
@@ -134,7 +142,10 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
         control={control}
         name="interestRate"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Rente (% p.a.)" error={errors.interestRate?.message}>
+          <FormField
+            label="Rente (% p.a.)"
+            error={errors.interestRate?.message}
+          >
             <Input
               value={value}
               onChangeText={onChange}
@@ -151,14 +162,16 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
         control={control}
         name="monthlyPayment"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Ydelse / md. (kr.)" error={errors.monthlyPayment?.message}>
-            <Input
+          <FormField
+            label="Ydelse / md. (kr.)"
+            error={errors.monthlyPayment?.message}
+          >
+            <MoneyInput
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               invalid={!!errors.monthlyPayment}
-              keyboardType="decimal-pad"
-              placeholder="1200"
+              placeholder="1.200"
             />
           </FormField>
         )}
@@ -168,7 +181,10 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
         control={control}
         name="startDate"
         render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Startdato (ÅÅÅÅ-MM-DD)" error={errors.startDate?.message}>
+          <FormField
+            label="Startdato (ÅÅÅÅ-MM-DD)"
+            error={errors.startDate?.message}
+          >
             <Input
               value={value}
               onChangeText={onChange}

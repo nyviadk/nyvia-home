@@ -1,22 +1,28 @@
-import { type Control, Controller, type FieldErrors, useWatch } from 'react-hook-form';
+import {
+  type Control,
+  Controller,
+  type FieldErrors,
+  useWatch,
+} from "react-hook-form";
 
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { MoneyText } from '@/components/ui/money-text';
-import { Segmented } from '@/components/ui/segmented';
-import { AppText } from '@/components/ui/text';
-import { parseKronerInput } from '@/lib/money';
-import { View } from '@/tw';
-import type { BudgetFormValues } from '../data/budget.schema';
-import { salaryBreakdown } from '../salary';
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { MoneyText } from "@/components/ui/money-text";
+import { Segmented } from "@/components/ui/segmented";
+import { AppText } from "@/components/ui/text";
+import { parseKronerInput } from "@/lib/money";
+import { View } from "@/tw";
+import type { BudgetFormValues } from "../data/budget.schema";
+import { salaryBreakdown } from "../salary";
 
 const MODE_OPTIONS = [
-  { value: 'net' as const, label: 'Efter skat' },
-  { value: 'gross' as const, label: 'Før skat' },
+  { value: "net" as const, label: "Efter skat" },
+  { value: "gross" as const, label: "Før skat" },
 ];
 
 const pct = (s: string) => {
-  const n = Number.parseFloat(s.replace(',', '.').trim());
+  const n = Number.parseFloat(s.replace(",", ".").trim());
   return Number.isFinite(n) ? n : 0;
 };
 
@@ -28,11 +34,11 @@ export function SalaryAmountField({
   control: Control<BudgetFormValues>;
   errors: FieldErrors<BudgetFormValues>;
 }) {
-  const mode = useWatch({ control, name: 'amountMode' });
-  const gross = useWatch({ control, name: 'gross' });
-  const amBidragPct = useWatch({ control, name: 'amBidragPct' });
-  const fradrag = useWatch({ control, name: 'fradrag' });
-  const traekPct = useWatch({ control, name: 'traekPct' });
+  const mode = useWatch({ control, name: "amountMode" });
+  const gross = useWatch({ control, name: "gross" });
+  const amBidragPct = useWatch({ control, name: "amBidragPct" });
+  const fradrag = useWatch({ control, name: "fradrag" });
+  const traekPct = useWatch({ control, name: "traekPct" });
 
   const breakdown = salaryBreakdown({
     grossOre: parseKronerInput(gross) ?? 0,
@@ -48,18 +54,30 @@ export function SalaryAmountField({
         name="amountMode"
         render={({ field: { onChange, value } }) => (
           <FormField label="Beløb">
-            <Segmented value={value} options={MODE_OPTIONS} onChange={onChange} />
+            <Segmented
+              value={value}
+              options={MODE_OPTIONS}
+              onChange={onChange}
+            />
           </FormField>
         )}
       />
 
-      {mode === 'net' ? (
+      {mode === "net" ? (
         <Controller
           control={control}
           name="amount"
           render={({ field: { onChange, onBlur, value } }) => (
-            <FormField label="Nettoløn / md (kr.)" error={errors.amount?.message}>
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="0" />
+            <FormField
+              label="Nettoløn / md (kr.)"
+              error={errors.amount?.message}
+            >
+              <MoneyInput
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="0"
+              />
             </FormField>
           )}
         />
@@ -69,8 +87,16 @@ export function SalaryAmountField({
             control={control}
             name="gross"
             render={({ field: { onChange, onBlur, value } }) => (
-              <FormField label="Bruttoløn / md (kr.)" error={errors.gross?.message}>
-                <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="0" />
+              <FormField
+                label="Bruttoløn / md (kr.)"
+                error={errors.gross?.message}
+              >
+                <MoneyInput
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="0"
+                />
               </FormField>
             )}
           />
@@ -80,8 +106,17 @@ export function SalaryAmountField({
                 control={control}
                 name="amBidragPct"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <FormField label="AM-bidrag (%)" error={errors.amBidragPct?.message}>
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="8" />
+                  <FormField
+                    label="AM-bidrag (%)"
+                    error={errors.amBidragPct?.message}
+                  >
+                    <Input
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      keyboardType="decimal-pad"
+                      placeholder="8"
+                    />
                   </FormField>
                 )}
               />
@@ -91,8 +126,17 @@ export function SalaryAmountField({
                 control={control}
                 name="traekPct"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <FormField label="Trækprocent (%)" error={errors.traekPct?.message}>
-                    <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="38" />
+                  <FormField
+                    label="Trækprocent (%)"
+                    error={errors.traekPct?.message}
+                  >
+                    <Input
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      keyboardType="decimal-pad"
+                      placeholder="38"
+                    />
                   </FormField>
                 )}
               />
@@ -102,13 +146,24 @@ export function SalaryAmountField({
             control={control}
             name="fradrag"
             render={({ field: { onChange, onBlur, value } }) => (
-              <FormField label="Månedsfradrag (kr.)" error={errors.fradrag?.message}>
-                <Input value={value} onChangeText={onChange} onBlur={onBlur} keyboardType="decimal-pad" placeholder="0" />
+              <FormField
+                label="Månedsfradrag (kr.)"
+                error={errors.fradrag?.message}
+              >
+                <MoneyInput
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="0"
+                />
               </FormField>
             )}
           />
 
-          <View className="gap-1 rounded-2xl border border-border bg-element p-3" style={{ borderCurve: 'continuous' }}>
+          <View
+            className="gap-1 rounded-2xl border border-border bg-element p-3"
+            style={{ borderCurve: "continuous" }}
+          >
             <View className="flex-row items-baseline justify-between">
               <AppText variant="label">Estimeret efter skat / md</AppText>
               <MoneyText ore={breakdown.netOre} whole variant="label" />
@@ -121,7 +176,9 @@ export function SalaryAmountField({
               <AppText variant="muted">− A-skat</AppText>
               <MoneyText ore={breakdown.aSkatOre} whole variant="muted" />
             </View>
-            <AppText variant="muted">Bruges som forventet løn indtil du kender den rigtige.</AppText>
+            <AppText variant="muted">
+              Bruges som forventet løn indtil du kender den rigtige.
+            </AppText>
           </View>
         </View>
       )}

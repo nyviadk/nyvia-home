@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { genId } from '@/lib/id';
-import { oreToKroner, parseKronerInput } from '@/lib/money';
+import { oreToInput, parseKronerInput } from '@/lib/money';
 import type { CustomLoanInput } from '../data/loans.repository';
 import { emptyCustomLoan } from './default';
 import type { CustomLoan } from './types';
@@ -13,7 +13,7 @@ export function kindOf(ore: number): EntryKind {
   return ore < 0 ? 'income' : 'expense';
 }
 function absStr(ore: number): string {
-  return String(oreToKroner(Math.abs(ore)).toNumber());
+  return oreToInput(Math.abs(ore));
 }
 export function toSignedOre(amountStr: string, kind: EntryKind): number {
   const magnitude = parseKronerInput(amountStr) ?? 0;
@@ -64,7 +64,7 @@ export const customFormSchema = z.object({
 
 export type CustomFormValues = z.infer<typeof customFormSchema>;
 
-const oreToStr = (ore: number) => String(oreToKroner(ore).toNumber());
+const oreToStr = (ore: number) => oreToInput(ore);
 
 /** Eksisterende lån (eller tomt) → formularværdier (positivt beløb + kind). */
 export function toFormValues(loan?: CustomLoan): CustomFormValues {
