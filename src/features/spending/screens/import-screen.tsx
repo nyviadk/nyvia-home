@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +38,12 @@ export function ImportScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ReviewFilter>("all");
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    label: string;
+    done: number;
+    total: number;
+  } | null>(null);
+  const cancelRef = useRef(false);
 
   // Udkast for konti der først dukker op i denne CSV (number → navn + intern-kryds + tekst).
   const [newDrafts, setNewDrafts] = useState<
@@ -140,28 +145,34 @@ export function ImportScreen() {
       return;
     }
     setBusy(true);
-    setProgress({ done: 0, total: included.length });
+    cancelRef.current = false;
+    const total = included.length;
     const now = nowISO();
     try {
       // Gem nye konti (med navne) så interne overførsler kendes fremover og bagud.
       if (preview.newAccounts.length > 0) {
+        setProgress({ label: "Gemmer konti…", done: 0, total });
         await setOwnAccounts(effectiveAccounts);
       }
+      setProgress({ label: "Opretter import…", done: 0, total });
       const batchId = await createImportBatch({
         fileName: preview.fileName,
         importedAt: now,
-        count: included.length,
-        internalCount: included.filter((r) => classify(r) === "internal")
-          .length,
+        count: total,
+        internalCount: included.filter((r) => classify(r) === "internal").length,
         duplicateCount: preview.duplicates,
         createdAt: now,
       });
-      await importTransactions(included, batchId, (done, total) =>
-        setProgress({ done, total }),
-      );
+      setProgress({ label: "Skriver transaktioner…", done: 0, total });
+      await importTransactions(included, batchId, {
+        onProgress: (done, t) => setProgress({ label: "Skriver transaktioner…", done, total: t }),
+        shouldCancel: () => cancelRef.current,
+      });
       await toastAfter(
         Promise.resolve(),
-        `${included.length} transaktioner importeret`,
+        cancelRef.current
+          ? "Import annulleret (delvist importeret — kan slettes i historikken)"
+          : `${total} transaktioner importeret`,
       );
       setPreview(null);
     } catch (e) {
@@ -231,6 +242,16 @@ export function ImportScreen() {
       <AppText variant="title">Importér bankdata</AppText>
 
       {error ? <AppText className="text-danger">{error}</AppText> : null}
+
+      <BulkProgress
+        visible={!!progress}
+        label={progress?.label ?? ""}
+        done={progress?.done ?? 0}
+        total={progress?.total ?? 0}
+        onCancel={() => {
+          cancelRef.current = true;
+        }}
+      />
 
       {preview ? (
         <>
@@ -316,10 +337,6 @@ export function ImportScreen() {
                 onValueChange={setDuplicatesIncluded}
               />
             </Card>
-          ) : null}
-
-          {progress ? (
-            <BulkProgress label="Importerer…" done={progress.done} total={progress.total} />
           ) : null}
 
           <View className="flex-row gap-2">

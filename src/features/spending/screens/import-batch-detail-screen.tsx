@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -26,6 +26,7 @@ export function ImportBatchDetailScreen() {
   const accounts = useSpendingSettingsStore((s) => s.accounts);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const cancelRef = useRef(false);
 
   if (!batch) {
     return (
@@ -53,11 +54,17 @@ export function ImportBatchDetailScreen() {
     );
     if (!ok) return;
     setBusy(true);
+    cancelRef.current = false;
     setProgress({ done: 0, total: rows.length });
     try {
-      await deleteTransactionsOfBatch(transactions, batch.id, (done, total) =>
-        setProgress({ done, total })
-      );
+      await deleteTransactionsOfBatch(transactions, batch.id, {
+        onProgress: (done, total) => setProgress({ done, total }),
+        shouldCancel: () => cancelRef.current,
+      });
+      if (cancelRef.current) {
+        await toastAfter(Promise.resolve(), 'Sletning annulleret (delvist slettet)');
+        return;
+      }
       await deleteImportBatch(batch.id);
       await toastAfter(Promise.resolve(), 'Import slettet');
       router.back();
@@ -89,9 +96,15 @@ export function ImportBatchDetailScreen() {
         </AppText>
       </Card>
 
-      {progress ? (
-        <BulkProgress label="Sletter…" done={progress.done} total={progress.total} />
-      ) : null}
+      <BulkProgress
+        visible={!!progress}
+        label="Sletter…"
+        done={progress?.done ?? 0}
+        total={progress?.total ?? 0}
+        onCancel={() => {
+          cancelRef.current = true;
+        }}
+      />
 
       <AppText variant="muted">Klik en postering for at se data eller ændre klassifikation.</AppText>
 

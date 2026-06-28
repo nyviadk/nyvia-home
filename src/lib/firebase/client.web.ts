@@ -118,11 +118,12 @@ export const db: DbFacade = {
     await fbDeleteDoc(doc(firestore, docPath));
   },
 
-  commitBatch: async (ops, onProgress) => {
-    const CHUNK = 450; // under Firestores 500-grænse
+  commitBatch: async (ops, opts) => {
+    const chunk = Math.min(opts?.chunkSize ?? 450, 450); // under Firestores 500-grænse
     let done = 0;
-    for (let i = 0; i < ops.length; i += CHUNK) {
-      const slice = ops.slice(i, i + CHUNK);
+    for (let i = 0; i < ops.length; i += chunk) {
+      if (opts?.shouldCancel?.()) return;
+      const slice = ops.slice(i, i + chunk);
       const batch = writeBatch(firestore);
       for (const op of slice) {
         const ref = doc(firestore, op.path);
@@ -132,7 +133,7 @@ export const db: DbFacade = {
       }
       await batch.commit();
       done += slice.length;
-      onProgress?.(done, ops.length);
+      opts?.onProgress?.(done, ops.length);
     }
   },
 };

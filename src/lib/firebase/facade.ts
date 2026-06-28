@@ -81,9 +81,15 @@ export interface DbFacade {
   /**
    * Skriver mange operationer i batches (≤500 pr. commit → ét netværkskald i stedet
    * for hundredvis). `onProgress` kaldes efter hver commit med akkumuleret antal.
+   * `shouldCancel` tjekkes før hver batch → afbryder rent (allerede committede batches
+   * består). `chunkSize` styrer hvor ofte fremdrift rapporteres (default 450).
    */
   commitBatch(
     ops: BatchOp[],
-    onProgress?: (done: number, total: number) => void
+    opts?: {
+      chunkSize?: number;
+      onProgress?: (done: number, total: number) => void;
+      shouldCancel?: () => boolean;
+    }
   ): Promise<void>;
 }

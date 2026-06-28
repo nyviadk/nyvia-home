@@ -13,6 +13,16 @@ import type { BankTransaction, TransactionKind } from '../types';
 /** Kaldes løbende under batch-skrivning så UI kan vise fremdrift. */
 export type ProgressCallback = (done: number, total: number) => void;
 
+export interface BulkOptions {
+  onProgress?: ProgressCallback;
+  /** Tjekkes mellem batches → afbryder rent (allerede committede batches består). */
+  shouldCancel?: () => boolean;
+}
+
+// Mindre batches → fremdriften opdateres oftere (mere transparent), stadig langt
+// hurtigere end ét kald pr. dokument.
+const BULK_CHUNK = 100;
+
 function requireUid(): string {
   const uid = auth.getCurrentUser()?.uid;
   if (!uid) throw new Error('Ingen aktiv bruger');
@@ -43,7 +53,7 @@ export function subscribeTransactions(
 export async function importTransactions(
   rows: ReviewRow[],
   batchId: string,
-  onProgress?: ProgressCallback
+  opts?: BulkOptions
 ): Promise<void> {
   const now = nowISO();
   const ops: BatchOp[] = rows.map((row) => ({
@@ -52,7 +62,7 @@ export async function importTransactions(
     data: toDoc(row, batchId, now),
     merge: true,
   }));
-  await db.commitBatch(ops, onProgress);
+  await db.commitBatch(ops, { chunkSize: BULK_CHUNK, ...opts });
 }
 
 function toDoc(row: ReviewRow, batchId: string, now: string): BankTransaction {
@@ -93,10 +103,10 @@ export function deleteTransaction(id: string): Promise<void> {
 export async function deleteTransactionsOfBatch(
   txns: WithId<BankTransaction>[],
   batchId: string,
-  onProgress?: ProgressCallback
+  opts?: BulkOptions
 ): Promise<void> {
   const ops: BatchOp[] = txns
     .filter((t) => t.importBatchId === batchId)
     .map((t) => ({ type: 'delete', path: docPath(t.id) }));
-  await db.commitBatch(ops, onProgress);
+  await db.commitBatch(ops, { chunkSize: BULK_CHUNK, ...opts });
 }
