@@ -9,6 +9,7 @@ import { AppText } from "@/components/ui/text";
 import { nowISO } from "@/lib/datetime";
 import { toastAfter } from "@/lib/toast/notify";
 import { Switch, View } from "@/tw";
+import { BulkProgress } from "../components/bulk-progress";
 import { ImportBatchRow } from "../components/import-batch-row";
 import { ImportSummary } from "../components/import-summary";
 import {
@@ -37,6 +38,7 @@ export function ImportScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ReviewFilter>("all");
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Udkast for konti der først dukker op i denne CSV (number → navn + intern-kryds + tekst).
   const [newDrafts, setNewDrafts] = useState<
@@ -138,6 +140,7 @@ export function ImportScreen() {
       return;
     }
     setBusy(true);
+    setProgress({ done: 0, total: included.length });
     const now = nowISO();
     try {
       // Gem nye konti (med navne) så interne overførsler kendes fremover og bagud.
@@ -153,7 +156,9 @@ export function ImportScreen() {
         duplicateCount: preview.duplicates,
         createdAt: now,
       });
-      await importTransactions(included, batchId);
+      await importTransactions(included, batchId, (done, total) =>
+        setProgress({ done, total }),
+      );
       await toastAfter(
         Promise.resolve(),
         `${included.length} transaktioner importeret`,
@@ -163,6 +168,7 @@ export function ImportScreen() {
       setError(e instanceof Error ? e.message : "Import fejlede.");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -312,11 +318,16 @@ export function ImportScreen() {
             </Card>
           ) : null}
 
+          {progress ? (
+            <BulkProgress label="Importerer…" done={progress.done} total={progress.total} />
+          ) : null}
+
           <View className="flex-row gap-2">
             <Button
               title="Annullér"
               variant="secondary"
               className="flex-1"
+              disabled={busy}
               onPress={() => setPreview(null)}
             />
             <Button

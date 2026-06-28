@@ -1,13 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { confirmAction } from '@/lib/confirm';
-import { formatDateTimeCopenhagen } from '@/lib/datetime';
+import { formatDateCopenhagen, formatDateTimeCopenhagen } from '@/lib/datetime';
 import { toastAfter } from '@/lib/toast/notify';
+import { cn } from '@/lib/cn';
 import { Pressable, View } from '@/tw';
+import { BulkProgress } from '../components/bulk-progress';
 import { TransactionRow } from '../components/transaction-row';
 import { deleteImportBatch } from '../data/import-batches.repository';
 import { useImportBatchesStore } from '../data/import-batches-store';
@@ -21,6 +24,8 @@ export function ImportBatchDetailScreen() {
   const batch = useImportBatchesStore((s) => s.batches.find((b) => b.id === id));
   const transactions = useTransactionsStore((s) => s.transactions);
   const accounts = useSpendingSettingsStore((s) => s.accounts);
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   if (!batch) {
     return (
@@ -36,6 +41,8 @@ export function ImportBatchDetailScreen() {
   const batchAccounts = Array.from(new Set(rows.map((t) => t.account))).map((n) =>
     displayAccountName(n, accounts)
   );
+  const latest = rows[0]?.date;
+  const earliest = rows[rows.length - 1]?.date;
 
   async function onDelete() {
     if (!batch) return;
@@ -45,14 +52,19 @@ export function ImportBatchDetailScreen() {
       'Slet'
     );
     if (!ok) return;
-    await toastAfter(
-      (async () => {
-        await deleteTransactionsOfBatch(transactions, batch.id);
-        await deleteImportBatch(batch.id);
-      })(),
-      'Import slettet'
-    );
-    router.back();
+    setBusy(true);
+    setProgress({ done: 0, total: rows.length });
+    try {
+      await deleteTransactionsOfBatch(transactions, batch.id, (done, total) =>
+        setProgress({ done, total })
+      );
+      await deleteImportBatch(batch.id);
+      await toastAfter(Promise.resolve(), 'Import slettet');
+      router.back();
+    } finally {
+      setBusy(false);
+      setProgress(null);
+    }
   }
 
   return (
@@ -66,11 +78,20 @@ export function ImportBatchDetailScreen() {
         {batchAccounts.length > 0 ? (
           <AppText variant="label">{batchAccounts.join(' · ')}</AppText>
         ) : null}
+        {earliest && latest ? (
+          <AppText variant="muted">
+            {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
+          </AppText>
+        ) : null}
         <AppText variant="muted">
           {batch.count} poster · {batch.internalCount} interne · {batch.duplicateCount} dubletter
           ignoreret
         </AppText>
       </Card>
+
+      {progress ? (
+        <BulkProgress label="Sletter…" done={progress.done} total={progress.total} />
+      ) : null}
 
       <AppText variant="muted">Klik en postering for at se data eller ændre klassifikation.</AppText>
 
@@ -81,8 +102,14 @@ export function ImportBatchDetailScreen() {
       </View>
 
       <View className="items-center pb-2 pt-4">
-        <Pressable accessibilityRole="button" onPress={onDelete} hitSlop={8}>
-          <AppText className="text-sm text-danger">Slet hele importen</AppText>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDelete}
+          disabled={busy}
+          hitSlop={8}>
+          <AppText className={cn('text-sm text-danger', busy && 'opacity-50')}>
+            {busy ? 'Sletter…' : 'Slet hele importen'}
+          </AppText>
         </Pressable>
       </View>
     </Screen>

@@ -37,6 +37,12 @@ export interface QueryOptions {
   orderDirection?: 'asc' | 'desc';
 }
 
+/** En enkelt operation i en batch-skrivning. */
+export type BatchOp =
+  | { type: 'set'; path: string; data: Record<string, unknown>; merge?: boolean }
+  | { type: 'update'; path: string; data: Record<string, unknown> }
+  | { type: 'delete'; path: string };
+
 export interface DbFacade {
   /** Realtime-abonnement på en kollektion (læser fra cache når offline). */
   subscribeCollection<T>(
@@ -71,4 +77,13 @@ export interface DbFacade {
 
   /** Sletter et dokument. */
   deleteDoc(docPath: string): Promise<void>;
+
+  /**
+   * Skriver mange operationer i batches (≤500 pr. commit → ét netværkskald i stedet
+   * for hundredvis). `onProgress` kaldes efter hver commit med akkumuleret antal.
+   */
+  commitBatch(
+    ops: BatchOp[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<void>;
 }

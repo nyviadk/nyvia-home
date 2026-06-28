@@ -19,6 +19,7 @@ import {
   query,
   setDoc as fbSetDoc,
   updateDoc as fbUpdateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { assertFirebaseConfig, firebaseConfig } from './config';
@@ -115,5 +116,23 @@ export const db: DbFacade = {
 
   deleteDoc: async (docPath) => {
     await fbDeleteDoc(doc(firestore, docPath));
+  },
+
+  commitBatch: async (ops, onProgress) => {
+    const CHUNK = 450; // under Firestores 500-grænse
+    let done = 0;
+    for (let i = 0; i < ops.length; i += CHUNK) {
+      const slice = ops.slice(i, i + CHUNK);
+      const batch = writeBatch(firestore);
+      for (const op of slice) {
+        const ref = doc(firestore, op.path);
+        if (op.type === 'set') batch.set(ref, op.data, { merge: op.merge ?? false });
+        else if (op.type === 'update') batch.update(ref, op.data);
+        else batch.delete(ref);
+      }
+      await batch.commit();
+      done += slice.length;
+      onProgress?.(done, ops.length);
+    }
   },
 };

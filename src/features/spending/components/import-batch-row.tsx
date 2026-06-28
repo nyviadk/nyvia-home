@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { AppText } from '@/components/ui/text';
-import { formatDateTimeCopenhagen } from '@/lib/datetime';
+import { formatDateCopenhagen, formatDateTimeCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
 import { useSpendingSettingsStore } from '../data/spending-settings-store';
@@ -14,9 +14,13 @@ import type { ImportBatch } from '../types';
 export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
   const transactions = useTransactionsStore((s) => s.transactions);
   const accounts = useSpendingSettingsStore((s) => s.accounts);
-  const batchAccounts = Array.from(
-    new Set(transactions.filter((t) => t.importBatchId === batch.id).map((t) => t.account))
-  ).map((number) => displayAccountName(number, accounts));
+  const own = transactions.filter((t) => t.importBatchId === batch.id);
+  const batchAccounts = Array.from(new Set(own.map((t) => t.account))).map((number) =>
+    displayAccountName(number, accounts)
+  );
+  const dates = own.map((t) => t.date).sort();
+  const earliest = dates[0];
+  const latest = dates[dates.length - 1];
 
   return (
     <Link href={{ pathname: '/spending/import-batch/[id]', params: { id: batch.id } }} asChild>
@@ -29,6 +33,11 @@ export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
             {batchAccounts.length > 0 ? (
               <AppText variant="muted" numberOfLines={1}>
                 {batchAccounts.join(' · ')}
+              </AppText>
+            ) : null}
+            {earliest && latest ? (
+              <AppText variant="muted">
+                {formatDateCopenhagen(earliest)} – {formatDateCopenhagen(latest)}
               </AppText>
             ) : null}
             <AppText variant="muted">

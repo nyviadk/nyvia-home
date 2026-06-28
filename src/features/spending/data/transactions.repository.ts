@@ -1,7 +1,17 @@
 import { nowISO } from '@/lib/datetime';
-import { auth, type CollectionSnapshot, db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import {
+  auth,
+  type BatchOp,
+  type CollectionSnapshot,
+  db,
+  type Unsubscribe,
+  type WithId,
+} from '@/lib/firebase';
 import type { ReviewRow } from '../lib/build-import';
 import type { BankTransaction, TransactionKind } from '../types';
+
+/** Kaldes løbende under batch-skrivning så UI kan vise fremdrift. */
+export type ProgressCallback = (done: number, total: number) => void;
 
 function requireUid(): string {
   const uid = auth.getCurrentUser()?.uid;
@@ -25,15 +35,24 @@ export function subscribeTransactions(
 }
 
 /**
- * Skriver de medtagne review-rækker med deterministisk id (setDoc/merge → idempotent,
- * gen-import overskriver i stedet for at duplikere). Klassifikationen beregnes ved
- * visning, så kun en evt. manuel `kindOverride` skrives med.
+ * Skriver de medtagne review-rækker med deterministisk id i batches (≤450 pr. commit,
+ * ét netværkskald pr. batch). setDoc/merge → idempotent, gen-import overskriver i
+ * stedet for at duplikere. Klassifikationen beregnes ved visning, så kun en evt.
+ * manuel `kindOverride` skrives med.
  */
-export async function importTransactions(rows: ReviewRow[], batchId: string): Promise<void> {
+export async function importTransactions(
+  rows: ReviewRow[],
+  batchId: string,
+  onProgress?: ProgressCallback
+): Promise<void> {
   const now = nowISO();
-  await Promise.all(
-    rows.map((row) => db.setDoc<BankTransaction>(docPath(row.id), toDoc(row, batchId, now), true))
-  );
+  const ops: BatchOp[] = rows.map((row) => ({
+    type: 'set',
+    path: docPath(row.id),
+    data: toDoc(row, batchId, now),
+    merge: true,
+  }));
+  await db.commitBatch(ops, onProgress);
 }
 
 function toDoc(row: ReviewRow, batchId: string, now: string): BankTransaction {
@@ -70,11 +89,14 @@ export function deleteTransaction(id: string): Promise<void> {
   return db.deleteDoc(docPath(id));
 }
 
-/** Sletter alle transaktioner der aktuelt ejes af et import-batch (ingen ekstra reads). */
+/** Sletter alle transaktioner der aktuelt ejes af et import-batch (i batches, ingen ekstra reads). */
 export async function deleteTransactionsOfBatch(
   txns: WithId<BankTransaction>[],
-  batchId: string
+  batchId: string,
+  onProgress?: ProgressCallback
 ): Promise<void> {
-  const ids = txns.filter((t) => t.importBatchId === batchId).map((t) => t.id);
-  await Promise.all(ids.map((id) => db.deleteDoc(docPath(id))));
+  const ops: BatchOp[] = txns
+    .filter((t) => t.importBatchId === batchId)
+    .map((t) => ({ type: 'delete', path: docPath(t.id) }));
+  await db.commitBatch(ops, onProgress);
 }
