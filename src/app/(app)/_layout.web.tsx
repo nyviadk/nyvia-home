@@ -10,6 +10,7 @@ const ITEMS = [
   { name: 'budget', href: '/budget', label: 'Budget', accent: 'text-accent-budget' },
   { name: 'loans', href: '/loans', label: 'Lån', accent: 'text-accent-loans' },
   { name: 'subscriptions', href: '/subscriptions', label: 'Abonnementer', accent: 'text-primary' },
+  { name: 'timetracker', href: '/timetracker', label: 'Timetracker', accent: 'text-accent-time' },
   { name: 'settings', href: '/settings', label: 'Indstillinger', accent: 'text-fg' },
 ] as const;
 

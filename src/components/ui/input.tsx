@@ -1,4 +1,5 @@
-import type { TextInputProps } from 'react-native';
+import { forwardRef } from 'react';
+import type { TextInput as RNTextInput, TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
 import { TextInput } from '@/tw';
@@ -7,10 +8,14 @@ export interface InputProps extends TextInputProps {
   invalid?: boolean;
 }
 
-/** Styled tekstfelt. */
-export function Input({ invalid, className, style, ...props }: InputProps) {
+/** Styled tekstfelt. Videresender ref til den underliggende TextInput (til fokus-styring). */
+export const Input = forwardRef<RNTextInput, InputProps>(function Input(
+  { invalid, className, style, ...props },
+  ref
+) {
   return (
     <TextInput
+      ref={ref}
       placeholderTextColor="#a8a29a"
       style={[{ borderCurve: 'continuous' }, style]}
       className={cn(
@@ -21,4 +26,4 @@ export function Input({ invalid, className, style, ...props }: InputProps) {
       {...props}
     />
   );
-}
+});

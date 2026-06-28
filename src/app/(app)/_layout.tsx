@@ -23,6 +23,11 @@ export default function AppTabsLayout() {
         <NativeTabs.Trigger.Icon sf="arrow.triangle.2.circlepath" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="timetracker">
+        <NativeTabs.Trigger.Label>Timetracker</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="clock.fill" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="settings">
         <NativeTabs.Trigger.Label>Indstillinger</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="gearshape.fill" />
