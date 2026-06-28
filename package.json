@@ -77,9 +77,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "deploy:preview": "expo export --platform web && eas deploy",
-    "deploy:prod": "expo export --platform web && eas deploy --prod",
-    "deploy:web": "expo export --platform web && eas deploy && eas deploy --prod"
+    "deploy:preview": "expo export --platform web && npx eas-cli deploy",
+    "deploy:prod": "expo export --platform web && npx eas-cli deploy --prod",
+    "deploy:web": "expo export --platform web && npx eas-cli deploy && npx eas-cli deploy --prod"
   },
   "expo": {
     "doctor": {
