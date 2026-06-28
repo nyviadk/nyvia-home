@@ -5,7 +5,7 @@ import type { MonthlyDay, Recurrence } from './types';
 
 /** Formularværdier for en gentagelse (flade felter til RHF). */
 export const recurrenceFormSchema = z.object({
-  cadence: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly', 'once']),
+  cadence: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly', 'biennial', 'triennial', 'once']),
   monthlyDayKind: z.enum(['day', 'firstBank', 'lastBank', 'month']),
   // ÅÅÅÅ-MM (måned, ved bankdag/kun-måned) eller ÅÅÅÅ-MM-DD (bestemt dag / kvartal/år/engang).
   startDate: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, 'Vælg en startdato'),

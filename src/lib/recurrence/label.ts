@@ -13,6 +13,10 @@ export function recurrenceLabel(rule: Recurrence): string {
       return `Halvårligt${stop}`;
     case 'yearly':
       return `Årligt · ${formatDateCopenhagen(rule.startDate)}${stop}`;
+    case 'biennial':
+      return `Hvert 2. år · ${formatDateCopenhagen(rule.startDate)}${stop}`;
+    case 'triennial':
+      return `Hvert 3. år · ${formatDateCopenhagen(rule.startDate)}${stop}`;
     case 'monthly': {
       const day = rule.monthlyDay;
       const dayLabel =

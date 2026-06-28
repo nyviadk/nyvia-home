@@ -14,6 +14,8 @@ const CADENCE_OPTIONS = [
   { value: 'quarterly' as const, label: 'Kvartal' },
   { value: 'half_yearly' as const, label: 'Halvår' },
   { value: 'yearly' as const, label: 'År' },
+  { value: 'biennial' as const, label: '2 år' },
+  { value: 'triennial' as const, label: '3 år' },
   { value: 'once' as const, label: 'Engang' },
 ];
 

@@ -35,6 +35,10 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
       return diff % 6 === 0;
     case 'yearly':
       return diff % 12 === 0;
+    case 'biennial':
+      return diff % 24 === 0;
+    case 'triennial':
+      return diff % 36 === 0;
   }
 }
 
@@ -84,6 +88,10 @@ function occurrencesPerYear(cadence: Recurrence['cadence']): number {
       return 2;
     case 'yearly':
       return 1;
+    case 'biennial':
+      return 0.5;
+    case 'triennial':
+      return 1 / 3;
     case 'once':
       return 0;
   }

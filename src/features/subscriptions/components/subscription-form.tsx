@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
@@ -35,6 +35,8 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
     resolver: zodResolver(subscriptionFormSchema),
     defaultValues: toSubscriptionFormValues(subscription, budgetStart),
   });
+
+  const introEnabled = useWatch({ control, name: 'introEnabled' });
 
   const submit = handleSubmit(async (values) => {
     await onSubmit(toSubscriptionInput(values));
@@ -87,6 +89,59 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
           <RecurrencePicker value={value} onChange={onChange} minDate={budgetStart ?? undefined} />
         )}
       />
+
+      <View className="gap-3 rounded-2xl border border-border p-3">
+        <View className="flex-row items-center justify-between gap-3">
+          <View className="flex-1">
+            <AppText variant="label">Introtilbud (nykunde)</AppText>
+            <AppText variant="muted">
+              Én stor betaling i startmåneden; normalprisen ovenfor tæller først efter
+              intro-perioden.
+            </AppText>
+          </View>
+          <Controller
+            control={control}
+            name="introEnabled"
+            render={({ field: { onChange, value } }) => (
+              <Switch value={value} onValueChange={onChange} />
+            )}
+          />
+        </View>
+
+        {introEnabled ? (
+          <>
+            <Controller
+              control={control}
+              name="introAmount"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <FormField label="Introbeløb (samlet, kr.)" error={errors.introAmount?.message}>
+                  <MoneyInput
+                    value={value ?? ''}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="fx 534,82"
+                  />
+                </FormField>
+              )}
+            />
+            <Controller
+              control={control}
+              name="introMonths"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <FormField label="Dækker antal måneder" error={errors.introMonths?.message}>
+                  <Input
+                    value={value ?? ''}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="fx 24"
+                    keyboardType="number-pad"
+                  />
+                </FormField>
+              )}
+            />
+          </>
+        ) : null}
+      </View>
 
       <View className="flex-row items-center justify-between">
         <AppText variant="label">Aktiv (medregnes i budget)</AppText>

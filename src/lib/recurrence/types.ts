@@ -1,5 +1,12 @@
 /** Gentagelses-model (delt af budget + abonnementer). */
-export type Cadence = 'monthly' | 'quarterly' | 'half_yearly' | 'yearly' | 'once';
+export type Cadence =
+  | 'monthly'
+  | 'quarterly'
+  | 'half_yearly'
+  | 'yearly'
+  | 'biennial'
+  | 'triennial'
+  | 'once';
 
 /**
  * Dag i måneden for månedlige poster: et tal 1–31 (findes dagen ikke i måneden →

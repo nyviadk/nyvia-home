@@ -5,6 +5,7 @@ import { useBudgetStore } from '../data/budget-store';
 import { useBudgetSettingsStore } from '../data/budget-settings-store';
 import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import type { ForecastInput, ForecastRule } from '../forecast';
+import { subscriptionToRules } from '../subscription-rules';
 
 /**
  * Samler forecast-input fra budget-poster (minus optimistisk slettede), aktive
@@ -33,9 +34,7 @@ export function useForecastInput(): ForecastInput {
     incomeRules: visible.filter((e) => e.type === 'income').map(budgetRule),
     expenseRules: [
       ...visible.filter((e) => e.type === 'expense').map(budgetRule),
-      ...subscriptions
-        .filter((s) => s.active)
-        .map((s) => ({ amount: s.amount, recurrence: s.recurrence, priceChanges: s.priceChanges })),
+      ...subscriptions.filter((s) => s.active).flatMap(subscriptionToRules),
     ],
     loans: loans.map((l) => ({
       remainingOre: remainingOre(l),

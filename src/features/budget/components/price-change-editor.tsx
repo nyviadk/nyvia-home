@@ -15,7 +15,8 @@ import { Pressable, View } from '@/tw';
 import type { PriceChange } from '../types';
 
 const schema = z.object({
-  fromYm: z.string().regex(/^\d{4}-\d{2}$/, 'Brug ÅÅÅÅ-MM'),
+  // Datoen den nye pris gælder fra (måneden udledes automatisk).
+  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Vælg en dato'),
   amount: z.string().refine((s) => {
     const ore = parseKronerInput(s);
     return ore !== null && ore >= 0;
@@ -43,15 +44,16 @@ export function PriceChangeEditor({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { fromYm: '', amount: '' } });
+  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { fromDate: '', amount: '' } });
 
   const add = handleSubmit(async (values) => {
+    const fromYm = values.fromDate.slice(0, 7); // måneden datoen falder i
     const next = sortChanges([
-      ...changes.filter((c) => c.fromYm !== values.fromYm),
-      { fromYm: values.fromYm, amountOre: parseKronerInput(values.amount) ?? 0 },
+      ...changes.filter((c) => c.fromYm !== fromYm),
+      { fromYm, amountOre: parseKronerInput(values.amount) ?? 0 },
     ]);
     await onSave(next);
-    reset({ fromYm: '', amount: '' });
+    reset({ fromDate: '', amount: '' });
   });
 
   const remove = (fromYm: string) => onSave(changes.filter((c) => c.fromYm !== fromYm));
@@ -82,15 +84,14 @@ export function PriceChangeEditor({
       <Card className="gap-3">
         <Controller
           control={control}
-          name="fromYm"
+          name="fromDate"
           render={({ field: { onChange, value } }) => (
-            <FormField label="Gælder fra" error={errors.fromYm?.message}>
+            <FormField label="Ny pris gælder fra (dato)" error={errors.fromDate?.message}>
               <DateField
-                mode="month"
                 value={value}
                 onChange={onChange}
-                invalid={!!errors.fromYm}
-                placeholder="Vælg måned"
+                invalid={!!errors.fromDate}
+                placeholder="Vælg dato"
               />
             </FormField>
           )}

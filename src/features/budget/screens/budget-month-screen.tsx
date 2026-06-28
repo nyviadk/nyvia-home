@@ -8,9 +8,8 @@ import { useLoansStore } from '@/features/loans/data/loans-store';
 import { loanStartMonth, monthlyOre, remainingOre } from '@/features/loans/loans.utils';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
 import { formatMonthCopenhagen } from '@/lib/datetime';
-import { occursInMonth } from '@/lib/recurrence/engine';
 import { loanPaymentForMonth } from '../forecast';
-import { effectivePriceOre } from '../pricing';
+import { subscriptionChargeInMonth } from '../subscription-rules';
 import { formatDKKWhole } from '@/lib/money';
 import { cn } from '@/lib/cn';
 import { Pressable, View } from '@/tw';
@@ -86,8 +85,9 @@ export function BudgetMonthScreen({ ym }: { ym: string }) {
   // Aktive abonnementer der falder i måneden (samme grundlag som forecasten).
   const subscriptions = useSubscriptionsStore((s) => s.subscriptions);
   const subRows = subscriptions
-    .filter((s) => s.active && occursInMonth(s.recurrence, year, month))
-    .map((s) => ({ id: s.id, name: s.name, amountOre: effectivePriceOre(s.amount, s.priceChanges, ym) }))
+    .filter((s) => s.active)
+    .map((s) => ({ id: s.id, name: s.name, amountOre: subscriptionChargeInMonth(s, year, month) }))
+    .filter((s) => s.amountOre > 0)
     .sort((a, b) => b.amountOre - a.amountOre);
   const subTotal = subRows.reduce((t, s) => t + s.amountOre, 0);
 
