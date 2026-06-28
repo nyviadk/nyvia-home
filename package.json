@@ -76,7 +76,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "deploy:preview": "expo export --platform web && eas deploy",
+    "deploy:prod": "expo export --platform web && eas deploy --prod",
+    "deploy:web": "expo export --platform web && eas deploy && eas deploy --prod"
   },
   "expo": {
     "doctor": {
