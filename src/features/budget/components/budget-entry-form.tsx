@@ -83,15 +83,18 @@ export function BudgetEntryForm({ entry, submitLabel, onSubmit }: BudgetEntryFor
         />
       )}
 
-      <Controller
-        control={control}
-        name="categories"
-        render={({ field: { onChange, value } }) => (
-          <FormField label="Kategorier" error={errors.categories?.message}>
-            <CategoryPicker type={type} value={value} onChange={onChange} />
-          </FormField>
-        )}
-      />
+      {/* zIndex så kategori-dropdown'en lægger sig over felterne nedenunder. */}
+      <View style={{ zIndex: 5 }}>
+        <Controller
+          control={control}
+          name="categories"
+          render={({ field: { onChange, value } }) => (
+            <FormField label="Kategorier" error={errors.categories?.message}>
+              <CategoryPicker type={type} value={value} onChange={onChange} />
+            </FormField>
+          )}
+        />
+      </View>
 
       <Controller
         control={control}

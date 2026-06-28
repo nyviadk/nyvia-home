@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -180,18 +181,9 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
       <Controller
         control={control}
         name="startDate"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Startdato (ÅÅÅÅ-MM-DD)"
-            error={errors.startDate?.message}
-          >
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.startDate}
-              placeholder="2026-01-01"
-            />
+        render={({ field: { onChange, value } }) => (
+          <FormField label="Startdato" error={errors.startDate?.message}>
+            <DateField value={value} onChange={onChange} invalid={!!errors.startDate} />
           </FormField>
         )}
       />

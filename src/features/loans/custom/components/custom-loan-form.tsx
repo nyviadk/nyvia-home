@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { DateField } from '@/components/ui/date-field';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
@@ -102,9 +103,15 @@ export function CustomLoanForm({ loan, submitLabel, onSubmit }: CustomLoanFormPr
         <Controller
           control={control}
           name="startMonth"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <FormField label="Startmåned (ÅÅÅÅ-MM)" error={errors.startMonth?.message}>
-              <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="2026-11" />
+          render={({ field: { onChange, value } }) => (
+            <FormField label="Startmåned" error={errors.startMonth?.message}>
+              <DateField
+                mode="month"
+                value={value}
+                onChange={onChange}
+                invalid={!!errors.startMonth}
+                placeholder="Vælg måned"
+              />
             </FormField>
           )}
         />

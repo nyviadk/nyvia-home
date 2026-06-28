@@ -5,9 +5,11 @@ import type { TextInput as RNTextInput } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DateField } from '@/components/ui/date-field';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
+import { todayISODate } from '@/lib/datetime';
 import { View } from '@/tw';
 import { type TimeFormValues, timeFormSchema, toTimeFormValues, toTimeInput } from '../data/time.schema';
 import { durationFromTimes, formatDuration, isOvernight } from '../time.utils';
@@ -50,14 +52,13 @@ export function TimeEntryForm({ entry, submitLabel, onSubmit }: TimeEntryFormPro
       <Controller
         control={control}
         name="date"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Dato (ÅÅÅÅ-MM-DD)" error={errors.date?.message}>
-            <Input
+        render={({ field: { onChange, value } }) => (
+          <FormField label="Dato" error={errors.date?.message}>
+            <DateField
               value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="2026-06-27"
-              autoCapitalize="none"
+              onChange={onChange}
+              maxDate={todayISODate()}
+              invalid={!!errors.date}
             />
           </FormField>
         )}

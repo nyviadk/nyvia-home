@@ -24,7 +24,7 @@ const EXPENSE_CATEGORIES = [
   "Transport",
   "Mad",
   "Forsikring",
-  "skatteservice",
+  "Skatteservice",
   "Internet",
   "Mobil",
   "Streaming",
@@ -42,7 +42,9 @@ export function presetCategories(type: BudgetEntryType): string[] {
 }
 
 /** Kategorier for en post (håndterer både ny `categories` og legacy `category`). */
-export function entryCategories(entry: Pick<BudgetEntry, "categories" | "category">): string[] {
+export function entryCategories(
+  entry: Pick<BudgetEntry, "categories" | "category">,
+): string[] {
   if (entry.categories && entry.categories.length > 0) return entry.categories;
   return entry.category ? [entry.category] : [];
 }

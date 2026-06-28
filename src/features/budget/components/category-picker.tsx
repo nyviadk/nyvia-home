@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import type {
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData,
+} from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
@@ -7,10 +11,12 @@ import { useBudgetStore } from '../data/budget-store';
 import { categorySuggestions } from '../data/categories';
 import type { BudgetEntryType } from '../types';
 
+type Option = { key: string; label: string; create?: boolean };
+
 /**
- * Multi-kategori-vælger: valgte kategorier som chips (klik = fjern) + søgefelt med
- * fuzzy-forslag (klik = tilføj). Fri tekst tillades (Enter eller "+"-chip).
- * `query` er ren UI-state (ephemeral søgetekst) — derfor useState.
+ * Multi-kategori: valgte vises som chips (klik = fjern). Tilføj via dropdown-select med
+ * fuzzy-forslag — naviger ↑/↓, vælg Enter/klik (tilføjer og bliver i feltet til flere).
+ * Fri tekst tilladt via "+ Opret".
  */
 export function CategoryPicker({
   type,
@@ -22,24 +28,60 @@ export function CategoryPicker({
   onChange: (next: string[]) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
   const entries = useBudgetStore((s) => s.entries);
+
   const suggestions = categorySuggestions(type, entries, query, value);
+  const queryTrim = query.trim();
+  const queryIsNew =
+    queryTrim.length > 0 &&
+    !value.some((v) => v.toLowerCase() === queryTrim.toLowerCase()) &&
+    !suggestions.some((s) => s.toLowerCase() === queryTrim.toLowerCase());
+
+  const options: Option[] = [
+    ...suggestions.map((c) => ({ key: c, label: c })),
+    ...(queryIsNew ? [{ key: '__create', label: `+ Opret "${queryTrim}"`, create: true }] : []),
+  ];
+  const visible = open && options.length > 0;
 
   const add = (cat: string) => {
     const c = cat.trim();
     if (!c) return;
     if (!value.some((v) => v.toLowerCase() === c.toLowerCase())) onChange([...value, c]);
     setQuery('');
+    setHighlight(0);
+    setOpen(false); // luk efter hvert valg (åbnes igen når man taster/fokuserer)
   };
   const remove = (cat: string) => onChange(value.filter((v) => v !== cat));
 
-  const queryIsNew =
-    query.trim().length > 0 &&
-    !value.some((v) => v.toLowerCase() === query.trim().toLowerCase()) &&
-    !suggestions.some((s) => s.toLowerCase() === query.trim().toLowerCase());
+  const commit = (i: number) => {
+    const o = options[i];
+    if (!o) return;
+    add(o.create ? queryTrim : o.label);
+  };
+
+  function onKeyPress(e: NativeSyntheticEvent<TextInputKeyPressEventData>) {
+    const key = e.nativeEvent.key;
+    if (key === 'ArrowDown') {
+      e.preventDefault?.();
+      if (!visible) setOpen(true);
+      else setHighlight((h) => Math.min(h + 1, options.length - 1));
+    } else if (key === 'ArrowUp') {
+      e.preventDefault?.();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (key === 'Enter') {
+      if (visible) {
+        e.preventDefault?.();
+        commit(highlight);
+      }
+    } else if (key === 'Escape') {
+      setOpen(false);
+    }
+  }
 
   return (
-    <View className="gap-2">
+    <View className="relative gap-2" style={visible ? { zIndex: 50 } : undefined}>
       {value.length > 0 ? (
         <View className="flex-row flex-wrap gap-2">
           {value.map((cat) => (
@@ -55,36 +97,44 @@ export function CategoryPicker({
         </View>
       ) : null}
 
-      <Input
-        value={query}
-        onChangeText={setQuery}
-        onSubmitEditing={() => add(query)}
-        returnKeyType="done"
-        placeholder="Søg eller tilføj kategori (fx Mad)"
-        autoCapitalize="none"
-      />
+      <View className="relative">
+        <Input
+          value={query}
+          onChangeText={(t) => {
+            setQuery(t);
+            setOpen(true);
+            setHighlight(0);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onKeyPress={onKeyPress}
+          placeholder="Søg eller tilføj kategori (fx Mad)"
+          autoCapitalize="none"
+        />
 
-      {suggestions.length > 0 || queryIsNew ? (
-        <View className="flex-row flex-wrap gap-2">
-          {suggestions.map((cat) => (
-            <Pressable
-              key={cat}
-              accessibilityRole="button"
-              onPress={() => add(cat)}
-              className="rounded-full bg-element px-3 py-1.5">
-              <Text className="text-sm text-fg">{cat}</Text>
-            </Pressable>
-          ))}
-          {queryIsNew ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => add(query)}
-              className={cn('rounded-full border border-border px-3 py-1.5')}>
-              <Text className="text-sm text-primary">+ "{query.trim()}"</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
+        {visible ? (
+          <View
+            className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-xl border border-border bg-card"
+            style={{
+              boxShadow: '0 6px 16px rgba(40, 40, 38, 0.12)',
+              borderCurve: 'continuous',
+              elevation: 8,
+            }}>
+            {options.map((o, i) => (
+              <Pressable
+                key={o.key}
+                accessibilityRole="button"
+                onPress={() => commit(i)}
+                onHoverIn={() => setHighlight(i)}
+                className={cn('px-4 py-2.5', i === highlight && 'bg-element')}>
+                <Text className={cn('text-base', o.create ? 'text-primary' : 'text-fg')}>
+                  {o.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }

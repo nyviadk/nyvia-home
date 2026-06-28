@@ -1,10 +1,11 @@
+import { DateField } from '@/components/ui/date-field';
 import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
 import { Segmented } from '@/components/ui/segmented';
+import { AppText } from '@/components/ui/text';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import type { Cadence } from '@/lib/recurrence/types';
 import { normalizeDateInput, type RecurrenceForm } from '@/lib/recurrence/recurrence-form';
-import { View } from '@/tw';
+import { Pressable, View } from '@/tw';
 
 const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?$/;
 
@@ -34,8 +35,8 @@ export function RecurrencePicker({
   /** Nedre grænse (ÅÅÅÅ-MM-DD) for startdatoen, fx budgettets startdato. */
   minDate?: string;
 }) {
-  // Månedlige poster styres af dag-typen → start angives kun som måned (ÅÅÅÅ-MM).
-  const monthOnlyStart = value.cadence === 'monthly';
+  // Bestemt dag (eller ikke-månedlig) → vælg fuld startdato; bankdag/kun-måned → kun måned.
+  const useDayStart = value.cadence !== 'monthly' || value.monthlyDayKind === 'day';
   const isOnce = value.cadence === 'once';
 
   const normStart = ISO_DATE.test(value.startDate) ? normalizeDateInput(value.startDate) : value.startDate;
@@ -59,50 +60,56 @@ export function RecurrencePicker({
       </FormField>
 
       {value.cadence === 'monthly' ? (
-        <View className="gap-2">
+        <FormField label="Hvornår på måneden">
           <Segmented
             value={value.monthlyDayKind}
             options={DAY_KIND_OPTIONS}
             onChange={(monthlyDayKind) => onChange({ ...value, monthlyDayKind })}
           />
-          {value.monthlyDayKind === 'day' ? (
-            <FormField label="Dag i måneden (1–31)">
-              <Input
-                value={value.monthlyDayNumber}
-                onChangeText={(monthlyDayNumber) => onChange({ ...value, monthlyDayNumber })}
-                keyboardType="number-pad"
-                placeholder="1"
-              />
-            </FormField>
-          ) : null}
-        </View>
+        </FormField>
       ) : null}
 
-      {monthOnlyStart ? (
-        <FormField label="Startmåned (ÅÅÅÅ-MM)" error={startError}>
-          <Input value={startMonthValue} onChangeText={onStartMonth} placeholder="2026-11" autoCapitalize="none" />
+      {/* Bestemt dag (månedlig) eller kvartal/halvår/år/engang → vælg en rigtig startdato
+          (dagen gentages hver periode). Bankdag/kun-måned → kun måned. */}
+      {useDayStart ? (
+        <FormField label={isOnce ? 'Dato' : 'Startdato'} error={startError}>
+          <DateField
+            value={value.startDate}
+            onChange={(startDate) => onChange({ ...value, startDate })}
+            minDate={minDate}
+            invalid={!!startError}
+          />
         </FormField>
       ) : (
-        <FormField
-          label={isOnce ? 'Dato (ÅÅÅÅ-MM-DD)' : 'Start (ÅÅÅÅ-MM-DD)'}
-          error={startError}>
-          <Input
-            value={value.startDate}
-            onChangeText={(startDate) => onChange({ ...value, startDate })}
-            placeholder="2026-11-01"
-            autoCapitalize="none"
+        <FormField label="Startmåned" error={startError}>
+          <DateField
+            mode="month"
+            value={startMonthValue}
+            onChange={onStartMonth}
+            minDate={minDate}
+            invalid={!!startError}
           />
         </FormField>
       )}
 
       {isOnce ? null : (
-        <FormField label="Slutdato (valgfri, ÅÅÅÅ-MM)">
-          <Input
-            value={value.endDate ?? ''}
-            onChangeText={(endDate) => onChange({ ...value, endDate: endDate.slice(0, 7) })}
-            placeholder="—"
-            autoCapitalize="none"
-          />
+        <FormField label="Slutdato (valgfri)">
+          <View className="gap-2">
+            <DateField
+              value={normalizeDateInput(value.endDate ?? '') || ''}
+              onChange={(endDate) => onChange({ ...value, endDate })}
+              minDate={normalizeDateInput(value.startDate)}
+              placeholder="Ingen slutdato"
+            />
+            {value.endDate ? (
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => onChange({ ...value, endDate: '' })}>
+                <AppText className="text-sm text-danger">Fjern slutdato</AppText>
+              </Pressable>
+            ) : null}
+          </View>
         </FormField>
       )}
     </View>

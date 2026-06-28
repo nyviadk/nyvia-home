@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -58,15 +59,9 @@ export function PaymentForm({ onSubmit }: { onSubmit: (input: PaymentInput) => P
       <Controller
         control={control}
         name="date"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Dato (ÅÅÅÅ-MM-DD)" error={errors.date?.message}>
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.date}
-              placeholder="2026-06-26"
-            />
+        render={({ field: { onChange, value } }) => (
+          <FormField label="Dato" error={errors.date?.message}>
+            <DateField value={value} onChange={onChange} invalid={!!errors.date} />
           </FormField>
         )}
       />

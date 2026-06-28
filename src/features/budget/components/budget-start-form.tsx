@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { AppText } from "@/components/ui/text";
@@ -58,18 +59,9 @@ export function BudgetStartForm({
       <Controller
         control={control}
         name="startDate"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Budgettets startdato (ÅÅÅÅ-MM-DD)"
-            error={errors.startDate?.message}
-          >
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="2026-01-01"
-              autoCapitalize="none"
-            />
+        render={({ field: { onChange, value } }) => (
+          <FormField label="Budgettets startdato" error={errors.startDate?.message}>
+            <DateField value={value} onChange={onChange} invalid={!!errors.startDate} />
           </FormField>
         )}
       />

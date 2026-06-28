@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
+import { SelectField } from '@/components/ui/select-field';
 import { AppText } from '@/components/ui/text';
 import { RecurrencePicker } from '@/components/recurrence-picker';
 import { useBudgetSettingsStore } from '@/features/budget/data/budget-settings-store';
-import { cn } from '@/lib/cn';
-import { Pressable, Switch, View } from '@/tw';
+import { Switch, View } from '@/tw';
 import {
   type SubscriptionFormValues,
   subscriptionFormSchema,
@@ -62,30 +62,23 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
         )}
       />
 
-      <Controller
-        control={control}
-        name="category"
-        render={({ field: { onChange, value } }) => (
-          <FormField label="Kategori">
-            <View className="flex-row flex-wrap gap-2">
-              {SUBSCRIPTION_CATEGORIES.map((cat) => {
-                const active = cat.value === value;
-                return (
-                  <Pressable
-                    key={cat.value}
-                    accessibilityRole="button"
-                    onPress={() => onChange(cat.value)}
-                    className={cn('rounded-full px-3 py-1.5', active ? 'bg-primary' : 'bg-element')}>
-                    <AppText className={cn('text-sm', active ? 'text-on-primary' : 'text-fg')}>
-                      {cat.label}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </FormField>
-        )}
-      />
+      {/* zIndex så kategori-dropdown'en lægger sig over felterne nedenunder. */}
+      <View style={{ zIndex: 5 }}>
+        <Controller
+          control={control}
+          name="category"
+          render={({ field: { onChange, value } }) => (
+            <FormField label="Kategori">
+              <SelectField
+                value={value}
+                options={SUBSCRIPTION_CATEGORIES}
+                onChange={onChange}
+                placeholder="Vælg kategori"
+              />
+            </FormField>
+          )}
+        />
+      </View>
 
       <Controller
         control={control}

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DateField } from "@/components/ui/date-field";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { AppText } from "@/components/ui/text";
@@ -93,17 +94,14 @@ export function SavingsPercentScheduleEditor({
         <Controller
           control={control}
           name="fromYm"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <FormField
-              label="Gælder fra (ÅÅÅÅ-MM)"
-              error={errors.fromYm?.message}
-            >
-              <Input
+          render={({ field: { onChange, value } }) => (
+            <FormField label="Gælder fra" error={errors.fromYm?.message}>
+              <DateField
+                mode="month"
                 value={value}
-                onChangeText={(t) => onChange(t.slice(0, 7))}
-                onBlur={onBlur}
-                placeholder="2027-01"
-                autoCapitalize="none"
+                onChange={onChange}
+                invalid={!!errors.fromYm}
+                placeholder="Vælg måned"
               />
             </FormField>
           )}
