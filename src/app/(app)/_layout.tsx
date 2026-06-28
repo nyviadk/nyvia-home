@@ -13,6 +13,11 @@ export default function AppTabsLayout() {
         <NativeTabs.Trigger.Icon sf="chart.pie.fill" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="spending">
+        <NativeTabs.Trigger.Label>Forbrug</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="banknote.fill" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="loans">
         <NativeTabs.Trigger.Label>Lån</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="creditcard.fill" />

@@ -23,6 +23,7 @@
   --color-accent-savings: #4e8d5b; /* grøn */
   --color-accent-moving: #c2752f; /* orange */
   --color-accent-time: #6b5b95; /* violet (timetracker) */
+  --color-accent-spending: #4a7c8c; /* dæmpet cyan-blå (forbrug) */
 
   /* Status */
   --color-danger: #b3261e;
@@ -63,6 +64,7 @@
   --color-accent-savings: var(--color-accent-savings);
   --color-accent-moving: var(--color-accent-moving);
   --color-accent-time: var(--color-accent-time);
+  --color-accent-spending: var(--color-accent-spending);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
 

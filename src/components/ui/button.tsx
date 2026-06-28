@@ -11,6 +11,13 @@ const containerClass: Record<Variant, string> = {
   ghost: 'bg-transparent',
 };
 
+// Hover (web) + pressed (alle platforme) feedback, så knapperne føles "levende".
+const interactionClass: Record<Variant, string> = {
+  primary: 'hover:bg-primary/90 active:bg-primary/80',
+  secondary: 'hover:bg-element active:bg-selected',
+  ghost: 'hover:bg-element active:bg-selected',
+};
+
 const labelClass: Record<Variant, string> = {
   primary: 'text-on-primary',
   secondary: 'text-fg',
@@ -46,7 +53,7 @@ export function Button({
       className={cn(
         'h-12 flex-row items-center justify-center rounded-xl px-4',
         containerClass[variant],
-        isDisabled && 'opacity-50',
+        isDisabled ? 'opacity-50' : interactionClass[variant],
         className
       )}
       {...props}>

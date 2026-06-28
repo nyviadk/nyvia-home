@@ -14,6 +14,12 @@ const ITEMS = [
     label: "Budget",
     accent: "text-accent-budget",
   },
+  {
+    name: "spending",
+    href: "/spending",
+    label: "Forbrug",
+    accent: "text-accent-spending",
+  },
   { name: "loans", href: "/loans", label: "Lån", accent: "text-accent-loans" },
   {
     name: "subscriptions",
