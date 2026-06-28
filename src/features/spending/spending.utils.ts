@@ -86,11 +86,3 @@ export function spendingInMonthOre(
     .filter((t) => classify(t) === 'expense' && ym(t.date) === month)
     .reduce((sum, t) => sum + Math.abs(t.amountOre), 0);
 }
-
-/** Seneste kendte saldo (nyeste dato med en saldo-værdi). */
-export function lastBalanceOre(txns: readonly WithId<BankTransaction>[]): number | null {
-  const withBalance = txns
-    .filter((t) => t.balanceOre != null)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  return withBalance[0]?.balanceOre ?? null;
-}

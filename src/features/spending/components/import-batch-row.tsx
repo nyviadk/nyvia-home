@@ -7,11 +7,19 @@ import { toastAfter } from '@/lib/toast/notify';
 import { Pressable, View } from '@/tw';
 import { deleteImportBatch } from '../data/import-batches.repository';
 import { deleteTransactionsOfBatch } from '../data/transactions.repository';
+import { useSpendingSettingsStore } from '../data/spending-settings-store';
 import { useTransactionsStore } from '../data/transactions-store';
+import { displayAccountName } from '../spending.utils';
 import type { ImportBatch } from '../types';
 
 /** En import i historikken — kan slettes (fjerner også dens transaktioner). */
 export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
+  const transactions = useTransactionsStore((s) => s.transactions);
+  const accounts = useSpendingSettingsStore((s) => s.accounts);
+  const batchAccounts = Array.from(
+    new Set(transactions.filter((t) => t.importBatchId === batch.id).map((t) => t.account))
+  ).map((number) => displayAccountName(number, accounts));
+
   async function onDelete() {
     const ok = await confirmAction(
       'Slet import',
@@ -35,6 +43,11 @@ export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
         <AppText variant="label" numberOfLines={1}>
           {batch.fileName}
         </AppText>
+        {batchAccounts.length > 0 ? (
+          <AppText variant="muted" numberOfLines={1}>
+            {batchAccounts.join(' · ')}
+          </AppText>
+        ) : null}
         <AppText variant="muted">
           {formatDateTimeCopenhagen(batch.importedAt)} · {batch.count} poster
         </AppText>
