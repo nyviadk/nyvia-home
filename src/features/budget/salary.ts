@@ -1,6 +1,6 @@
-import BigNumber from 'bignumber.js';
+import BigNumber from "bignumber.js";
 
-import type { SalaryCalc } from './types';
+import type { SalaryCalc } from "./types";
 
 export type SalaryBreakdown = {
   grossOre: number;
@@ -17,17 +17,32 @@ export type SalaryBreakdown = {
  * Bevidst forenklet (ingen topskat/progression) — kun et estimat indtil rigtig løn kendes.
  */
 export function salaryBreakdown(c: SalaryCalc): SalaryBreakdown {
+  const round = (b: BigNumber) =>
+    b.integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+
   const gross = new BigNumber(c.grossOre);
-  const amBidrag = gross.times(c.amBidragPct).div(100);
-  const taxable = BigNumber.max(0, gross.minus(amBidrag).minus(c.fradragOre));
-  const aSkat = taxable.times(c.traekPct).div(100);
-  const net = gross.minus(amBidrag).minus(aSkat);
-  const round = (b: BigNumber) => b.integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+
+  // Beregn og rund AM-bidrag med det samme for at undgå afrundingsdifferencer på skærmen
+  const amBidragCalc = gross.times(c.amBidragPct).div(100);
+  const amBidragOre = round(amBidragCalc);
+
+  // Beregn A-skattegrundlag baseret på det afrundede AM-bidrag
+  const grossAfterAm = gross.minus(amBidragOre);
+  const taxable = BigNumber.max(0, grossAfterAm.minus(c.fradragOre));
+
+  // Beregn og rund A-skat
+  const aSkatCalc = taxable.times(c.traekPct).div(100);
+  const aSkatOre = round(aSkatCalc);
+
+  // Beregn nettoløn ud fra de endelige, afrundede poster.
+  // Dette sikrer, at grossOre - amBidragOre - aSkatOre altid giver præcis netOre.
+  const netOre = gross.toNumber() - amBidragOre - aSkatOre;
+
   return {
-    grossOre: round(gross),
-    amBidragOre: round(amBidrag),
-    aSkatOre: round(aSkat),
-    netOre: round(net),
+    grossOre: gross.toNumber(),
+    amBidragOre,
+    aSkatOre,
+    netOre,
   };
 }
 
