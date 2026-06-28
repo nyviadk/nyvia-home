@@ -1,23 +1,27 @@
-import { Link } from 'expo-router';
+import { Link } from "expo-router";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
-import { MoneyText } from '@/components/ui/money-text';
-import { Screen } from '@/components/ui/screen';
-import { AppText } from '@/components/ui/text';
-import { formatMonthCopenhagen, todayISODate } from '@/lib/datetime';
-import { View } from '@/tw';
-import { AccountRow } from '../components/account-row';
-import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { useTransactionsStore } from '../data/transactions-store';
-import { accountNumbers, monthlyTotals, spendingInMonthOre } from '../spending.utils';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MoneyText } from "@/components/ui/money-text";
+import { Screen } from "@/components/ui/screen";
+import { AppText } from "@/components/ui/text";
+import { formatMonthCopenhagen, todayISODate } from "@/lib/datetime";
+import { Pressable, View } from "@/tw";
+import { AccountRow } from "../components/account-row";
+import { useSpendingSettingsStore } from "../data/spending-settings-store";
+import { useTransactionsStore } from "../data/transactions-store";
+import {
+  accountNumbers,
+  monthlyTotals,
+  spendingInMonthOre,
+} from "../spending.utils";
 
 function capitalize(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-const isWeb = process.env.EXPO_OS === 'web';
+const isWeb = process.env.EXPO_OS === "web";
 
 export function SpendingOverviewScreen() {
   const transactions = useTransactionsStore((s) => s.transactions);
@@ -28,9 +32,9 @@ export function SpendingOverviewScreen() {
   const month = todayISODate().slice(0, 7);
   const numbers = accountNumbers(transactions).sort();
   const totalSpending = spendingInMonthOre(transactions, month, accounts);
-  const monthsTable = Array.from(monthlyTotals(transactions, accounts).entries()).sort((a, b) =>
-    b[0].localeCompare(a[0])
-  );
+  const monthsTable = Array.from(
+    monthlyTotals(transactions, accounts).entries(),
+  ).sort((a, b) => b[0].localeCompare(a[0]));
 
   return (
     <Screen>
@@ -38,7 +42,11 @@ export function SpendingOverviewScreen() {
         <AppText variant="title">Forbrug</AppText>
         <View className="flex-row gap-2">
           <Link href="/spending/settings" asChild>
-            <Button title="Indstillinger" variant="secondary" className="h-10 px-4" />
+            <Button
+              title="Indstillinger"
+              variant="secondary"
+              className="h-10 px-4"
+            />
           </Link>
           {isWeb ? (
             <Link href="/spending/import" asChild>
@@ -48,7 +56,9 @@ export function SpendingOverviewScreen() {
         </View>
       </View>
 
-      {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
+      {fromCache ? (
+        <AppText variant="muted">Offline – viser gemte data</AppText>
+      ) : null}
 
       {numbers.length === 0 ? (
         loading ? null : (
@@ -56,26 +66,53 @@ export function SpendingOverviewScreen() {
             title="Ingen transaktioner endnu"
             description={
               isWeb
-                ? 'Importér en CSV-eksport fra banken for at se dit faktiske forbrug pr. konto.'
-                : 'Importér bankdata på web — her kan du se forbruget bagefter.'
+                ? "Importér en CSV-eksport fra banken for at se dit faktiske forbrug pr. konto."
+                : "Importér bankdata på web — her kan du se forbruget bagefter."
             }
           />
         )
       ) : (
         <>
           <Card className="border-0 bg-accent-budget">
-            <AppText className="text-on-primary/80">Forbrug denne måned (alle konti)</AppText>
-            <MoneyText ore={totalSpending} whole className="text-3xl font-bold text-on-primary" />
+            <AppText className="text-on-primary/80">
+              Forbrug denne måned (alle konti)
+            </AppText>
+            <MoneyText
+              ore={totalSpending}
+              whole
+              className="text-3xl font-bold text-on-primary"
+            />
           </Card>
 
           {monthsTable.length > 0 ? (
             <Card className="gap-2">
               <AppText variant="label">Forbrug pr. måned</AppText>
               {monthsTable.map(([ymKey, totals]) => (
-                <View key={ymKey} className="flex-row items-center justify-between">
-                  <AppText variant="muted">{capitalize(formatMonthCopenhagen(`${ymKey}-01`))}</AppText>
-                  <MoneyText ore={totals.expenseOre} whole variant="label" className="text-danger" />
-                </View>
+                <Link
+                  key={ymKey}
+                  href={{
+                    pathname: "/spending/month/[ym]",
+                    params: { ym: ymKey },
+                  }}
+                  asChild
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    className="flex-row items-center justify-between rounded-lg py-1"
+                  >
+                    <AppText variant="muted">
+                      {capitalize(formatMonthCopenhagen(`${ymKey}-01`))}
+                    </AppText>
+                    <View className="flex-row items-center gap-2">
+                      <MoneyText
+                        ore={totals.expenseOre}
+                        whole
+                        variant="label"
+                        className="text-danger"
+                      />
+                    </View>
+                  </Pressable>
+                </Link>
               ))}
             </Card>
           ) : null}

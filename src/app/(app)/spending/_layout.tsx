@@ -9,6 +9,7 @@ export default function SpendingLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[account]" options={{ title: "Konto" }} />
+      <Stack.Screen name="month/[ym]" options={{ title: "Måned" }} />
       <Stack.Screen name="transaction/[id]" options={{ title: "Postering" }} />
       <Stack.Screen name="import" options={{ title: "Importér bankdata" }} />
       <Stack.Screen name="import-batch/[id]" options={{ title: "Import" }} />
