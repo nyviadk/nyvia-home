@@ -45,6 +45,8 @@ function DayGroup({ date, entries }: { date: string; entries: WithId<TimeEntry>[
 export function TimetrackerScreen() {
   const [range, setRange] = useState<TimeRange>('week');
   const [onlyAfterOfficial, setOnlyAfterOfficial] = useState(false);
+  // Vis kun åbne (uden sluttid) — ignorerer tidsfilteret, så ingen gemmer sig.
+  const [onlyOpen, setOnlyOpen] = useState(false);
 
   const entries = useTimetrackerStore((s) => s.entries);
   const loading = useTimetrackerStore((s) => s.loading);
@@ -53,9 +55,10 @@ export function TimetrackerScreen() {
   const officialStart = useTimetrackerSettingsStore((s) => s.officialStartDate);
 
   const rangeStart = rangeStartDate(range);
+  const openCount = entries.filter((e) => !pendingIds.has(e.id) && !e.endTime).length;
   const visible = entries
     .filter((e) => !pendingIds.has(e.id))
-    .filter((e) => (rangeStart === null ? true : e.date >= rangeStart))
+    .filter((e) => (onlyOpen ? !e.endTime : rangeStart === null ? true : e.date >= rangeStart))
     .filter((e) => (onlyAfterOfficial && officialStart ? e.date >= officialStart : true))
     .sort((a, b) => (a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date)));
 
@@ -83,7 +86,20 @@ export function TimetrackerScreen() {
 
       {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
 
+      {/* Oversigt øverst */}
+      {visible.length > 0 ? <TimetrackerSummary entries={visible} /> : null}
+
+      {/* Filtre under oversigten */}
       <Segmented<TimeRange> value={range} options={RANGE_OPTIONS} onChange={setRange} />
+
+      {onlyOpen || openCount > 0 ? (
+        <View className="flex-row items-center justify-between">
+          <AppText variant="muted" className={onlyOpen ? 'text-accent-moving' : undefined}>
+            Kun uden sluttid ({openCount})
+          </AppText>
+          <Switch value={onlyOpen} onValueChange={setOnlyOpen} />
+        </View>
+      ) : null}
 
       {officialStart ? (
         <View className="flex-row items-center justify-between">
@@ -92,20 +108,22 @@ export function TimetrackerScreen() {
         </View>
       ) : null}
 
+      {/* Liste */}
       {visible.length === 0 ? (
         loading ? null : (
           <EmptyState
-            title="Ingen registreringer"
-            description="Tilføj din første tidsregistrering for at se overblikket."
+            title={onlyOpen ? 'Ingen åbne registreringer' : 'Ingen registreringer'}
+            description={
+              onlyOpen
+                ? 'Alle registreringer har en sluttid.'
+                : 'Tilføj din første tidsregistrering for at se overblikket.'
+            }
           />
         )
       ) : (
-        <>
-          <TimetrackerSummary entries={visible} />
-          {days.map((day) => (
-            <DayGroup key={day.date} date={day.date} entries={day.entries} />
-          ))}
-        </>
+        days.map((day) => (
+          <DayGroup key={day.date} date={day.date} entries={day.entries} />
+        ))
       )}
     </Screen>
   );

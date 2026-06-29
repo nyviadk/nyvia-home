@@ -8,6 +8,7 @@ import type { TimeEntry } from '../types';
 /** Total + nedbrydning pr. funktion for de (allerede filtrerede) poster. */
 export function TimetrackerSummary({ entries }: { entries: WithId<TimeEntry>[] }) {
   const total = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
+  const openCount = entries.filter((e) => !e.endTime).length;
 
   const byCategory = new Map<string, number>();
   for (const e of entries) {
@@ -20,6 +21,11 @@ export function TimetrackerSummary({ entries }: { entries: WithId<TimeEntry>[] }
       <Card className="gap-1 border-0 bg-accent-time">
         <AppText className="text-on-primary/80">Tid i alt</AppText>
         <AppText className="text-3xl font-bold text-on-primary">{formatDuration(total)}</AppText>
+        {openCount > 0 ? (
+          <AppText className="text-on-primary/90">
+            ⚠ {openCount} {openCount === 1 ? 'post mangler' : 'poster mangler'} sluttid
+          </AppText>
+        ) : null}
       </Card>
 
       {rows.length > 0 ? (

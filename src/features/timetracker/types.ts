@@ -4,9 +4,9 @@ export type TimeEntry = {
   date: string;
   /** Starttid HH:mm. */
   startTime: string;
-  /** Sluttid HH:mm (kan være før start = natarbejde, slutter næste dag). */
-  endTime: string;
-  /** Varighed i minutter (heltal). Håndterer natarbejde over midnat. */
+  /** Sluttid HH:mm (valgfri — null/udeladt = mangler; før start = natarbejde, slutter næste dag). */
+  endTime?: string | null;
+  /** Varighed i minutter (heltal; 0 hvis sluttid mangler). Håndterer natarbejde over midnat. */
   durationMinutes: number;
   /** Funktion/kategori, fx "Udvikling". */
   category: string;

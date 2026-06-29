@@ -89,9 +89,9 @@ export function TimeEntryForm({ entry, submitLabel, onSubmit }: TimeEntryFormPro
             control={control}
             name="endTime"
             render={({ field: { onChange, onBlur, value } }) => (
-              <FormField label="Slut (HH:mm)" error={errors.endTime?.message}>
+              <FormField label="Slut (HH:mm, valgfri)" error={errors.endTime?.message}>
                 <TimeInput
-                  value={value}
+                  value={value ?? ''}
                   onChange={onChange}
                   onBlur={onBlur}
                   placeholder="1700"
@@ -108,7 +108,11 @@ export function TimeEntryForm({ entry, submitLabel, onSubmit }: TimeEntryFormPro
         <AppText variant="label">Varighed</AppText>
         <AppText variant="label">{duration > 0 ? formatDuration(duration) : '—'}</AppText>
       </Card>
-      {overnight ? (
+      {!endTime ? (
+        <AppText variant="muted">
+          Lad slut stå tom for at gemme starten nu — udfyld sluttid senere.
+        </AppText>
+      ) : overnight ? (
         <AppText variant="muted">Natarbejde: slutter næste dag (registreres som én post).</AppText>
       ) : null}
 

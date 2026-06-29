@@ -31,7 +31,7 @@ export function EditTimeEntryScreen({ id }: { id: string }) {
       />
       <DeleteTimeEntryLink
         id={id}
-        label={`${entry.category} ${entry.startTime}–${entry.endTime}`}
+        label={`${entry.category} ${entry.startTime}–${entry.endTime ?? '?'}`}
       />
     </Screen>
   );
