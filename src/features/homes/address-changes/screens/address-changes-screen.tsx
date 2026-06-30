@@ -112,9 +112,8 @@ export function AddressChangesScreen() {
         <View className="flex-1 gap-0.5">
           <AppText variant="title">Adresseændringer</AppText>
           <AppText variant="muted">
-            På tværs af boliger
             {changes.length > 0
-              ? ` · ${doneCount} / ${changes.length} færdige`
+              ? `${doneCount} / ${changes.length} færdige`
               : ""}
           </AppText>
         </View>
