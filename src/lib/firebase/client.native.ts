@@ -18,13 +18,28 @@ import {
   updateDoc as fbUpdateDoc,
   writeBatch,
 } from '@react-native-firebase/firestore';
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage as getFbStorage,
+  putFile,
+  ref as storageRef,
+} from '@react-native-firebase/storage';
 
-import type { AuthFacade, AuthUser, CollectionSnapshot, DbFacade, WithId } from './facade';
+import type {
+  AuthFacade,
+  AuthUser,
+  CollectionSnapshot,
+  DbFacade,
+  StorageFacade,
+  WithId,
+} from './facade';
 
 // @react-native-firebase initialiserer automatisk fra google-services.json.
 // Firestore offline-persistens er slået til som standard på native.
 const fbAuth = getAuth();
 const firestore = getFirestore();
+const fbStorage = getFbStorage();
 
 function toAuthUser(user: { uid: string; email: string | null } | null): AuthUser | null {
   return user ? { uid: user.uid, email: user.email } : null;
@@ -126,5 +141,16 @@ export const db: DbFacade = {
       done += slice.length;
       opts?.onProgress?.(done, ops.length);
     }
+  },
+};
+
+export const storage: StorageFacade = {
+  upload: async (path, localUri) => {
+    const r = storageRef(fbStorage, path);
+    await putFile(r, localUri);
+    return getDownloadURL(r);
+  },
+  remove: async (path) => {
+    await deleteObject(storageRef(fbStorage, path));
   },
 };

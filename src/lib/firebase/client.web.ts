@@ -21,14 +21,29 @@ import {
   updateDoc as fbUpdateDoc,
   writeBatch,
 } from 'firebase/firestore';
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+} from 'firebase/storage';
 
 import { assertFirebaseConfig, firebaseConfig } from './config';
-import type { AuthFacade, AuthUser, CollectionSnapshot, DbFacade, WithId } from './facade';
+import type {
+  AuthFacade,
+  AuthUser,
+  CollectionSnapshot,
+  DbFacade,
+  StorageFacade,
+  WithId,
+} from './facade';
 
 assertFirebaseConfig();
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const fbAuth = getAuth(app);
+const fbStorage = getStorage(app);
 
 // Offline-persistens (IndexedDB) — virker på tværs af faner.
 const firestore = initializeFirestore(app, {
@@ -135,5 +150,17 @@ export const db: DbFacade = {
       done += slice.length;
       opts?.onProgress?.(done, ops.length);
     }
+  },
+};
+
+export const storage: StorageFacade = {
+  upload: async (path, localUri) => {
+    const blob = await (await fetch(localUri)).blob();
+    const r = storageRef(fbStorage, path);
+    await uploadBytes(r, blob);
+    return getDownloadURL(r);
+  },
+  remove: async (path) => {
+    await deleteObject(storageRef(fbStorage, path));
   },
 };

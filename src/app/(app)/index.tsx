@@ -1,11 +1,6 @@
-import { Screen } from "@/components/ui/screen";
-import { AppText } from "@/components/ui/text";
+import { Redirect } from 'expo-router';
 
-export default function TodayScreen() {
-  return (
-    <Screen>
-      <AppText variant="title">I Dag</AppText>
-      <AppText variant="muted">Dit overblik samles her, efterhånden som flere features kommer til.</AppText>
-    </Screen>
-  );
+// Forsiden er nu "Hjem" (bolig-listen). Index sender bare videre dertil.
+export default function Index() {
+  return <Redirect href="/homes" />;
 }

@@ -7,7 +7,7 @@ import { View } from "@/tw";
 import React from "react";
 
 const ITEMS = [
-  { name: "index", href: "/", label: "I Dag", accent: "text-primary" },
+  { name: "homes", href: "/homes", label: "Hjem", accent: "text-accent-moving" },
   {
     name: "budget",
     href: "/budget",

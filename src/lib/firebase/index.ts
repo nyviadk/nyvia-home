@@ -1,2 +1,2 @@
 export * from './facade';
-export { auth, db } from './client';
+export { auth, db, storage } from './client';

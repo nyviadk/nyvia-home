@@ -23,6 +23,14 @@ export interface AuthFacade {
 /** Et dokument med dets id flettet ind i data. */
 export type WithId<T> = T & { id: string };
 
+/** Filupload til Firebase Storage (platform-split: web bruger blobs, native fil-URI). */
+export interface StorageFacade {
+  /** Uploader en lokal fil-URI til Storage-stien. Returnerer download-URL'en. */
+  upload(path: string, localUri: string): Promise<string>;
+  /** Sletter en fil på en Storage-sti. */
+  remove(path: string): Promise<void>;
+}
+
 /** Snapshot af en kollektion, inkl. offline-metadata. */
 export interface CollectionSnapshot<T> {
   docs: WithId<T>[];
