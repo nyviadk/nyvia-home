@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { TextInput as RNTextInput } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { type FilterChip, FilterChips } from '@/components/ui/filter-chips';
-import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { confirmAction } from '@/lib/confirm';
@@ -24,10 +24,15 @@ type StatusFilter = AddressChangeStatus | 'all';
 
 export function AddressChangesScreen() {
   const all = useAddressChangesStore((s) => s.items);
+  // Ét felt: filtrerer listen mens du skriver, og tilføjer ved tryk (fanger varianter
+  // af samme navn, så man ikke kommer til at oprette dubletter).
   const [name, setName] = useState('');
-  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [busy, setBusy] = useState(false);
+  const inputRef = useRef<RNTextInput>(null);
+
+  // Behold fokus efter Enter (setTimeout → kører efter RN's blur), så man kan taste videre.
+  const refocus = () => setTimeout(() => inputRef.current?.focus(), 0);
 
   // Stabil rækkefølge (oprettelses-rækkefølge) → rækker hopper ikke når status ændres.
   const changes = [...all].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -46,7 +51,7 @@ export function AddressChangesScreen() {
   ];
   const activeFilter = chipOptions.some((o) => o.key === statusFilter) ? statusFilter : 'all';
 
-  const q = search.trim().toLowerCase();
+  const q = name.trim().toLowerCase();
   const visible = changes
     .filter((c) => activeFilter === 'all' || c.status === activeFilter)
     .filter((c) => !q || c.name.toLowerCase().includes(q));
@@ -58,11 +63,12 @@ export function AddressChangesScreen() {
     const n = name.trim();
     if (!n) return;
     setName('');
+    refocus();
     if (existsByName(n)) {
       await toastAfter(Promise.resolve(), 'Findes allerede på listen');
       return;
     }
-    await createAddressChange({ name: n, status: 'ikke_startet' });
+    await toastAfter(createAddressChange({ name: n, status: 'ikke_startet' }), `Tilføjet “${n}”`);
   }
 
   async function addPresets() {
@@ -70,7 +76,10 @@ export function AddressChangesScreen() {
     if (toAdd.length === 0) return;
     setBusy(true);
     try {
-      await createAddressChanges(toAdd.map((name) => ({ name, status: 'ikke_startet' as const })));
+      await toastAfter(
+        createAddressChanges(toAdd.map((name) => ({ name, status: 'ikke_startet' as const }))),
+        `Tilføjet ${toAdd.length}`
+      );
     } finally {
       setBusy(false);
     }
@@ -107,6 +116,7 @@ export function AddressChangesScreen() {
         onChangeText={setName}
         onAdd={add}
         placeholder="Hvem skal have ny adresse?"
+        inputRef={inputRef}
       />
 
       {changes.length === 0 ? (
@@ -124,12 +134,11 @@ export function AddressChangesScreen() {
         </>
       ) : (
         <>
-          <Input value={search} onChangeText={setSearch} placeholder="Søg i listen…" autoCapitalize="none" />
           {chipOptions.length > 2 ? (
             <FilterChips options={chipOptions} value={activeFilter} onChange={setStatusFilter} />
           ) : null}
           {visible.length === 0 ? (
-            <AppText variant="muted">Ingen match.</AppText>
+            <AppText variant="muted">Ingen match — tryk Tilføj for at oprette “{name.trim()}”.</AppText>
           ) : (
             <View className="gap-2">
               {visible.map((change, i) => (
