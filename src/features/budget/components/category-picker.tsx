@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type {
   NativeSyntheticEvent,
+  TextInput as RNTextInput,
   TextInputKeyPressEventData,
 } from 'react-native';
 
@@ -30,6 +31,7 @@ export function CategoryPicker({
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const inputRef = useRef<RNTextInput>(null);
   const entries = useBudgetStore((s) => s.entries);
 
   const suggestions = categorySuggestions(type, entries, query, value);
@@ -52,6 +54,7 @@ export function CategoryPicker({
     setQuery('');
     setHighlight(0);
     setOpen(false); // luk efter hvert valg (åbnes igen når man taster/fokuserer)
+    inputRef.current?.blur(); // blur helt ved valg → luk tastatur + fjern fokus
   };
   const remove = (cat: string) => onChange(value.filter((v) => v !== cat));
 
@@ -81,7 +84,9 @@ export function CategoryPicker({
   }
 
   return (
-    <View className="relative gap-2" style={visible ? { zIndex: 50 } : undefined}>
+    <View
+      className="relative gap-2"
+      style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
       {value.length > 0 ? (
         <View className="flex-row flex-wrap gap-2">
           {value.map((cat) => (
@@ -99,6 +104,7 @@ export function CategoryPicker({
 
       <View className="relative">
         <Input
+          ref={inputRef}
           value={query}
           onChangeText={(t) => {
             setQuery(t);

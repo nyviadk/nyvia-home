@@ -64,7 +64,7 @@ export function CategoryPicker({
   }
 
   return (
-    <View className="relative" style={visible ? { zIndex: 50 } : undefined}>
+    <View className="relative" style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
       <Input
         ref={inputRef}
         value={value}

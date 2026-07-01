@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import type { NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import { useRef, useState } from 'react';
+import type {
+  NativeSyntheticEvent,
+  TextInput as RNTextInput,
+  TextInputKeyPressEventData,
+} from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/cn';
@@ -32,6 +36,7 @@ export function SelectField<T extends string>({
   // query=null → ikke i redigering (vis valgt label); ellers vis/filtrér på query.
   const [query, setQuery] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
+  const inputRef = useRef<RNTextInput>(null);
 
   const selected = options.find((o) => o.value === value);
   const editing = query !== null;
@@ -47,7 +52,9 @@ export function SelectField<T extends string>({
     if (!o) return;
     onChange(o.value);
     setQuery(null);
-    onSelectAdvance?.();
+    // Ved valg: luk feltet helt (blur) — medmindre formularen vil føre fokus videre.
+    if (onSelectAdvance) onSelectAdvance();
+    else inputRef.current?.blur();
   };
 
   function onKeyPress(e: NativeSyntheticEvent<TextInputKeyPressEventData>) {
@@ -69,8 +76,11 @@ export function SelectField<T extends string>({
   }
 
   return (
-    <View className="relative" style={visible ? { zIndex: 50 } : undefined}>
+    // zIndex-toggle kun på web: på Android tegner elevation dropdownen øverst, og en
+    // dynamisk zIndex-ændring re-ordner den native view → fokuseret TextInput mister fokus.
+    <View className="relative" style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
       <Input
+        ref={inputRef}
         value={text}
         invalid={invalid}
         placeholder={placeholder}

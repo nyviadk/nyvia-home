@@ -68,7 +68,7 @@ export function TimeInput({
   return (
     // Løft hele feltet mens dropdown er åben, så den lægger sig OVER de følgende felter
     // (zIndex alene på den absolutte liste er ikke nok — senere søskende tegnes ovenpå).
-    <View className="relative" style={visible ? { zIndex: 50 } : undefined}>
+    <View className="relative" style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
       <Input
         ref={inputRef}
         value={value}

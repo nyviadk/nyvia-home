@@ -39,6 +39,7 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
           contentContainerClassName="grow"
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {inner}
         </ScrollView>
