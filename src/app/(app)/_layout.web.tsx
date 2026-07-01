@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { TabList, TabSlot, TabTrigger, Tabs } from "expo-router/ui";
 import { useWindowDimensions } from "react-native";
 
@@ -81,16 +80,19 @@ export default function AppWebLayout() {
             }
       }
     >
-      {wide ? (
+      {/* Logoet ER index-triggeren: definerer forsiden i navigatoren (så TabSlot kan
+          rendere den) og navigerer dertil — uden et synligt "Forside"-punkt i listen.
+          Skjules på smal skærm, hvor der ikke er plads til et logo i bund-baren. */}
+      <TabTrigger name="index" href="/" asChild>
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.navigate("/")}
-          className="px-3 pb-2 pt-3 hover:opacity-80">
+          className="px-3 pb-2 pt-3 hover:opacity-80"
+          style={wide ? undefined : { display: "none" }}>
           <AppText variant="heading" className="text-primary">
             NyviaHome
           </AppText>
         </Pressable>
-      ) : null}
+      </TabTrigger>
       {ITEMS.map((item) => (
         <React.Fragment key={item.name}>
           {/* Hvis det er en bred skærm, og vi er nået til 'settings', indsæt en spacer */}

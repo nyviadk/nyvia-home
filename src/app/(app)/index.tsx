@@ -1,7 +1,7 @@
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 
-/** Forside (foreløbig tom) — overblik/genveje kommer her senere. */
+/** Forside (foreløbig tom) — overblik/genveje samles her. På web nås den også via logoet. */
 export default function ForsideScreen() {
   return (
     <Screen>
