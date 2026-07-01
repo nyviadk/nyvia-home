@@ -27,7 +27,12 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
   );
 
   return (
-    <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
+    // paddingTop bliver 0 på skærme med header (react-navigation "spiser" top-insettet);
+    // paddingBottom holder indhold fri af Androids edge-to-edge nav-knapper.
+    <View
+      className="flex-1 bg-surface"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       {scroll ? (
         <ScrollView
           className="flex-1 scrollbar-gutter-stable"

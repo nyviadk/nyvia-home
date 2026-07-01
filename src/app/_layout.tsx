@@ -1,6 +1,8 @@
 import '@/global.css';
 
+import { StatusBar } from 'expo-status-bar';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Toaster } from '@/components/toaster';
@@ -35,11 +37,15 @@ function RootNavigator() {
 export default function RootLayout() {
   // Light-only for nu → fast DefaultTheme (lyse nav-headers uanset system-tema).
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={DefaultTheme}>
-        <RootNavigator />
-        <Toaster />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider value={DefaultTheme}>
+          {/* Light-only app → mørke status bar-ikoner/tekst (ellers usynlige på lys bund). */}
+          <StatusBar style="dark" />
+          <RootNavigator />
+          <Toaster />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

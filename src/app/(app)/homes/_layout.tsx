@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
 
+import { drawerListHeaderOptions } from '@/components/nav/drawer-menu-button';
+
 export const unstable_settings = {
   anchor: 'index',
 };
@@ -7,7 +9,7 @@ export const unstable_settings = {
 export default function HomesLayout() {
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={drawerListHeaderOptions} />
       <Stack.Screen name="new" options={{ title: 'Ny bolig' }} />
       <Stack.Screen name="address-changes" options={{ title: 'Adresseændringer' }} />
       <Stack.Screen name="[id]/index" options={{ title: 'Bolig' }} />

@@ -1,47 +1,48 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Drawer } from 'expo-router/drawer';
 
-export default function AppTabsLayout() {
+/**
+ * Native-skal: en Drawer (side-menu) i stedet for bund-faner. Android-bund-baren kan
+ * højst have ~6 faner, og appen får flere features — en drawer skalerer ubegrænset og
+ * matcher web-sidebaren. Åbnes via hamburger-ikonet (edge-swipe er slået fra).
+ *
+ * Header-strategi (statisk → glatte navigations-animationer):
+ * - Forside + Indstillinger er blad-skærme uden understak → de får drawer-headeren
+ *   med hamburger direkte.
+ * - Feature-mapperne (homes, budget …) får INGEN drawer-header; deres hamburger sidder
+ *   i feature-stakkens egen index-header (drawerListHeaderOptions), samme niveau som
+ *   tilbage-knappen på undersider. Dermed aldrig dobbelt-header og ingen dynamisk toggling.
+ */
+const CARD = '#ffffff';
+const FG = '#2a2a28';
+
+export default function AppDrawerLayout() {
   return (
-    <NativeTabs tintColor="#2f7d6b">
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Forside</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="homes">
-        <NativeTabs.Trigger.Label>Hjem</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="house.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="budget">
-        <NativeTabs.Trigger.Label>Budget</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="chart.pie.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="spending">
-        <NativeTabs.Trigger.Label>Forbrug</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="banknote.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="loans">
-        <NativeTabs.Trigger.Label>Lån</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="creditcard.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="subscriptions">
-        <NativeTabs.Trigger.Label>Abonnementer</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="arrow.triangle.2.circlepath" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="timetracker">
-        <NativeTabs.Trigger.Label>Timetracker</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="clock.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Indstillinger</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="gearshape.fill" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Drawer
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'front',
+        // Kun hamburger åbner draweren — ingen edge-swipe.
+        swipeEnabled: false,
+        drawerActiveTintColor: '#2f7d6b',
+        drawerActiveBackgroundColor: '#eef2ee',
+        drawerLabelStyle: { fontSize: 15 },
+        // Lys, flad header (ingen skygge/glas) — kun hamburger, titlen står i selve skærmen.
+        headerStyle: { backgroundColor: CARD },
+        headerShadowVisible: false,
+        headerTintColor: FG,
+        headerTitle: '',
+      }}>
+      <Drawer.Screen name="index" options={{ drawerLabel: 'Forside', headerShown: true }} />
+      <Drawer.Screen
+        name="settings"
+        options={{ drawerLabel: 'Indstillinger', headerShown: true }}
+      />
+      <Drawer.Screen name="homes" options={{ drawerLabel: 'Hjem' }} />
+      <Drawer.Screen name="budget" options={{ drawerLabel: 'Budget' }} />
+      <Drawer.Screen name="spending" options={{ drawerLabel: 'Forbrug' }} />
+      <Drawer.Screen name="loans" options={{ drawerLabel: 'Lån' }} />
+      <Drawer.Screen name="subscriptions" options={{ drawerLabel: 'Abonnementer' }} />
+      <Drawer.Screen name="timetracker" options={{ drawerLabel: 'Timetracker' }} />
+    </Drawer>
   );
 }
