@@ -1,6 +1,12 @@
-import { Redirect } from 'expo-router';
+import { Screen } from '@/components/ui/screen';
+import { AppText } from '@/components/ui/text';
 
-// Forsiden er nu "Hjem" (bolig-listen). Index sender bare videre dertil.
-export default function Index() {
-  return <Redirect href="/homes" />;
+/** Forside (foreløbig tom) — overblik/genveje kommer her senere. */
+export default function ForsideScreen() {
+  return (
+    <Screen>
+      <AppText variant="title">NyviaHome</AppText>
+      <AppText variant="muted">Din forside. Overblik og genveje samles her.</AppText>
+    </Screen>
+  );
 }

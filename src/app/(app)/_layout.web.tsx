@@ -1,9 +1,10 @@
+import { router } from "expo-router";
 import { TabList, TabSlot, TabTrigger, Tabs } from "expo-router/ui";
 import { useWindowDimensions } from "react-native";
 
 import { NavItem } from "@/components/nav/nav-item";
 import { AppText } from "@/components/ui/text";
-import { View } from "@/tw";
+import { Pressable, View } from "@/tw";
 import React from "react";
 
 const ITEMS = [
@@ -81,9 +82,14 @@ export default function AppWebLayout() {
       }
     >
       {wide ? (
-        <AppText variant="heading" className="px-3 pb-2 pt-3 text-primary">
-          NyviaHome
-        </AppText>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.navigate("/")}
+          className="px-3 pb-2 pt-3 hover:opacity-80">
+          <AppText variant="heading" className="text-primary">
+            NyviaHome
+          </AppText>
+        </Pressable>
       ) : null}
       {ITEMS.map((item) => (
         <React.Fragment key={item.name}>

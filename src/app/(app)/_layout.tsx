@@ -3,6 +3,11 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 export default function AppTabsLayout() {
   return (
     <NativeTabs tintColor="#2f7d6b">
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Label>Forside</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="homes">
         <NativeTabs.Trigger.Label>Hjem</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house.fill" />
