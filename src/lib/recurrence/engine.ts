@@ -68,21 +68,29 @@ function occurrenceDayInMonth(rule: Recurrence, year: number, month: number): Da
 }
 
 /**
- * Falder reglen i den givne måned? Slutdatoen tjekkes mod forekomstens FAKTISKE dato —
- * ikke bare slut-måneden: en betaling der ville falde EFTER slutdatoen tæller ikke med
- * (fx sidste bankdag ≈ 26. feb tæller ikke når slutdatoen er 5. feb). 'month'-dag (ingen
- * bestemt dato) bruger måneds-grænsen.
+ * Falder reglen i den givne måned? Start- OG slutdato tjekkes mod forekomstens FAKTISKE
+ * (bank-justerede) dato — ikke bare start/slut-måneden: en betaling der ville falde FØR
+ * startdatoen eller EFTER slutdatoen tæller ikke med (fx sidste bankdag ≈ 26. feb tæller
+ * ikke når slutdatoen er 5. feb). 'month'-dag (ingen bestemt dato) bruger måneds-grænsen.
  */
 export function occursInMonth(rule: Recurrence, year: number, month: number): boolean {
   if (!matchesCadenceInMonth(rule, year, month)) return false;
-  if (!rule.endDate) return true;
   const occ = occurrenceDayInMonth(rule, year, month);
   if (occ) {
-    const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('day');
-    return occ <= end;
+    const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE }).startOf('day');
+    if (occ < start) return false;
+    if (rule.endDate) {
+      const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('day');
+      if (occ > end) return false;
+    }
+    return true;
   }
-  const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
-  return monthStart(year, month) <= end;
+  // 'month'-dag (ingen bestemt dato): brug måneds-grænsen (start er dækket coarse ovenfor).
+  if (rule.endDate) {
+    const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
+    if (monthStart(year, month) > end) return false;
+  }
+  return true;
 }
 
 /** Den konkrete dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null hvis ingen. */
