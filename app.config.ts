@@ -36,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     url: 'https://u.expo.dev/32217862-113c-4d9c-ad99-e9108ce99c4b',
   },
   ios: {
-    icon: './assets/expo.icon',
+    icon: './assets/images/icon.png',
     bundleIdentifier: `nyvia.home${suffix}`,
   },
   android: {
@@ -45,7 +45,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // da google-services.json er git-ignoreret og derfor ikke følger med til cloud-build.
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#2f7d6b',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -63,8 +63,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
-        android: { image: './assets/images/splash-icon.png', imageWidth: 76 },
+        backgroundColor: '#2f7d6b',
+        android: { image: './assets/images/splash-icon.png', imageWidth: 120 },
       },
     ],
     'expo-secure-store',
