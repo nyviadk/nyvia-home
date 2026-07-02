@@ -6,6 +6,7 @@ import {
   formatDateTimeCopenhagen,
   todayISODate,
 } from "@/lib/datetime";
+import { imageToDataUri } from "@/lib/capture/image-data-uri";
 import type { WithId } from "@/lib/firebase";
 import { toastAfter } from "@/lib/toast/notify";
 import type { InspectionItem } from "../types";
@@ -15,19 +16,6 @@ function esc(s: string): string {
     /[&<>"]/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
   );
-}
-
-/** Hent et billede og returnér som base64 data-URI, så det ALTID renderes i PDF'en
- *  (remote-URL'er når ikke altid at loade i print-motoren). Falder tilbage til URL ved fejl. */
-async function toDataUri(url: string): Promise<string> {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("read failed"));
-    reader.onloadend = () => resolve(String(reader.result));
-    reader.readAsDataURL(blob);
-  });
 }
 
 function buildHtml(
@@ -153,11 +141,9 @@ export async function exportInspectionPdf(
       for (const it of items) {
         for (const p of it.photos) {
           if (uriByUrl.has(p.url)) continue;
-          try {
-            uriByUrl.set(p.url, await toDataUri(p.url));
-          } catch {
-            uriByUrl.set(p.url, p.url);
-          }
+          // imageToDataUri er platform-splittet (native: expo-file-system, web: fetch+FileReader)
+          // og falder selv tilbage til URL'en ved fejl.
+          uriByUrl.set(p.url, await imageToDataUri(p.url));
         }
       }
       const html = buildHtml(
