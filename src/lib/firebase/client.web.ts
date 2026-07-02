@@ -76,14 +76,23 @@ export const db: DbFacade = {
     const q = options.orderByField
       ? query(base, orderBy(options.orderByField, options.orderDirection ?? 'asc'))
       : base;
+    // Ved metadata-kun-emits (fx cache→server med SAMME data) genbruger vi forrige docs-
+    // reference, så stores ikke overskriver items med et nyt array → ingen unødig re-render
+    // eller forecast-genberegning. docChanges().length === 0 = intet dokument ændret siden sidst.
+    let prevDocs: WithId<T>[] | null = null;
     return onSnapshot(
       q,
       { includeMetadataChanges: true },
       (snap) => {
+        const docs =
+          prevDocs !== null && snap.docChanges().length === 0
+            ? prevDocs
+            : snap.docs.map(
+                (d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }) as WithId<T>
+              );
+        prevDocs = docs;
         onChange({
-          docs: snap.docs.map(
-            (d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }) as WithId<T>
-          ),
+          docs,
           fromCache: snap.metadata.fromCache,
           hasPendingWrites: snap.metadata.hasPendingWrites,
         });
@@ -96,18 +105,24 @@ export const db: DbFacade = {
     path: string,
     onChange: (doc: WithId<T> | null) => void,
     onError?: (error: Error) => void
-  ) =>
-    onSnapshot(
+  ) => {
+    // Spring uændrede emits over (fx cache→server-flip med samme data). subscribeDoc giver ikke
+    // fromCache videre, så der er intet at opdatere når data er ens → undgå at stores re-kører
+    // setState og laver nye array-/objekt-referencer (fx savingsPercentChanges) unødigt.
+    let prevKey: string | null = null;
+    return onSnapshot(
       doc(firestore, path),
       { includeMetadataChanges: true },
-      (snap) =>
-        onChange(
-          snap.exists()
-            ? ({ id: snap.id, ...(snap.data() as Record<string, unknown>) } as WithId<T>)
-            : null
-        ),
+      (snap) => {
+        const data = snap.exists() ? (snap.data() as Record<string, unknown>) : null;
+        const key = data ? `${snap.id}|${JSON.stringify(data)}` : 'null';
+        if (key === prevKey) return;
+        prevKey = key;
+        onChange(data ? ({ id: snap.id, ...data } as WithId<T>) : null);
+      },
       (err) => onError?.(err)
-    ),
+    );
+  },
 
   getDoc: async <T,>(path: string): Promise<WithId<T> | null> => {
     const snap = await fbGetDoc(doc(firestore, path));
