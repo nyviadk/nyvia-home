@@ -71,11 +71,15 @@ export function DateField({
       <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
         <Pressable
           onPress={close}
-          style={{ backgroundColor: 'rgba(40, 40, 38, 0.35)' }}
+          style={{ backgroundColor: 'rgba(40, 40, 38, 0.35)', cursor: 'auto' }}
           className="flex-1 items-center justify-center p-6">
           <Pressable
             onPress={() => {}}
-            style={{ boxShadow: '0 8px 24px rgba(40, 40, 38, 0.18)', borderCurve: 'continuous' }}
+            style={{
+              boxShadow: '0 8px 24px rgba(40, 40, 38, 0.18)',
+              borderCurve: 'continuous',
+              cursor: 'auto',
+            }}
             className="w-full max-w-80 gap-3 rounded-2xl border border-border bg-card p-4">
             {mode === 'month' ? (
               <MonthGrid

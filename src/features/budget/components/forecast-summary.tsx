@@ -19,6 +19,7 @@ import {
 } from "../forecast";
 import { useBudgetOverview } from "../hooks/use-budget-overview";
 import { useForecastInput } from "../hooks/use-forecast";
+import { ForecastInfoButton } from "./forecast-info-button";
 import { ForecastMonthRow } from "./forecast-month-row";
 
 const MODE_OPTIONS = [
@@ -127,6 +128,7 @@ export function ForecastSummary() {
       <Card className="gap-2">
         <View className="flex-row items-center justify-between">
           <AppText variant="heading">Kommende måneder</AppText>
+          <ForecastInfoButton />
         </View>
         <Segmented<ForecastMode>
           value={mode}

@@ -198,3 +198,18 @@ export function averageMonthlyOre(
     .integerValue(BigNumber.ROUND_HALF_UP)
     .toNumber();
 }
+
+/**
+ * Har reglen mindst én forekomst i horisonten fra `anchorISO` (mindst cadencens periode lang)?
+ * Bruges til "hensat"-forudhensættelse: en periodisk post må kun spredes jævnt ud over vinduet
+ * hvis den faktisk forfalder i det — så poster der først starter langt ude ikke hensættes for tidligt.
+ */
+export function occursWithinHorizon(rule: Recurrence, anchorISO: string, count: number): boolean {
+  const horizon = Math.max(count, periodMonths(rule.cadence));
+  const base = DateTime.fromISO(anchorISO, { zone: APP_TIMEZONE }).startOf('month');
+  for (let i = 0; i < horizon; i++) {
+    const d = base.plus({ months: i });
+    if (occursInMonth(rule, d.year, d.month)) return true;
+  }
+  return false;
+}

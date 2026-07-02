@@ -2,7 +2,12 @@ import BigNumber from "bignumber.js";
 import { DateTime } from "luxon";
 
 import { APP_TIMEZONE } from "@/lib/datetime";
-import { isActiveInMonth, monthlyAverageOre, occursInMonth } from "@/lib/recurrence/engine";
+import {
+  isActiveInMonth,
+  monthlyAverageOre,
+  occursInMonth,
+  occursWithinHorizon,
+} from "@/lib/recurrence/engine";
 import type { Recurrence } from "@/lib/recurrence/types";
 import {
   actualTotalOre,
@@ -122,11 +127,14 @@ function expectedForMonth(rule: ForecastRule, monthYm: string): number {
   return effectivePriceOre(rule.amount, rule.priceChanges, monthYm);
 }
 
+/** Vinduet der forudhensættes over (til "hensat"-mode): ankermåned + antal måneder. */
+type SmoothWindow = { anchorISO: string; count: number };
+
 /**
  * Sum af regler der bidrager til (year, month). En forudbetalt regel udbetales
  * måneden før, så den tæller i denne måned hvis dens forekomst falder i forrige måned.
  * - realistic: beløb i den måned det falder; faktisk (sum af linjer) overstyrer forventet.
- * - smoothed: hver regel bidrager med sit månedsgennemsnit (periodiske spredes ud).
+ * - smoothed: månedlige poster vises præcist; periodiske FORUDHENSÆTTES jævnt over hele vinduet.
  */
 function sumForMonth(
   rules: ForecastRule[],
@@ -134,6 +142,7 @@ function sumForMonth(
   month: number,
   mode: ForecastMode,
   useActuals = true,
+  smoothWindow?: SmoothWindow,
 ): number {
   const monthYm = toYm(year, month);
   const prev = DateTime.fromObject(
@@ -144,15 +153,29 @@ function sumForMonth(
   return rules
     .reduce((sum, r) => {
       if (mode === "smoothed") {
-        // Udjævnet plan: spred periodiske beløb over de måneder posten er aktiv
-        // (respekterer start/slut). Ingen forudløn-/faktisk-justering af beløbet.
-        const active = r.advanceMonth
-          ? isActiveInMonth(r.recurrence, prev.year, prev.month)
-          : isActiveInMonth(r.recurrence, year, month);
-        if (!active) return sum;
-        return sum.plus(
-          monthlyAverageOre(expectedForMonth(r, monthYm), r.recurrence),
-        );
+        const rec = r.recurrence;
+        // Månedlige poster udjævnes IKKE kunstigt — de vises præcist (respekterer start/slut),
+        // så en tidsbegrænset månedlig udgift ærligt falder bort den måned den stopper.
+        if (rec.cadence === "monthly") {
+          const active = r.advanceMonth
+            ? isActiveInMonth(rec, prev.year, prev.month)
+            : isActiveInMonth(rec, year, month);
+          if (!active) return sum;
+          return sum.plus(monthlyAverageOre(expectedForMonth(r, monthYm), rec));
+        }
+        // Periodiske poster FORUDHENSÆTTES: den periodiske udgift spredes jævnt over HELE
+        // vinduet — også månederne før næste forfald — så en kendt årlig regning ikke får en
+        // enkelt måned til at dykke. Gate kun på slutdato + at posten forfalder i vinduet.
+        if (rec.endDate) {
+          const end = DateTime.fromISO(rec.endDate, { zone: APP_TIMEZONE }).endOf("month");
+          if (DateTime.fromObject({ year, month }, { zone: APP_TIMEZONE }).startOf("month") > end) {
+            return sum;
+          }
+        }
+        if (smoothWindow && !occursWithinHorizon(rec, smoothWindow.anchorISO, smoothWindow.count)) {
+          return sum;
+        }
+        return sum.plus(monthlyAverageOre(expectedForMonth(r, monthYm), rec));
       }
       const occurs = r.advanceMonth
         ? occursInMonth(r.recurrence, prev.year, prev.month)
@@ -171,11 +194,12 @@ export function monthForecast(
   input: ForecastInput,
   mode: ForecastMode = "realistic",
   useActuals = true,
+  smoothWindow?: SmoothWindow,
 ): MonthForecast {
   const monthYm = toYm(year, month);
-  const income = sumForMonth(input.incomeRules, year, month, mode, useActuals);
+  const income = sumForMonth(input.incomeRules, year, month, mode, useActuals, smoothWindow);
   const expenses = new BigNumber(
-    sumForMonth(input.expenseRules, year, month, mode, useActuals),
+    sumForMonth(input.expenseRules, year, month, mode, useActuals, smoothWindow),
   )
     .plus(loanPaymentForMonth(input.loans, year, month))
     .toNumber();
@@ -214,12 +238,13 @@ export function runningForecast(
     ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
     : DateTime.now().setZone(APP_TIMEZONE);
   const start = base.startOf("month");
+  const smoothWindow: SmoothWindow = { anchorISO: start.toFormat("yyyy-MM-dd"), count };
 
   const out: RunningMonth[] = [];
   for (let i = 0; i < count; i++) {
     const d = start.plus({ months: i });
-    const forventetNet = monthForecast(d.year, d.month, input, mode, false).net;
-    const aktuelNet = monthForecast(d.year, d.month, input, mode, true).net;
+    const forventetNet = monthForecast(d.year, d.month, input, mode, false, smoothWindow).net;
+    const aktuelNet = monthForecast(d.year, d.month, input, mode, true, smoothWindow).net;
     out.push({
       ym: toYm(d.year, d.month),
       forventetNet,
@@ -294,10 +319,11 @@ export function forecastMonths(
     ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
     : DateTime.now().setZone(APP_TIMEZONE);
   const start = base.startOf("month");
+  const smoothWindow: SmoothWindow = { anchorISO: start.toFormat("yyyy-MM-dd"), count };
   const out: MonthForecast[] = [];
   for (let i = 0; i < count; i++) {
     const d = start.plus({ months: i });
-    out.push(monthForecast(d.year, d.month, input, mode));
+    out.push(monthForecast(d.year, d.month, input, mode, true, smoothWindow));
   }
   return out;
 }
