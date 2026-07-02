@@ -1,48 +1,121 @@
 import { Drawer } from 'expo-router/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { cn } from '@/lib/cn';
+import { Pressable, ScrollView, Text, View } from '@/tw';
 
 /**
  * Native-skal: en Drawer (side-menu) i stedet for bund-faner. Android-bund-baren kan
  * højst have ~6 faner, og appen får flere features — en drawer skalerer ubegrænset og
  * matcher web-sidebaren. Åbnes via hamburger-ikonet (edge-swipe er slået fra).
  *
- * Header-strategi (statisk → glatte navigations-animationer):
- * - Forside + Indstillinger er blad-skærme uden understak → de får drawer-headeren
- *   med hamburger direkte.
- * - Feature-mapperne (homes, budget …) får INGEN drawer-header; deres hamburger sidder
- *   i feature-stakkens egen index-header (drawerListHeaderOptions), samme niveau som
- *   tilbage-knappen på undersider. Dermed aldrig dobbelt-header og ingen dynamisk toggling.
+ * Custom indhold: alle punkter øverst, "Indstillinger" pinnet i BUNDEN af draweren.
+ * Bygget uden @react-navigation/drawer-imports (blokeret i SDK 56) — vi bruger bare
+ * drawerens state/navigation.
  */
 const CARD = '#ffffff';
 const FG = '#2a2a28';
 
+const LABELS: Record<string, string> = {
+  index: 'Forside',
+  homes: 'Hjem',
+  budget: 'Budget',
+  spending: 'Forbrug',
+  loans: 'Lån',
+  subscriptions: 'Abonnementer',
+  timetracker: 'Timetracker',
+  settings: 'Indstillinger',
+};
+
+type DrawerRoute = { key: string; name: string };
+type DrawerContentProps = {
+  state: { index: number; routes: readonly DrawerRoute[] };
+  navigation: { navigate: (name: string) => void; closeDrawer: () => void };
+};
+
+function DrawerRow({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{ borderCurve: 'continuous' }}
+      className={cn(
+        'will-change-pressable mx-3 my-0.5 rounded-lg px-4 py-3 hover:bg-element active:bg-selected',
+        active && 'bg-element',
+      )}>
+      <Text className={cn('text-base', active ? 'font-semibold text-primary' : 'text-fg')}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function DrawerContent({ state, navigation }: DrawerContentProps) {
+  const insets = useSafeAreaInsets();
+  const activeName = state.routes[state.index]?.name;
+  const go = (name: string) => {
+    navigation.navigate(name);
+    navigation.closeDrawer();
+  };
+  const top = state.routes.filter((r) => r.name !== 'settings');
+  const hasSettings = state.routes.some((r) => r.name === 'settings');
+
+  return (
+    <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
+      <ScrollView className="flex-1" contentContainerClassName="py-2">
+        {top.map((r) => (
+          <DrawerRow
+            key={r.key}
+            label={LABELS[r.name] ?? r.name}
+            active={r.name === activeName}
+            onPress={() => go(r.name)}
+          />
+        ))}
+      </ScrollView>
+      {hasSettings ? (
+        <View className="border-t border-border pt-1" style={{ paddingBottom: insets.bottom + 4 }}>
+          <DrawerRow
+            label={LABELS.settings}
+            active={activeName === 'settings'}
+            onPress={() => go('settings')}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export default function AppDrawerLayout() {
   return (
     <Drawer
+      drawerContent={(props) => (
+        <DrawerContent state={props.state} navigation={props.navigation as DrawerContentProps['navigation']} />
+      )}
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
-        // Kun hamburger åbner draweren — ingen edge-swipe.
         swipeEnabled: false,
-        drawerActiveTintColor: '#2f7d6b',
-        drawerActiveBackgroundColor: '#eef2ee',
-        drawerLabelStyle: { fontSize: 15 },
-        // Lys, flad header (ingen skygge/glas) — kun hamburger, titlen står i selve skærmen.
         headerStyle: { backgroundColor: CARD },
         headerShadowVisible: false,
         headerTintColor: FG,
         headerTitle: '',
       }}>
-      <Drawer.Screen name="index" options={{ drawerLabel: 'Forside', headerShown: true }} />
-      <Drawer.Screen
-        name="settings"
-        options={{ drawerLabel: 'Indstillinger', headerShown: true }}
-      />
-      <Drawer.Screen name="homes" options={{ drawerLabel: 'Hjem' }} />
-      <Drawer.Screen name="budget" options={{ drawerLabel: 'Budget' }} />
-      <Drawer.Screen name="spending" options={{ drawerLabel: 'Forbrug' }} />
-      <Drawer.Screen name="loans" options={{ drawerLabel: 'Lån' }} />
-      <Drawer.Screen name="subscriptions" options={{ drawerLabel: 'Abonnementer' }} />
-      <Drawer.Screen name="timetracker" options={{ drawerLabel: 'Timetracker' }} />
+      <Drawer.Screen name="index" options={{ headerShown: true }} />
+      <Drawer.Screen name="settings" options={{ headerShown: true }} />
+      <Drawer.Screen name="homes" />
+      <Drawer.Screen name="budget" />
+      <Drawer.Screen name="spending" />
+      <Drawer.Screen name="loans" />
+      <Drawer.Screen name="subscriptions" />
+      <Drawer.Screen name="timetracker" />
     </Drawer>
   );
 }
