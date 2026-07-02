@@ -19,9 +19,9 @@ import type { TimeEntry } from '../types';
 
 const RANGE_OPTIONS = [
   { value: 'today' as const, label: 'I dag' },
-  { value: 'week' as const, label: 'Uge' },
-  { value: 'month' as const, label: 'Måned' },
-  { value: 'year' as const, label: 'År' },
+  { value: '7d' as const, label: '7 dage' },
+  { value: '31d' as const, label: '31 dage' },
+  { value: '365d' as const, label: '365 dage' },
   { value: 'all' as const, label: 'Alt' },
 ];
 
@@ -43,7 +43,7 @@ function DayGroup({ date, entries }: { date: string; entries: WithId<TimeEntry>[
 }
 
 export function TimetrackerScreen() {
-  const [range, setRange] = useState<TimeRange>('week');
+  const [range, setRange] = useState<TimeRange>('7d');
   const [onlyAfterOfficial, setOnlyAfterOfficial] = useState(false);
   // Vis kun åbne (uden sluttid) — ignorerer tidsfilteret, så ingen gemmer sig.
   const [onlyOpen, setOnlyOpen] = useState(false);

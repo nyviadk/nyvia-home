@@ -2,8 +2,8 @@ import { DateTime } from 'luxon';
 
 import { APP_TIMEZONE } from '@/lib/datetime';
 
-/** Tidsfilter for oversigten. */
-export type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
+/** Tidsfilter for oversigten — rullende vinduer (seneste N dage), ikke kalender-justeret. */
+export type TimeRange = 'today' | '7d' | '31d' | '365d' | 'all';
 
 /** Parse "HH:mm" → minutter siden midnat, eller null hvis ugyldig. */
 export function parseHm(value: string): number | null {
@@ -98,18 +98,19 @@ export function formatDuration(minutes: number): string {
   return `${sign}${h}t ${m}m`;
 }
 
-/** Nedre grænse (ÅÅÅÅ-MM-DD, inkl.) for et tidsfilter, eller null for "alt". */
+/** Nedre grænse (ÅÅÅÅ-MM-DD, inkl.) for et tidsfilter, eller null for "alt". Rullende
+ *  vinduer: seneste N dage INKL. i dag (fx '31d' = i dag + de 30 foregående = 31 dage). */
 export function rangeStartDate(range: TimeRange): string | null {
   const now = DateTime.now().setZone(APP_TIMEZONE);
   switch (range) {
     case 'today':
       return now.toFormat('yyyy-MM-dd');
-    case 'week':
-      return now.startOf('week').toFormat('yyyy-MM-dd');
-    case 'month':
-      return now.startOf('month').toFormat('yyyy-MM-dd');
-    case 'year':
-      return now.startOf('year').toFormat('yyyy-MM-dd');
+    case '7d':
+      return now.minus({ days: 6 }).toFormat('yyyy-MM-dd');
+    case '31d':
+      return now.minus({ days: 30 }).toFormat('yyyy-MM-dd');
+    case '365d':
+      return now.minus({ days: 364 }).toFormat('yyyy-MM-dd');
     case 'all':
       return null;
   }
