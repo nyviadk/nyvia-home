@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import { subscribeTimetrackerSettings } from './timetracker-settings.repository';
 
 interface TimetrackerSettingsState {
@@ -10,10 +12,12 @@ interface TimetrackerSettingsState {
   loading: boolean;
 }
 
-export const useTimetrackerSettingsStore = create<TimetrackerSettingsState>(() => ({
-  officialStartDate: null,
-  loading: true,
-}));
+export const useTimetrackerSettingsStore = create<TimetrackerSettingsState>()(
+  persist(
+    () => ({ officialStartDate: null, loading: true }),
+    persistOptions<TimetrackerSettingsState>('timetracker-settings', ['officialStartDate'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

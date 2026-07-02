@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { TimeEntry } from '../types';
 import { subscribeTimeEntries } from './timetracker.repository';
 
@@ -11,11 +13,12 @@ interface TimetrackerState {
   fromCache: boolean;
 }
 
-export const useTimetrackerStore = create<TimetrackerState>(() => ({
-  entries: [],
-  loading: true,
-  fromCache: false,
-}));
+export const useTimetrackerStore = create<TimetrackerState>()(
+  persist(
+    () => ({ entries: [], loading: true, fromCache: false }),
+    persistOptions<TimetrackerState>('timetracker', ['entries'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

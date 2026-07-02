@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { Card } from "@/components/ui/card";
 import { MoneyText } from "@/components/ui/money-text";
 import { Segmented } from "@/components/ui/segmented";
@@ -58,14 +60,23 @@ export function ForecastSummary() {
   const mode = useBudgetViewStore((s) => s.mode);
 
   const anchorISO = forecastAnchorISO(startDate);
-  const months = runningForecast(12, input, anchorISO, mode);
+  // Begge modes udregnes ÉN gang (samme input) og caches → skift realistisk↔hensat er gratis,
+  // og re-renders uden data-ændring genberegner ikke den tunge forecast.
+  const both = useMemo(
+    () => ({
+      realistic: runningForecast(12, input, anchorISO, "realistic"),
+      smoothed: runningForecast(12, input, anchorISO, "smoothed"),
+    }),
+    [input, anchorISO]
+  );
+  const months = mode === "smoothed" ? both.smoothed : both.realistic;
   const anchor = months[0];
   const isThisMonth = anchorISO.slice(0, 7) === todayISODate().slice(0, 7);
   const yearlyDisposable = overview.disposableOre * 12;
   // Overført saldo fra måneder der allerede er omme (carry-over sker først når måneden er omme).
-  const carried = carriedBalanceOre(input, startDate);
+  const carried = useMemo(() => carriedBalanceOre(input, startDate), [input, startDate]);
   // Samlet opsparet hidtil (faktisk hvor indtastet, ellers forventet).
-  const totalSaved = totalSavedOre(input, startDate);
+  const totalSaved = useMemo(() => totalSavedOre(input, startDate), [input, startDate]);
   const showSavings = savingsPercent > 0 || totalSaved !== 0;
 
   return (

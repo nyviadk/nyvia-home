@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { AnyLoan } from '../types';
 import { subscribeLoans } from './loans.repository';
 
@@ -11,11 +13,12 @@ interface LoansState {
   fromCache: boolean;
 }
 
-export const useLoansStore = create<LoansState>(() => ({
-  loans: [],
-  loading: true,
-  fromCache: false,
-}));
+export const useLoansStore = create<LoansState>()(
+  persist(
+    () => ({ loans: [], loading: true, fromCache: false }),
+    persistOptions<LoansState>('loans', ['loans'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

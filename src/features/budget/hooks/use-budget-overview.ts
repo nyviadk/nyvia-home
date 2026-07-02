@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useLoansStore } from '@/features/loans/data/loans-store';
 import { totalMonthlyPayment } from '@/features/loans/loans.utils';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
@@ -25,21 +27,23 @@ export function useBudgetOverview(): BudgetOverview {
   const savingsPercentChanges = useBudgetSettingsStore((s) => s.savingsPercentChanges);
   const startDate = useBudgetSettingsStore((s) => s.startDate);
 
-  const visible = entries.filter((e) => !pending.has(e.id));
-  // Overblikket viser "nu" → brug den gældende procent for indeværende måned.
-  const currentPercent = effectiveSavingsPercent(
-    savingsPercent,
-    savingsPercentChanges,
-    todayISODate().slice(0, 7)
-  );
+  return useMemo<BudgetOverview>(() => {
+    const visible = entries.filter((e) => !pending.has(e.id));
+    // Overblikket viser "nu" → brug den gældende procent for indeværende måned.
+    const currentPercent = effectiveSavingsPercent(
+      savingsPercent,
+      savingsPercentChanges,
+      todayISODate().slice(0, 7)
+    );
 
-  return budgetOverview({
-    incomeRules: visible.filter((e) => e.type === 'income').map(toRule),
-    expenseRules: visible.filter((e) => e.type === 'expense').map(toRule),
-    subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
-    loansMonthlyOre: totalMonthlyPayment(loans),
-    savingsPercent: currentPercent,
-    anchorISO: forecastAnchorISO(startDate),
-    count: 12,
-  });
+    return budgetOverview({
+      incomeRules: visible.filter((e) => e.type === 'income').map(toRule),
+      expenseRules: visible.filter((e) => e.type === 'expense').map(toRule),
+      subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
+      loansMonthlyOre: totalMonthlyPayment(loans),
+      savingsPercent: currentPercent,
+      anchorISO: forecastAnchorISO(startDate),
+      count: 12,
+    });
+  }, [entries, pending, subscriptions, loans, savingsPercent, savingsPercentChanges, startDate]);
 }

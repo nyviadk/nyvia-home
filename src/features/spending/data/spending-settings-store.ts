@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { OwnAccount, ScrubRule } from '../types';
 import { subscribeSpendingSettings } from './spending-settings.repository';
 
@@ -11,11 +13,12 @@ interface SpendingSettingsState {
   loading: boolean;
 }
 
-export const useSpendingSettingsStore = create<SpendingSettingsState>(() => ({
-  accounts: [],
-  scrubRules: [],
-  loading: true,
-}));
+export const useSpendingSettingsStore = create<SpendingSettingsState>()(
+  persist(
+    () => ({ accounts: [], scrubRules: [], loading: true }),
+    persistOptions<SpendingSettingsState>('spending-settings', ['accounts', 'scrubRules'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

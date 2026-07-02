@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { Subscription } from '../types';
 import { subscribeSubscriptions } from './subscriptions.repository';
 
@@ -11,11 +13,12 @@ interface SubscriptionsState {
   fromCache: boolean;
 }
 
-export const useSubscriptionsStore = create<SubscriptionsState>(() => ({
-  subscriptions: [],
-  loading: true,
-  fromCache: false,
-}));
+export const useSubscriptionsStore = create<SubscriptionsState>()(
+  persist(
+    () => ({ subscriptions: [], loading: true, fromCache: false }),
+    persistOptions<SubscriptionsState>('subscriptions', ['subscriptions'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

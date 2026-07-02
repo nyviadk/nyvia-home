@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type CollectionSnapshot, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 
 export interface CollectionState<T> {
   items: WithId<T>[];
@@ -21,11 +23,18 @@ export function createCollectionStore<T>(
     onError?: (e: Error) => void
   ) => Unsubscribe
 ) {
-  const useStore = create<CollectionState<T>>(() => ({
-    items: [],
-    loading: true,
-    fromCache: false,
-  }));
+  // persist: cachede `items` males synkront ved kold start (MMKV/localStorage), før Firestore
+  // -listeneren svarer. `loading`/`fromCache` gemmes ikke — de nulstilles og opdateres live.
+  const useStore = create<CollectionState<T>>()(
+    persist(
+      () => ({
+        items: [] as WithId<T>[],
+        loading: true,
+        fromCache: false,
+      }),
+      persistOptions<CollectionState<T>>(`col:${key}`, ['items'])
+    )
+  );
 
   let unsubscribe: Unsubscribe | null = null;
 

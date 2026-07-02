@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { BudgetEntry } from '../types';
 import { subscribeBudgetEntries } from './budget.repository';
 
@@ -11,11 +13,12 @@ interface BudgetState {
   fromCache: boolean;
 }
 
-export const useBudgetStore = create<BudgetState>(() => ({
-  entries: [],
-  loading: true,
-  fromCache: false,
-}));
+export const useBudgetStore = create<BudgetState>()(
+  persist(
+    () => ({ entries: [], loading: true, fromCache: false }),
+    persistOptions<BudgetState>('budget', ['entries'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

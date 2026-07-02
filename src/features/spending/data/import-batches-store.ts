@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe, type WithId } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { ImportBatch } from '../types';
 import { subscribeImportBatches } from './import-batches.repository';
 
@@ -10,10 +12,12 @@ interface ImportBatchesState {
   loading: boolean;
 }
 
-export const useImportBatchesStore = create<ImportBatchesState>(() => ({
-  batches: [],
-  loading: true,
-}));
+export const useImportBatchesStore = create<ImportBatchesState>()(
+  persist(
+    () => ({ batches: [], loading: true }),
+    persistOptions<ImportBatchesState>('import-batches', ['batches'])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

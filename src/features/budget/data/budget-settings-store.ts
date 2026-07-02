@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { auth, type Unsubscribe } from '@/lib/firebase';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
+import { persistOptions } from '@/lib/storage/persist-options';
 import type { SavingsPercentChange } from '../types';
 import { subscribeBudgetSettings } from './budget-settings.repository';
 
@@ -17,13 +19,23 @@ interface BudgetSettingsState {
   loading: boolean;
 }
 
-export const useBudgetSettingsStore = create<BudgetSettingsState>(() => ({
-  startDate: null,
-  savingsPercent: 0,
-  savingsPercentChanges: [],
-  savingsActuals: {},
-  loading: true,
-}));
+export const useBudgetSettingsStore = create<BudgetSettingsState>()(
+  persist(
+    () => ({
+      startDate: null,
+      savingsPercent: 0,
+      savingsPercentChanges: [],
+      savingsActuals: {},
+      loading: true,
+    }),
+    persistOptions<BudgetSettingsState>('budget-settings', [
+      'startDate',
+      'savingsPercent',
+      'savingsPercentChanges',
+      'savingsActuals',
+    ])
+  )
+);
 
 let unsubscribe: Unsubscribe | null = null;
 

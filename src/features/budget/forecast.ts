@@ -127,8 +127,44 @@ function expectedForMonth(rule: ForecastRule, monthYm: string): number {
   return effectivePriceOre(rule.amount, rule.priceChanges, monthYm);
 }
 
-/** Vinduet der forudhensættes over (til "hensat"-mode): ankermåned + antal måneder. */
-type SmoothWindow = { anchorISO: string; count: number };
+/**
+ * "Hensat"-vindue: de periodiske regler der FAKTISK forfalder i horisonten og derfor må
+ * forudhensættes. Beregnes ÉN gang pr. forecast (ikke pr. måned), så den tunge forekomst-
+ * scanning ikke gentages for hver af de 12 måneder.
+ */
+type SmoothWindow = { provisionable: ReadonlySet<ForecastRule> };
+
+/** Periodiske regler med mindst én forekomst i vinduet [anchor, anchor+count). */
+function provisionableRules(
+  rules: ForecastRule[],
+  anchorISO: string,
+  count: number
+): Set<ForecastRule> {
+  const set = new Set<ForecastRule>();
+  for (const r of rules) {
+    if (r.recurrence.cadence !== "monthly" && occursWithinHorizon(r.recurrence, anchorISO, count)) {
+      set.add(r);
+    }
+  }
+  return set;
+}
+
+/** Byg "hensat"-vinduet — kun relevant i smoothed mode; ellers spild af arbejde. */
+function buildSmoothWindow(
+  input: ForecastInput,
+  anchorISO: string,
+  count: number,
+  mode: ForecastMode
+): SmoothWindow | undefined {
+  if (mode !== "smoothed") return undefined;
+  return {
+    provisionable: provisionableRules(
+      [...input.incomeRules, ...input.expenseRules],
+      anchorISO,
+      count
+    ),
+  };
+}
 
 /**
  * Sum af regler der bidrager til (year, month). En forudbetalt regel udbetales
@@ -165,15 +201,14 @@ function sumForMonth(
         }
         // Periodiske poster FORUDHENSÆTTES: den periodiske udgift spredes jævnt over HELE
         // vinduet — også månederne før næste forfald — så en kendt årlig regning ikke får en
-        // enkelt måned til at dykke. Gate kun på slutdato + at posten forfalder i vinduet.
+        // enkelt måned til at dykke. Gate kun på at posten forfalder i vinduet (precomputed
+        // set → O(1) pr. måned) + slutdato.
+        if (smoothWindow && !smoothWindow.provisionable.has(r)) return sum;
         if (rec.endDate) {
           const end = DateTime.fromISO(rec.endDate, { zone: APP_TIMEZONE }).endOf("month");
           if (DateTime.fromObject({ year, month }, { zone: APP_TIMEZONE }).startOf("month") > end) {
             return sum;
           }
-        }
-        if (smoothWindow && !occursWithinHorizon(rec, smoothWindow.anchorISO, smoothWindow.count)) {
-          return sum;
         }
         return sum.plus(monthlyAverageOre(expectedForMonth(r, monthYm), rec));
       }
@@ -238,7 +273,7 @@ export function runningForecast(
     ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
     : DateTime.now().setZone(APP_TIMEZONE);
   const start = base.startOf("month");
-  const smoothWindow: SmoothWindow = { anchorISO: start.toFormat("yyyy-MM-dd"), count };
+  const smoothWindow = buildSmoothWindow(input, start.toFormat("yyyy-MM-dd"), count, mode);
 
   const out: RunningMonth[] = [];
   for (let i = 0; i < count; i++) {
@@ -319,7 +354,7 @@ export function forecastMonths(
     ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
     : DateTime.now().setZone(APP_TIMEZONE);
   const start = base.startOf("month");
-  const smoothWindow: SmoothWindow = { anchorISO: start.toFormat("yyyy-MM-dd"), count };
+  const smoothWindow = buildSmoothWindow(input, start.toFormat("yyyy-MM-dd"), count, mode);
   const out: MonthForecast[] = [];
   for (let i = 0; i < count; i++) {
     const d = start.plus({ months: i });

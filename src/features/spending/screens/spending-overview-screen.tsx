@@ -1,4 +1,5 @@
 import { Link } from "expo-router";
+import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,15 +8,13 @@ import { MoneyText } from "@/components/ui/money-text";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import { formatMonthCopenhagen, todayISODate } from "@/lib/datetime";
+import type { WithId } from "@/lib/firebase";
 import { Pressable, View } from "@/tw";
 import { AccountRow } from "../components/account-row";
 import { useSpendingSettingsStore } from "../data/spending-settings-store";
 import { useTransactionsStore } from "../data/transactions-store";
-import {
-  accountNumbers,
-  monthlyTotals,
-  spendingInMonthOre,
-} from "../spending.utils";
+import { monthlyTotals, spendingInMonthOre } from "../spending.utils";
+import type { BankTransaction } from "../types";
 
 function capitalize(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
@@ -30,11 +29,24 @@ export function SpendingOverviewScreen() {
   const accounts = useSpendingSettingsStore((s) => s.accounts);
 
   const month = todayISODate().slice(0, 7);
-  const numbers = accountNumbers(transactions).sort();
-  const totalSpending = spendingInMonthOre(transactions, month, accounts);
-  const monthsTable = Array.from(
-    monthlyTotals(transactions, accounts).entries(),
-  ).sort((a, b) => b[0].localeCompare(a[0]));
+  // Tunge udledninger memoiseres → køres kun når transaktioner/konti ændres, ikke ved hver
+  // render. Konti grupperes ÉN gang (byAccount) i stedet for at filtrere alle pr. konto.
+  const { numbers, totalSpending, monthsTable, byAccount } = useMemo(() => {
+    const grouped = new Map<string, WithId<BankTransaction>[]>();
+    for (const t of transactions) {
+      const arr = grouped.get(t.account);
+      if (arr) arr.push(t);
+      else grouped.set(t.account, [t]);
+    }
+    return {
+      numbers: Array.from(grouped.keys()).sort(),
+      totalSpending: spendingInMonthOre(transactions, month, accounts),
+      monthsTable: Array.from(monthlyTotals(transactions, accounts).entries()).sort((a, b) =>
+        b[0].localeCompare(a[0]),
+      ),
+      byAccount: grouped,
+    };
+  }, [transactions, accounts, month]);
 
   return (
     <Screen>
@@ -125,7 +137,7 @@ export function SpendingOverviewScreen() {
               <AccountRow
                 key={account}
                 account={account}
-                transactions={transactions.filter((t) => t.account === account)}
+                transactions={byAccount.get(account) ?? []}
                 accounts={accounts}
                 month={month}
               />
