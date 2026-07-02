@@ -11,7 +11,6 @@
     "@react-native-firebase/firestore": "^25.1.0",
     "@react-native-firebase/storage": "^25.1.0",
     "@react-native-ml-kit/text-recognition": "^2.0.0",
-    "@react-navigation/drawer": "^7.12.4",
     "@shopify/flash-list": "2.0.2",
     "@tailwindcss/postcss": "^4.3.1",
     "bignumber.js": "^11.1.4",
