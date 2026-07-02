@@ -150,11 +150,30 @@ export function isActiveInMonth(rule: Recurrence, year: number, month: number): 
   return true;
 }
 
+/** Cadencens periode i måneder — til horisont-udvidelse så sjældne cadencer udjævnes korrekt. */
+function periodMonths(cadence: Recurrence['cadence']): number {
+  switch (cadence) {
+    case 'monthly':
+      return 1;
+    case 'quarterly':
+      return 3;
+    case 'half_yearly':
+      return 6;
+    case 'yearly':
+      return 12;
+    case 'biennial':
+      return 24;
+    case 'triennial':
+      return 36;
+    case 'once':
+      return 0;
+  }
+}
+
 /**
- * Gennemsnitligt månedligt bidrag (øre) over en horisont på `count` måneder fra
- * `anchorISO` — tæller kun de forekomster der FAKTISK falder (respekterer start/slut).
- * Konsistent med den realistiske forecast: en post der slutter halvvejs tæller kun i de
- * måneder den er aktiv. For evige poster er resultatet identisk med `monthlyAverageOre`.
+ * Gennemsnitligt månedligt bidrag (øre) over en horisont fra `anchorISO` — tæller de
+ * forekomster der FAKTISK falder (respekterer start/slut). Horisonten udvides til mindst
+ * cadencens periode, så biennial/triennial udjævnes korrekt. Engangsbeløb → 0.
  */
 export function averageMonthlyOre(
   amountOre: number,
@@ -162,15 +181,20 @@ export function averageMonthlyOre(
   anchorISO: string,
   count: number,
 ): number {
+  if (rule.cadence === 'once') return 0; // engangsbeløb har ingen månedlig sats
+  // Udvid horisonten til mindst cadencens periode, så sjældne cadencer (biennial 24 mdr,
+  // triennial 36 mdr) fanger præcis én forekomst → korrekt beløb/24 hhv. beløb/36 i stedet
+  // for at hoppe mellem beløb/12 og 0. ≤årlige poster er upåvirkede (periode ≤ 12).
+  const horizon = Math.max(count, periodMonths(rule.cadence));
   const base = DateTime.fromISO(anchorISO, { zone: APP_TIMEZONE }).startOf('month');
   let occurrences = 0;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < horizon; i++) {
     const d = base.plus({ months: i });
     if (occursInMonth(rule, d.year, d.month)) occurrences++;
   }
   return new BigNumber(amountOre)
     .times(occurrences)
-    .div(count)
+    .div(horizon)
     .integerValue(BigNumber.ROUND_HALF_UP)
     .toNumber();
 }

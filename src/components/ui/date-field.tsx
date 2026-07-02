@@ -155,7 +155,9 @@ function DayGrid({
   const cells: (DateTime | null)[] = [];
   for (let i = 0; i < offset; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(monthStart.set({ day: d }));
-  while (cells.length % 7 !== 0) cells.push(null);
+  // Fyld altid op til 6 uger (42 celler), så kalenderen har fast højde og pilene ikke
+  // flytter sig når man bladrer mellem måneder med forskelligt antal uge-rækker.
+  while (cells.length < 42) cells.push(null);
   const weeks: (DateTime | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
@@ -178,7 +180,7 @@ function DayGrid({
         ))}
       </View>
       {weeks.map((week, wi) => (
-        <View key={wi} className="flex-row">
+        <View key={wi} className="h-10 flex-row items-center">
           {week.map((cell, ci) => {
             if (!cell) return <View key={ci} className="flex-1" />;
             const ds = cell.toFormat('yyyy-MM-dd');
