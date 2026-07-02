@@ -30,6 +30,8 @@ export type Home = {
   moveInDate?: string;
   moveOutDate?: string;
   landlord?: Landlord;
+  /** Fri ekstra-info til indflytningssyn-PDF'en (navn, indflytningsdato mv.). */
+  reportInfo?: string;
   createdAt: string;
   updatedAt: string;
 };

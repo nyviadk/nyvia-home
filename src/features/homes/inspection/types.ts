@@ -1,5 +1,5 @@
-/** Ét foto i et indflytningssyn (Storage-sti + download-URL). */
-export type InspectionPhoto = { path: string; url: string };
+/** Ét foto i et indflytningssyn (Storage-sti + download-URL + evt. optaget-tid fra EXIF). */
+export type InspectionPhoto = { path: string; url: string; takenAt?: string };
 
 /** En post i indflytningssynet (fejl/mangel) — knyttet til en bolig (homeId). */
 export type InspectionItem = {

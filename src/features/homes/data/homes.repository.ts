@@ -36,6 +36,11 @@ export function updateHome(id: string, input: HomeInput): Promise<void> {
   return toastAfter(db.updateDoc(docPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
 }
 
+/** Gemmer fri ekstra-info til indflytningssyn-PDF'en på boligen (rører ikke øvrige felter). */
+export function updateHomeReportInfo(id: string, reportInfo: string): Promise<void> {
+  return db.updateDoc(docPath(id), { reportInfo, updatedAt: nowISO() });
+}
+
 /** Sletning toaster ikke her — håndteres af performWithUndo (fortryd). */
 export function deleteHome(id: string): Promise<void> {
   return db.deleteDoc(docPath(id));

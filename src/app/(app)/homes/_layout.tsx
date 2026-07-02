@@ -17,6 +17,7 @@ export default function HomesLayout() {
       <Stack.Screen name="[id]/tasks" options={{ title: 'Flytte-todo' }} />
       <Stack.Screen name="[id]/inspection/index" options={{ title: 'Indflytningssyn' }} />
       <Stack.Screen name="[id]/inspection/new" options={{ title: 'Ny syns-post' }} />
+      <Stack.Screen name="[id]/inspection/[itemId]" options={{ title: 'Redigér syns-post' }} />
     </Stack>
   );
 }

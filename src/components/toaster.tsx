@@ -13,8 +13,8 @@ export function Toaster() {
 
   return (
     <View
-      pointerEvents="box-none"
       style={{
+        pointerEvents: "box-none",
         position: "absolute",
         top: insets.top + 16,
         right: insets.right + 32,
