@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { cn } from "@/lib/cn";
-import { ScrollView, View } from "@/tw";
+import { View } from "@/tw";
+import { KeyboardAwareScroll } from "@/components/ui/keyboard-aware-scroll";
 
 export interface ScreenProps {
   children: ReactNode;
@@ -33,19 +34,7 @@ export function Screen({ children, scroll = true, className }: ScreenProps) {
       className="flex-1 bg-surface"
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
-      {scroll ? (
-        <ScrollView
-          className="flex-1 scrollbar-gutter-stable"
-          contentContainerClassName="grow"
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          {inner}
-        </ScrollView>
-      ) : (
-        inner
-      )}
+      {scroll ? <KeyboardAwareScroll>{inner}</KeyboardAwareScroll> : inner}
     </View>
   );
 }

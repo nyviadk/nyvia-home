@@ -3,6 +3,7 @@ import '@/global.css';
 import { StatusBar } from 'expo-status-bar';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Toaster } from '@/components/toaster';
@@ -39,12 +40,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider value={DefaultTheme}>
-          {/* Light-only app → mørke status bar-ikoner/tekst (ellers usynlige på lys bund). */}
-          <StatusBar style="dark" />
-          <RootNavigator />
-          <Toaster />
-        </ThemeProvider>
+        <KeyboardProvider>
+          <ThemeProvider value={DefaultTheme}>
+            {/* Light-only app → mørke status bar-ikoner/tekst (ellers usynlige på lys bund). */}
+            <StatusBar style="dark" />
+            <RootNavigator />
+            <Toaster />
+          </ThemeProvider>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
