@@ -5,21 +5,37 @@ import { APP_TIMEZONE } from '@/lib/datetime';
 import { firstBankDayOfMonth, lastBankDayOfMonth, nextBankDay } from './danish-holidays';
 import type { Recurrence } from './types';
 
+// Cache pr. (år, måned) — samme måned bygges mange gange under ét forecast; zoned luxon-
+// allokeringer er dyre på Hermes (Android).
+const monthStartCache = new Map<number, DateTime>();
 function monthStart(year: number, month: number): DateTime {
-  return DateTime.fromObject({ year, month, day: 1 }, { zone: APP_TIMEZONE });
+  const key = year * 100 + month;
+  let d = monthStartCache.get(key);
+  if (!d) {
+    d = DateTime.fromObject({ year, month, day: 1 }, { zone: APP_TIMEZONE });
+    monthStartCache.set(key, d);
+  }
+  return d;
 }
 
-/** Hele måneder mellem to måneds-starter (kan være negativt). */
-function monthsBetween(from: DateTime, to: DateTime): number {
-  return Math.round(to.diff(from.startOf('month'), 'months').months);
+// Cache parsede startdatoer (normaliseret til dagens start). De samme ~få startdatoer parses
+// ellers tusindvis af gange, og zoned ISO-parsing er en af de dyreste luxon-operationer.
+const startIsoCache = new Map<string, DateTime>();
+function parseStartISO(iso: string): DateTime {
+  let d = startIsoCache.get(iso);
+  if (!d) {
+    d = DateTime.fromISO(iso, { zone: APP_TIMEZONE }).startOf('day');
+    startIsoCache.set(iso, d);
+  }
+  return d;
 }
 
 /** Rammer cadencen den givne måned (uden slut-grænse)? Start tjekkes på måneds-niveau. */
 function matchesCadenceInMonth(rule: Recurrence, year: number, month: number): boolean {
-  const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
-  const target = monthStart(year, month);
-  if (target < start.startOf('month')) return false;
-  const diff = monthsBetween(start, target);
+  const start = parseStartISO(rule.startDate);
+  // Måneds-aritmetik i stedet for luxon-diff/-sammenligning (langt hurtigere på Hermes).
+  if (year < start.year || (year === start.year && month < start.month)) return false;
+  const diff = (year - start.year) * 12 + (month - start.month);
   switch (rule.cadence) {
     case 'once':
       return diff === 0;
@@ -49,7 +65,7 @@ function matchesCadenceInMonth(rule: Recurrence, year: number, month: number): b
  * 'lastBank'/'firstBank' er allerede bankdage; faste dage/anker er den rå dag.
  */
 function nominalOccurrenceDay(rule: Recurrence, year: number, month: number): DateTime | null {
-  const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
+  const start = parseStartISO(rule.startDate);
   const base = monthStart(year, month);
   const daysInMonth = base.daysInMonth ?? 28;
   if (rule.cadence === 'monthly') {
@@ -83,7 +99,7 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
   if (!matchesCadenceInMonth(rule, year, month)) return false;
   const nominal = nominalOccurrenceDay(rule, year, month);
   if (nominal) {
-    const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE }).startOf('day');
+    const start = parseStartISO(rule.startDate);
     if (nominal < start) return false;
     if (rule.endDate) {
       const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('day');

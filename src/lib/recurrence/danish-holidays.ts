@@ -66,17 +66,30 @@ export function isBankClosed(date: DateTime): boolean {
   return bankClosedDates(date.year).has(date.toFormat('yyyy-MM-dd'));
 }
 
-/** Sidste bankdag i måneden (sidste dag, der ikke er lukket). */
+// Cache pr. (år, måned): rene funktioner, og de samme måneder slås op mange gange under et
+// forecast. Undgår while-løkken + de dyre zoned luxon-allokeringer ved gentagne kald.
+const lastBankCache = new Map<number, DateTime>();
+const firstBankCache = new Map<number, DateTime>();
+
+/** Sidste bankdag i måneden (sidste dag, der ikke er lukket). Cachet pr. (år, måned). */
 export function lastBankDayOfMonth(year: number, month: number): DateTime {
+  const key = year * 100 + month;
+  const cached = lastBankCache.get(key);
+  if (cached) return cached;
   let d = DateTime.fromObject({ year, month }, { zone: APP_TIMEZONE }).endOf('month').startOf('day');
   while (isBankClosed(d)) d = d.minus({ days: 1 });
+  lastBankCache.set(key, d);
   return d;
 }
 
-/** Første bankdag i måneden (første dag, der ikke er lukket). */
+/** Første bankdag i måneden (første dag, der ikke er lukket). Cachet pr. (år, måned). */
 export function firstBankDayOfMonth(year: number, month: number): DateTime {
+  const key = year * 100 + month;
+  const cached = firstBankCache.get(key);
+  if (cached) return cached;
   let d = DateTime.fromObject({ year, month, day: 1 }, { zone: APP_TIMEZONE }).startOf('day');
   while (isBankClosed(d)) d = d.plus({ days: 1 });
+  firstBankCache.set(key, d);
   return d;
 }
 
