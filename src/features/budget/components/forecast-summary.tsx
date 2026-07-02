@@ -135,7 +135,7 @@ export function ForecastSummary() {
         />
         <AppText variant="muted">
           {mode === "smoothed"
-            ? "Periodiske beløb spredes som hensættelse — ingen måned dykker."
+            ? "Periodiske regninger fordeles jævnt (hensat). Niveauet kan stadig skifte ved lån-afvikling, prisændringer, start/slut på poster og opsparing."
             : "Beløb vises i den måned de falder; faktiske beløb overstyrer forventet."}{" "}
           Net pr. måned — overskud/underskud bæres først videre når måneden er omme.
         </AppText>
