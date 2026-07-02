@@ -1,59 +1,80 @@
-import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { View } from '@/tw';
+import { confirmAction } from '@/lib/confirm';
+import { Pressable, View } from '@/tw';
 import { QuickAddRow } from '../../components/quick-add-row';
-import { useHomesStore } from '../../data/homes-store';
 import { TaskRow } from '../components/task-row';
-import { createMoveTask, createMoveTasks } from '../data/move-tasks.repository';
+import {
+  createMoveTask,
+  createMoveTasks,
+  resetMoveTasks,
+} from '../data/move-tasks.repository';
 import { useMoveTasksStore } from '../data/move-tasks-store';
 import { MOVE_TASK_PRESETS } from '../data/presets';
 
 export function MoveTasksScreen() {
-  const { id: homeId } = useLocalSearchParams<{ id: string }>();
-  const home = useHomesStore((s) => s.items.find((h) => h.id === homeId));
   const allTasks = useMoveTasksStore((s) => s.items);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const tasks = allTasks
-    .filter((t) => t.homeId === homeId)
-    .sort((a, b) => (a.done === b.done ? a.order - b.order : a.done ? 1 : -1));
+  // Klarede opgaver synker til bunden; ellers order-rækkefølge.
+  const tasks = [...allTasks].sort((a, b) =>
+    a.done === b.done ? a.order - b.order : a.done ? 1 : -1
+  );
   const doneCount = tasks.filter((t) => t.done).length;
+  const canReset = tasks.some((t) => t.done);
+
+  const existsByTitle = (t: string) =>
+    tasks.some((x) => x.title.toLowerCase() === t.trim().toLowerCase());
 
   async function add() {
     const t = title.trim();
-    if (!t || !homeId) return;
+    if (!t) return;
     setTitle('');
-    await createMoveTask({ homeId, title: t, done: false, order: Date.now() });
+    if (existsByTitle(t)) return;
+    await createMoveTask({ title: t, done: false, order: Date.now() });
   }
 
   async function addPresets() {
-    if (!homeId) return;
+    const toAdd = MOVE_TASK_PRESETS.filter((t) => !existsByTitle(t));
+    if (toAdd.length === 0) return;
     setBusy(true);
     try {
       const base = Date.now();
       await createMoveTasks(
-        MOVE_TASK_PRESETS.map((title, i) => ({ homeId, title, done: false, order: base + i }))
+        toAdd.map((title, i) => ({ title, done: false, order: base + i }))
       );
     } finally {
       setBusy(false);
     }
   }
 
+  async function onReset() {
+    const ok = await confirmAction(
+      'Nulstil opgaver',
+      'Sæt alle tilbage til ikke-klaret? Listen beholdes, så den kan genbruges til næste flytning.',
+      'Nulstil'
+    );
+    if (ok) await resetMoveTasks(tasks.map((t) => t.id));
+  }
+
   return (
     <Screen>
-      <View className="gap-0.5">
-        <AppText variant="title">Flytte-todo</AppText>
-        {home ? <AppText variant="muted">{home.address}</AppText> : null}
-        {tasks.length > 0 ? (
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-1 gap-0.5">
+          <AppText variant="title">Flytte-todo</AppText>
           <AppText variant="muted">
-            {doneCount} / {tasks.length} klaret
+            {tasks.length > 0 ? `${doneCount} / ${tasks.length} klaret` : ''}
           </AppText>
+        </View>
+        {canReset ? (
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={onReset}>
+            <AppText className="text-sm text-primary">Nulstil</AppText>
+          </Pressable>
         ) : null}
       </View>
 

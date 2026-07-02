@@ -22,14 +22,19 @@ export function HomesListScreen() {
     <Screen>
       <View className="flex-row items-center justify-between gap-3">
         <AppText variant="title">Hjem</AppText>
-        <View className="flex-row items-center gap-2">
-          <Link href="/homes/address-changes" asChild>
-            <Button title="Adresseændringer" variant="secondary" className="h-10 px-4" />
-          </Link>
-          <Link href="/homes/new" asChild>
-            <Button title="Tilføj bolig" className="h-10 px-4" />
-          </Link>
-        </View>
+        <Link href="/homes/new" asChild>
+          <Button title="Tilføj bolig" className="h-10 px-4" />
+        </Link>
+      </View>
+
+      {/* Globale flytte-værktøjer (ikke bundet til én bolig) */}
+      <View className="flex-row gap-2">
+        <Link href="/homes/tasks" asChild>
+          <Button title="Flytte-todo" variant="secondary" className="h-10 flex-1" />
+        </Link>
+        <Link href="/homes/address-changes" asChild>
+          <Button title="Adresseændringer" variant="secondary" className="h-10 flex-1" />
+        </Link>
       </View>
 
       {fromCache ? (

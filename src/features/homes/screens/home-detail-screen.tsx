@@ -40,11 +40,6 @@ export function HomeDetailScreen() {
 
       <View className="gap-2">
         <SectionLink
-          title="Flytte-todo"
-          subtitle="Tjekliste til flytningen"
-          href={{ pathname: '/homes/[id]/tasks', params: { id: home.id } }}
-        />
-        <SectionLink
           title="Indflytningssyn"
           subtitle="Fotos af fejl & mangler pr. rum"
           href={{ pathname: '/homes/[id]/inspection', params: { id: home.id } }}

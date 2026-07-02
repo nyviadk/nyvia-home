@@ -1,6 +1,5 @@
-/** En flytte-opgave knyttet til en bolig (homeId). */
+/** En global flytte-opgave (ikke bundet til en bestemt bolig — genbruges pr. flytning). */
 export type MoveTask = {
-  homeId: string;
   title: string;
   done: boolean;
   dueDate?: string;
@@ -11,4 +10,4 @@ export type MoveTask = {
   updatedAt: string;
 };
 
-export type MoveTaskInput = Pick<MoveTask, 'homeId' | 'title' | 'done' | 'order' | 'dueDate' | 'notes'>;
+export type MoveTaskInput = Pick<MoveTask, 'title' | 'done' | 'order' | 'dueDate' | 'notes'>;
