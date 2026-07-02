@@ -2,6 +2,7 @@ import { Link } from "expo-router";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { OfflineNotice } from "@/components/ui/offline-notice";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import type { WithId } from "@/lib/firebase";
@@ -64,9 +65,7 @@ export function BudgetScreen() {
         </View>
       </View>
 
-      {fromCache ? (
-        <AppText variant="muted">Offline – viser gemte data</AppText>
-      ) : null}
+      <OfflineNotice fromCache={fromCache} />
 
       {visible.length === 0 ? (
         loading ? null : (

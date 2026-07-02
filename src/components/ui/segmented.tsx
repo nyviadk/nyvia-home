@@ -28,7 +28,10 @@ export function Segmented<T extends string>({ value, options, onChange }: Segmen
                 ? { borderCurve: 'continuous', boxShadow: '0 1px 2px rgba(40, 40, 38, 0.08)' }
                 : undefined
             }
-            className={cn('flex-1 items-center rounded-lg py-2', active && 'bg-card')}>
+            className={cn(
+              'flex-1 items-center rounded-lg py-2 will-change-pressable',
+              active ? 'bg-card' : 'hover:bg-card/60 active:bg-card'
+            )}>
             <Text className={cn('text-sm', active ? 'font-semibold text-fg' : 'text-fg-muted')}>
               {opt.label}
             </Text>

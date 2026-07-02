@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MoneyText } from '@/components/ui/money-text';
+import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { todayISODate } from '@/lib/datetime';
@@ -33,7 +34,7 @@ export function SubscriptionsHubScreen() {
         </Link>
       </View>
 
-      {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
+      <OfflineNotice fromCache={fromCache} />
 
       {visible.length === 0 ? (
         loading ? null : (

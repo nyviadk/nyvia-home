@@ -16,7 +16,6 @@ import {
   carriedBalanceOre,
   forecastAnchorISO,
   type ForecastMode,
-  type RunningMonth,
   runningForecast,
   totalSavedOre,
 } from "../forecast";
@@ -61,15 +60,16 @@ export function ForecastSummary() {
   const mode = useBudgetViewStore((s) => s.mode);
 
   const anchorISO = forecastAnchorISO(startDate);
-  // Lazy pr. visning: kun den viste beregnes ved åbning (halverer mount-arbejdet). Den anden
-  // beregnes FØRSTE gang du skifter — derefter ligger begge i cachen, så toggling er øjeblikkelig
-  // som før. Det memoiserede cache-objekt nulstilles automatisk når data (input) eller anker
-  // ændres, så tallene aldrig bliver forældede.
-  const forecastCache = useMemo<{ realistic?: RunningMonth[]; smoothed?: RunningMonth[] }>(
-    () => ({}),
+  // Begge visninger beregnes ÉN gang (samme input) og caches → skift realistisk↔hensat er
+  // øjeblikkeligt, og re-renders uden data-ændring genberegner ikke den tunge forecast.
+  const both = useMemo(
+    () => ({
+      realistic: runningForecast(12, input, anchorISO, "realistic"),
+      smoothed: runningForecast(12, input, anchorISO, "smoothed"),
+    }),
     [input, anchorISO]
   );
-  const months = (forecastCache[mode] ??= runningForecast(12, input, anchorISO, mode));
+  const months = mode === "smoothed" ? both.smoothed : both.realistic;
   const anchor = months[0];
   const isThisMonth = anchorISO.slice(0, 7) === todayISODate().slice(0, 7);
   const yearlyDisposable = overview.disposableOre * 12;

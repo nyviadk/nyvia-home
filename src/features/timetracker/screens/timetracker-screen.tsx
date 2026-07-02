@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
 import { Screen } from '@/components/ui/screen';
@@ -84,7 +85,7 @@ export function TimetrackerScreen() {
         </View>
       </View>
 
-      {fromCache ? <AppText variant="muted">Offline – viser gemte data</AppText> : null}
+      <OfflineNotice fromCache={fromCache} />
 
       {/* Oversigt øverst */}
       {visible.length > 0 ? <TimetrackerSummary entries={visible} /> : null}
