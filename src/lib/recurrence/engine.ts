@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { DateTime } from 'luxon';
 
 import { APP_TIMEZONE } from '@/lib/datetime';
-import { firstBankDayOfMonth, lastBankDayOfMonth, previousBankDay } from './danish-holidays';
+import { firstBankDayOfMonth, lastBankDayOfMonth, nextBankDay } from './danish-holidays';
 import type { Recurrence } from './types';
 
 function monthStart(year: number, month: number): DateTime {
@@ -42,50 +42,55 @@ function matchesCadenceInMonth(rule: Recurrence, year: number, month: number): b
  * Forekomstens faktiske (bank-justerede) dato i måneden, eller null for 'month'-dag
  * (ingen bestemt dato). Antager at cadencen rammer måneden.
  */
-function occurrenceDayInMonth(rule: Recurrence, year: number, month: number): DateTime | null {
+/**
+ * Forekomstens NOMINELLE dato i måneden (den tilsigtede dag), eller null for 'month'-dag.
+ * Bruges til måneds-tilhør (start/slut-grænser). Retningen på bankdag-justering er ligegyldig
+ * for beregningerne — posten havner i samme måned via den nominelle dag uanset.
+ * 'lastBank'/'firstBank' er allerede bankdage; faste dage/anker er den rå dag.
+ */
+function nominalOccurrenceDay(rule: Recurrence, year: number, month: number): DateTime | null {
   const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
   const base = monthStart(year, month);
   const daysInMonth = base.daysInMonth ?? 28;
-
-  let date: DateTime;
   if (rule.cadence === 'monthly') {
     const md = rule.monthlyDay ?? start.day;
-    if (md === 'month') {
-      return null; // ingen bestemt dag (kun måneden tæller)
-    } else if (md === 'lastBank') {
-      date = lastBankDayOfMonth(year, month);
-    } else if (md === 'firstBank') {
-      date = firstBankDayOfMonth(year, month);
-    } else {
-      date = base.set({ day: Math.min(md, daysInMonth) });
-    }
-  } else {
-    // kvartal/halvår/år/engang: brug ankerdatoens dag-i-måneden
-    date = base.set({ day: Math.min(start.day, daysInMonth) });
+    if (md === 'month') return null; // ingen bestemt dag (kun måneden tæller)
+    if (md === 'lastBank') return lastBankDayOfMonth(year, month);
+    if (md === 'firstBank') return firstBankDayOfMonth(year, month);
+    return base.set({ day: Math.min(md, daysInMonth) });
   }
-  // En fast dag der falder på en bank-lukket dag rykkes til foregående bankdag.
-  return previousBankDay(date);
+  // kvartal/halvår/år/engang: brug ankerdatoens dag-i-måneden
+  return base.set({ day: Math.min(start.day, daysInMonth) });
 }
 
 /**
- * Falder reglen i den givne måned? Start- OG slutdato tjekkes mod forekomstens FAKTISKE
- * (bank-justerede) dato — ikke bare start/slut-måneden: en betaling der ville falde FØR
- * startdatoen eller EFTER slutdatoen tæller ikke med (fx sidste bankdag ≈ 26. feb tæller
- * ikke når slutdatoen er 5. feb). 'month'-dag (ingen bestemt dato) bruger måneds-grænsen.
+ * Forekomstens FAKTISKE (bank-justerede) dato — kun til VISNING. En fast dag på en lukkedag
+ * rykkes til NÆSTE bankdag (førstkommende hverdag); 'lastBank' er allerede sidste bankdag,
+ * så nextBankDay er da et no-op. Beregningerne bruger den nominelle dato, ikke denne.
+ */
+function occurrenceDayInMonth(rule: Recurrence, year: number, month: number): DateTime | null {
+  const nominal = nominalOccurrenceDay(rule, year, month);
+  return nominal ? nextBankDay(nominal) : null;
+}
+
+/**
+ * Falder reglen i den givne måned? Start-/slut-grænsen tjekkes mod forekomstens NOMINELLE
+ * dato (den tilsigtede dag), så måneds-tilhør er uafhængig af bankdag-justering: fx en årlig
+ * post 1. jan. hører til JANUAR, selvom betalingen (nytårsdag lukket) reelt sker 4. jan.
+ * 'month'-dag (ingen bestemt dato) bruger måneds-grænsen.
  */
 export function occursInMonth(rule: Recurrence, year: number, month: number): boolean {
   if (!matchesCadenceInMonth(rule, year, month)) return false;
-  const occ = occurrenceDayInMonth(rule, year, month);
-  if (occ) {
+  const nominal = nominalOccurrenceDay(rule, year, month);
+  if (nominal) {
     const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE }).startOf('day');
-    if (occ < start) return false;
+    if (nominal < start) return false;
     if (rule.endDate) {
       const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('day');
-      if (occ > end) return false;
+      if (nominal > end) return false;
     }
     return true;
   }
-  // 'month'-dag (ingen bestemt dato): brug måneds-grænsen (start er dækket coarse ovenfor).
   if (rule.endDate) {
     const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
     if (monthStart(year, month) > end) return false;
@@ -93,7 +98,7 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
   return true;
 }
 
-/** Den konkrete dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null hvis ingen. */
+/** Den konkrete (bank-justerede) dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null. */
 export function occurrenceDate(rule: Recurrence, year: number, month: number): string | null {
   if (!occursInMonth(rule, year, month)) return null;
   const occ = occurrenceDayInMonth(rule, year, month);

@@ -86,3 +86,11 @@ export function previousBankDay(date: DateTime): DateTime {
   while (isBankClosed(d)) d = d.minus({ days: 1 });
   return d;
 }
+
+/** Ryk en dato FREM til næste bankdag (en betaling på en lukkedag gennemføres den
+ *  førstkommende hverdag). Bruges til faste dage/anker — modsat 'sidste bankdag'. */
+export function nextBankDay(date: DateTime): DateTime {
+  let d = date;
+  while (isBankClosed(d)) d = d.plus({ days: 1 });
+  return d;
+}
