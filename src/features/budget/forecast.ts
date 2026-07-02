@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 import { DateTime } from "luxon";
 
 import { APP_TIMEZONE } from "@/lib/datetime";
-import { monthlyAverageOre, occursInMonth } from "@/lib/recurrence/engine";
+import { isActiveInMonth, monthlyAverageOre, occursInMonth } from "@/lib/recurrence/engine";
 import type { Recurrence } from "@/lib/recurrence/types";
 import {
   actualTotalOre,
@@ -144,7 +144,12 @@ function sumForMonth(
   return rules
     .reduce((sum, r) => {
       if (mode === "smoothed") {
-        // Udjævnet plan: spred periodiske beløb; ingen forudløn-/faktisk-justering.
+        // Udjævnet plan: spred periodiske beløb over de måneder posten er aktiv
+        // (respekterer start/slut). Ingen forudløn-/faktisk-justering af beløbet.
+        const active = r.advanceMonth
+          ? isActiveInMonth(r.recurrence, prev.year, prev.month)
+          : isActiveInMonth(r.recurrence, year, month);
+        if (!active) return sum;
         return sum.plus(
           monthlyAverageOre(expectedForMonth(r, monthYm), r.recurrence),
         );
@@ -295,21 +300,4 @@ export function forecastMonths(
     out.push(monthForecast(d.year, d.month, input, mode));
   }
   return out;
-}
-
-/** Gennemsnitligt månedligt rådighedsbeløb (udjævner kvartal/halvår/år). */
-export function averageDisposableOre(input: ForecastInput): number {
-  const avg = (rules: ForecastRule[]) =>
-    rules.reduce(
-      (sum, r) => sum.plus(monthlyAverageOre(r.amount, r.recurrence)),
-      new BigNumber(0),
-    );
-  const loanMonthly = input.loans.reduce(
-    (sum, l) => sum.plus(l.monthlyOre),
-    new BigNumber(0),
-  );
-  return avg(input.incomeRules)
-    .minus(avg(input.expenseRules))
-    .minus(loanMonthly)
-    .toNumber();
 }

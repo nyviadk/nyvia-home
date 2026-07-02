@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 
-import { monthlyAverageOre } from '@/lib/recurrence/engine';
+import { averageMonthlyOre } from '@/lib/recurrence/engine';
 import type { ForecastRule } from './forecast';
 
 /** Strukturerede regler så nedbrydningen kan vises pr. linje (modsat den flade ForecastInput). */
@@ -12,6 +12,9 @@ export type OverviewInput = {
   loansMonthlyOre: number;
   /** Automatisk opsparing i procent af resterende rådighedsbeløb. */
   savingsPercent: number;
+  /** Ankermåned (ÅÅÅÅ-MM-DD) for horisont-gennemsnittet + antal måneder (typisk 12). */
+  anchorISO: string;
+  count: number;
 };
 
 /** Udjævnede månedlige gennemsnit (øre) pr. linje + rådighedsbeløb. */
@@ -24,18 +27,19 @@ export type BudgetOverview = {
   disposableOre: number;
 };
 
-function sumAvg(rules: ForecastRule[]): BigNumber {
+function sumAvg(rules: ForecastRule[], anchorISO: string, count: number): BigNumber {
   return rules.reduce(
-    (sum, r) => sum.plus(monthlyAverageOre(r.amount, r.recurrence)),
+    (sum, r) => sum.plus(averageMonthlyOre(r.amount, r.recurrence, anchorISO, count)),
     new BigNumber(0)
   );
 }
 
-/** Gennemsnitligt månedligt overblik (udjævner kvartal/halvår/år via monthlyAverageOre). */
+/** Gennemsnitligt månedligt overblik over de kommende `count` måneder (respekterer start/slut). */
 export function budgetOverview(input: OverviewInput): BudgetOverview {
-  const income = sumAvg(input.incomeRules);
-  const expense = sumAvg(input.expenseRules);
-  const subscriptions = sumAvg(input.subscriptionRules);
+  const { anchorISO, count } = input;
+  const income = sumAvg(input.incomeRules, anchorISO, count);
+  const expense = sumAvg(input.expenseRules, anchorISO, count);
+  const subscriptions = sumAvg(input.subscriptionRules, anchorISO, count);
   const loans = new BigNumber(input.loansMonthlyOre);
   // Opsparing = procent af resterende rådighedsbeløb (kun hvis positivt).
   const base = income.minus(expense).minus(subscriptions).minus(loans);

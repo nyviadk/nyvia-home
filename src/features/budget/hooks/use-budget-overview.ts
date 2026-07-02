@@ -5,6 +5,7 @@ import { todayISODate } from '@/lib/datetime';
 import { useBudgetStore } from '../data/budget-store';
 import { useBudgetSettingsStore } from '../data/budget-settings-store';
 import { usePendingBudgetDeletes } from '../data/pending-deletes';
+import { forecastAnchorISO } from '../forecast';
 import { budgetOverview, type BudgetOverview } from '../overview';
 import { effectiveSavingsPercent } from '../pricing';
 import type { BudgetEntry } from '../types';
@@ -22,6 +23,7 @@ export function useBudgetOverview(): BudgetOverview {
   const loans = useLoansStore((s) => s.loans);
   const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
   const savingsPercentChanges = useBudgetSettingsStore((s) => s.savingsPercentChanges);
+  const startDate = useBudgetSettingsStore((s) => s.startDate);
 
   const visible = entries.filter((e) => !pending.has(e.id));
   // Overblikket viser "nu" → brug den gældende procent for indeværende måned.
@@ -37,5 +39,7 @@ export function useBudgetOverview(): BudgetOverview {
     subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
     loansMonthlyOre: totalMonthlyPayment(loans),
     savingsPercent: currentPercent,
+    anchorISO: forecastAnchorISO(startDate),
+    count: 12,
   });
 }

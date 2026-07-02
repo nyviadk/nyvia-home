@@ -14,15 +14,11 @@ function monthsBetween(from: DateTime, to: DateTime): number {
   return Math.round(to.diff(from.startOf('month'), 'months').months);
 }
 
-/** Falder reglen i den givne måned? */
-export function occursInMonth(rule: Recurrence, year: number, month: number): boolean {
+/** Rammer cadencen den givne måned (uden slut-grænse)? Start tjekkes på måneds-niveau. */
+function matchesCadenceInMonth(rule: Recurrence, year: number, month: number): boolean {
   const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
   const target = monthStart(year, month);
   if (target < start.startOf('month')) return false;
-  if (rule.endDate) {
-    const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
-    if (target > end) return false;
-  }
   const diff = monthsBetween(start, target);
   switch (rule.cadence) {
     case 'once':
@@ -42,22 +38,21 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
   }
 }
 
-/** Den konkrete dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null hvis ingen. */
-export function occurrenceDate(rule: Recurrence, year: number, month: number): string | null {
-  if (!occursInMonth(rule, year, month)) return null;
+/**
+ * Forekomstens faktiske (bank-justerede) dato i måneden, eller null for 'month'-dag
+ * (ingen bestemt dato). Antager at cadencen rammer måneden.
+ */
+function occurrenceDayInMonth(rule: Recurrence, year: number, month: number): DateTime | null {
   const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
   const base = monthStart(year, month);
   const daysInMonth = base.daysInMonth ?? 28;
 
   let date: DateTime;
-
   if (rule.cadence === 'monthly') {
     const md = rule.monthlyDay ?? start.day;
     if (md === 'month') {
-      // Ingen bestemt dag (kun måneden tæller).
-      return null;
+      return null; // ingen bestemt dag (kun måneden tæller)
     } else if (md === 'lastBank') {
-      // Allerede en bankdag → previousBankDay nedenfor er et no-op.
       date = lastBankDayOfMonth(year, month);
     } else if (md === 'firstBank') {
       date = firstBankDayOfMonth(year, month);
@@ -68,13 +63,33 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
     // kvartal/halvår/år/engang: brug ankerdatoens dag-i-måneden
     date = base.set({ day: Math.min(start.day, daysInMonth) });
   }
+  // En fast dag der falder på en bank-lukket dag rykkes til foregående bankdag.
+  return previousBankDay(date);
+}
 
-  // En fast dag der falder på en bank-lukket dag rykkes til foregående bankdag
-  // (overførsler kan ikke ske på helligdage). Bankdag-valgene rammer allerede en
-  // bankdag, så previousBankDay er da et no-op.
-  date = previousBankDay(date);
+/**
+ * Falder reglen i den givne måned? Slutdatoen tjekkes mod forekomstens FAKTISKE dato —
+ * ikke bare slut-måneden: en betaling der ville falde EFTER slutdatoen tæller ikke med
+ * (fx sidste bankdag ≈ 26. feb tæller ikke når slutdatoen er 5. feb). 'month'-dag (ingen
+ * bestemt dato) bruger måneds-grænsen.
+ */
+export function occursInMonth(rule: Recurrence, year: number, month: number): boolean {
+  if (!matchesCadenceInMonth(rule, year, month)) return false;
+  if (!rule.endDate) return true;
+  const occ = occurrenceDayInMonth(rule, year, month);
+  if (occ) {
+    const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('day');
+    return occ <= end;
+  }
+  const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
+  return monthStart(year, month) <= end;
+}
 
-  return date.toFormat('yyyy-MM-dd');
+/** Den konkrete dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null hvis ingen. */
+export function occurrenceDate(rule: Recurrence, year: number, month: number): string | null {
+  if (!occursInMonth(rule, year, month)) return null;
+  const occ = occurrenceDayInMonth(rule, year, month);
+  return occ ? occ.toFormat('yyyy-MM-dd') : null;
 }
 
 /** Forekomster pr. år for en cadence (engang = 0 → indgår ikke i månedsgennemsnit). */
@@ -97,11 +112,52 @@ function occurrencesPerYear(cadence: Recurrence['cadence']): number {
   }
 }
 
-/** Gennemsnitligt månedligt bidrag (øre): forekomster pr. år ÷ 12. */
+/** Gennemsnitligt månedligt bidrag (øre): forekomster pr. år ÷ 12. Ser IKKE på start/slut
+ *  → brug kun til per-måned-udjævning sammen med `isActiveInMonth`. */
 export function monthlyAverageOre(amountOre: number, rule: Recurrence): number {
   return new BigNumber(amountOre)
     .times(occurrencesPerYear(rule.cadence))
     .div(12)
+    .integerValue(BigNumber.ROUND_HALF_UP)
+    .toNumber();
+}
+
+/** Er reglen aktiv i måneden? — til udjævnet ("hensat") visning. Månedlige poster bruger
+ *  den præcise per-forekomst-logik (så en betaling efter slutdatoen heller ikke tæller her);
+ *  periodiske poster udjævnes over hele det aktive vindue [start-måned, slut-måned]. */
+export function isActiveInMonth(rule: Recurrence, year: number, month: number): boolean {
+  if (rule.cadence === 'monthly') return occursInMonth(rule, year, month);
+  const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
+  const target = monthStart(year, month);
+  if (target < start.startOf('month')) return false;
+  if (rule.endDate) {
+    const end = DateTime.fromISO(rule.endDate, { zone: APP_TIMEZONE }).endOf('month');
+    if (target > end) return false;
+  }
+  return true;
+}
+
+/**
+ * Gennemsnitligt månedligt bidrag (øre) over en horisont på `count` måneder fra
+ * `anchorISO` — tæller kun de forekomster der FAKTISK falder (respekterer start/slut).
+ * Konsistent med den realistiske forecast: en post der slutter halvvejs tæller kun i de
+ * måneder den er aktiv. For evige poster er resultatet identisk med `monthlyAverageOre`.
+ */
+export function averageMonthlyOre(
+  amountOre: number,
+  rule: Recurrence,
+  anchorISO: string,
+  count: number,
+): number {
+  const base = DateTime.fromISO(anchorISO, { zone: APP_TIMEZONE }).startOf('month');
+  let occurrences = 0;
+  for (let i = 0; i < count; i++) {
+    const d = base.plus({ months: i });
+    if (occursInMonth(rule, d.year, d.month)) occurrences++;
+  }
+  return new BigNumber(amountOre)
+    .times(occurrences)
+    .div(count)
     .integerValue(BigNumber.ROUND_HALF_UP)
     .toNumber();
 }
