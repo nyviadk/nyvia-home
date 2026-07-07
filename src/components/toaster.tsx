@@ -1,4 +1,4 @@
-import Animated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { dismissToast, useToastStore } from "@/lib/toast/toast-store";
@@ -16,17 +16,21 @@ export function Toaster() {
       style={{
         pointerEvents: "box-none",
         position: "absolute",
+        // Både left OG right sættes → containeren får en reel bredde. Uden left kollapser
+        // absolut-boksen til indholdsbredde på Android (Yoga), og child'ens width:100% blev
+        // til en tynd lodret kasse uden plads til teksten. items-end = top-højre på web,
+        // fuld bredde i toppen på smal mobil.
+        left: insets.left + 16,
+        right: insets.right + 16,
         top: insets.top + 16,
-        right: insets.right + 32,
-        bottom: insets.bottom + 32,
       }}
-      className="items-center gap-2 px-4"
+      className="items-end gap-2"
     >
       {toasts.map((toast) => (
         <Animated.View
           key={toast.id}
           entering={FadeInDown.duration(200)}
-          exiting={FadeOutDown.duration(150)}
+          exiting={FadeOutUp.duration(150)}
           style={{ width: "100%", maxWidth: 440 }}
         >
           <View
