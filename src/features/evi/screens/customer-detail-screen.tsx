@@ -5,6 +5,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Screen } from '@/components/ui/screen';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
+import { notify, notifySaved } from '@/lib/toast/notify';
 import { View } from '@/tw';
 import { AnswerField } from '../components/answer-field';
 import { AnswerView } from '../components/answer-view';
@@ -39,11 +40,6 @@ function groupBySection(fields: EviField[]): Section[] {
   return out;
 }
 
-function SaveIndicator({ state }: { state: 'idle' | 'saving' | 'saved' }) {
-  if (state === 'idle') return null;
-  return <AppText variant="muted">{state === 'saving' ? 'Gemmer…' : 'Gemt ✓'}</AppText>;
-}
-
 const MODE_OPTIONS = [
   { value: 'view' as const, label: 'Ren visning' },
   { value: 'edit' as const, label: 'Rediger' },
@@ -52,7 +48,6 @@ const MODE_OPTIONS = [
 export function EviCustomerDetailScreen({ id }: { id: string }) {
   const customer = useEviCustomersStore((s) => s.items.find((c) => c.id === id));
   const allFields = useEviTemplateStore((s) => s.fields);
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   if (!customer) {
@@ -66,13 +61,9 @@ export function EviCustomerDetailScreen({ id }: { id: string }) {
   const answers = customer.answers ?? {};
 
   const runSave = (p: Promise<unknown>) => {
-    setSaveState('saving');
     p.then(
-      () => {
-        setSaveState('saved');
-        setTimeout(() => setSaveState('idle'), 1500);
-      },
-      () => setSaveState('idle'),
+      () => notifySaved(),
+      () => notify('Kunne ikke gemme — prøv igen'),
     );
   };
 
@@ -102,12 +93,9 @@ export function EviCustomerDetailScreen({ id }: { id: string }) {
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between">
-        <AppText variant="title" numberOfLines={1} className="flex-1">
-          {customer.companyName || 'Uden navn'}
-        </AppText>
-        <SaveIndicator state={saveState} />
-      </View>
+      <AppText variant="title" numberOfLines={1}>
+        {customer.companyName || 'Uden navn'}
+      </AppText>
 
       <Segmented<'view' | 'edit'> value={mode} options={MODE_OPTIONS} onChange={setMode} />
 
