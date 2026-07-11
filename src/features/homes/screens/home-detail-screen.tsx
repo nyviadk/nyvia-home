@@ -7,7 +7,7 @@ import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import { Pressable, View } from '@/tw';
-import { CopyableRow } from '../components/copyable-row';
+import { CopyableRow } from '@/components/ui/copyable-row';
 import { useHomesStore } from '../data/homes-store';
 import { type Landlord, homeLocation } from '../types';
 

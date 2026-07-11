@@ -24,6 +24,7 @@
   --color-accent-moving: #c2752f; /* orange */
   --color-accent-time: #6b5b95; /* violet (timetracker) */
   --color-accent-spending: #4a7c8c; /* dæmpet cyan-blå (forbrug) */
+  --color-accent-evi: #9a5f7e; /* dæmpet plomme (Evi) */
 
   /* Status */
   --color-danger: #b3261e;
@@ -65,6 +66,7 @@
   --color-accent-moving: var(--color-accent-moving);
   --color-accent-time: var(--color-accent-time);
   --color-accent-spending: var(--color-accent-spending);
+  --color-accent-evi: var(--color-accent-evi);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
 

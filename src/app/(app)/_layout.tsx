@@ -24,6 +24,7 @@ const LABELS: Record<string, string> = {
   loans: 'Lån',
   subscriptions: 'Abonnementer',
   timetracker: 'Timetracker',
+  evi: 'Evi',
   settings: 'Indstillinger',
 };
 
@@ -116,6 +117,7 @@ export default function AppDrawerLayout() {
       <Drawer.Screen name="loans" />
       <Drawer.Screen name="subscriptions" />
       <Drawer.Screen name="timetracker" />
+      <Drawer.Screen name="evi" />
     </Drawer>
   );
 }

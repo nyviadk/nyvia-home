@@ -34,6 +34,12 @@ const ITEMS = [
     accent: "text-accent-time",
   },
   {
+    name: "evi",
+    href: "/evi",
+    label: "Evi",
+    accent: "text-accent-evi",
+  },
+  {
     name: "settings",
     href: "/settings",
     label: "Indstillinger",
