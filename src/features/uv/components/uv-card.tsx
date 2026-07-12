@@ -36,6 +36,7 @@ export function UvCard() {
   const usage = useUvStore((s) => s.usage);
 
   const [showPlaces, setShowPlaces] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   useEffect(() => {
     void refreshUv();
@@ -51,6 +52,7 @@ export function UvCard() {
 
   const available = places.map((p) => snapshots[p.id]).filter((s): s is NonNullable<typeof s> => !!s);
   const combined = aggregateSnapshots(available);
+  const notifyPlace = places.find((p) => p.id === notifyPlaceId) ?? null;
 
   return (
     <Card className="gap-4">
@@ -93,49 +95,73 @@ export function UvCard() {
 
       {showPlaces || places.length === 0 ? <PlacePicker /> : null}
 
+      {/* Varsler foldes sammen: man rører dem én gang, men de fyldte hele kortet. Status
+          står i overskriften, så man kan se om de er slået til uden at folde ud. */}
       {isNative && places.length > 0 ? (
         <View className="gap-2 border-t border-border pt-3">
-          <View className="flex-row items-center justify-between gap-3">
-            <View className="flex-1">
-              <AppText variant="label">Varsl mig før UV rammer 3</AppText>
-              <AppText variant="muted">
-                Lokalt varsel {UV_ALERT_LEAD_MIN} min før UV rammer 3 — og igen når det falder
-                under (så du ved, du ikke behøver solcreme mere).
-              </AppText>
-            </View>
-            <Switch value={notifyEnabled} onValueChange={(v) => void setUvNotifyEnabled(v)} />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowAlerts((v) => !v)}
+            className="flex-row items-center gap-2 rounded-lg py-0.5 hover:bg-element">
+            <AppText variant="muted">{showAlerts ? '▾' : '▸'}</AppText>
+            <AppText variant="label">Varsler</AppText>
+            <AppText variant="muted" numberOfLines={1} className="flex-1 text-xs">
+              {notifyEnabled
+                ? `Til${notifyPlace ? ` · ${shortPlaceName(notifyPlace.name)}` : ''}`
+                : 'Fra'}
+            </AppText>
+          </Pressable>
 
-          {/* Telefonen ved ikke hvor du er — så varslerne skal knyttes til ét bestemt sted. */}
-          {notifyEnabled && places.length > 1 ? (
-            <View className="gap-1.5">
-              <AppText variant="muted" className="text-xs">
-                Varsl for hvilket sted?
-              </AppText>
-              <View className="flex-row flex-wrap gap-2">
-                {places.map((p) => {
-                  const on = p.id === notifyPlaceId;
-                  return (
-                    <Pressable
-                      key={p.id}
-                      accessibilityRole="button"
-                      onPress={() => void setNotifyPlace(p.id)}
-                      style={{ borderCurve: 'continuous' }}
-                      className={cn(
-                        'rounded-full border px-3 py-1.5',
-                        on ? 'border-primary bg-primary' : 'border-border bg-card hover:bg-element',
-                      )}>
-                      <Text
-                        numberOfLines={1}
-                        style={{ maxWidth: 140 }}
-                        className={cn('text-xs', on ? 'font-medium text-on-primary' : 'text-fg')}>
-                        {shortPlaceName(p.name)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+          {showAlerts ? (
+            <>
+              <View className="flex-row items-center justify-between gap-3">
+                <View className="flex-1">
+                  <AppText variant="label">Varsl mig før UV rammer 3</AppText>
+                  <AppText variant="muted">
+                    Lokalt varsel {UV_ALERT_LEAD_MIN} min før UV rammer 3 — og igen når det
+                    falder under (så du ved, du ikke behøver solcreme mere).
+                  </AppText>
+                </View>
+                <Switch value={notifyEnabled} onValueChange={(v) => void setUvNotifyEnabled(v)} />
               </View>
-            </View>
+
+              {/* Telefonen ved ikke hvor du er — så varslerne knyttes til ét bestemt sted. */}
+              {notifyEnabled && places.length > 1 ? (
+                <View className="gap-1.5">
+                  <AppText variant="muted" className="text-xs">
+                    Varsl for hvilket sted?
+                  </AppText>
+                  <View className="flex-row flex-wrap gap-2">
+                    {places.map((p) => {
+                      const on = p.id === notifyPlaceId;
+                      return (
+                        <Pressable
+                          key={p.id}
+                          accessibilityRole="button"
+                          onPress={() => void setNotifyPlace(p.id)}
+                          style={{ borderCurve: 'continuous' }}
+                          className={cn(
+                            'rounded-full border px-3 py-1.5',
+                            on
+                              ? 'border-primary bg-primary'
+                              : 'border-border bg-card hover:bg-element',
+                          )}>
+                          <Text
+                            numberOfLines={1}
+                            style={{ maxWidth: 140 }}
+                            className={cn(
+                              'text-xs',
+                              on ? 'font-medium text-on-primary' : 'text-fg',
+                            )}>
+                            {shortPlaceName(p.name)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : null}
+            </>
           ) : null}
         </View>
       ) : null}
