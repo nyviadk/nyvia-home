@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:open-meteo.com)",
+      "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=55.6761&longitude=12.5683&current=uv_index&hourly=uv_index&daily=uv_index_max&timezone=auto&forecast_days=3&timeformat=unixtime\")",
+      "Bash(curl -s \"https://ipwho.is/\")",
+      "Bash(curl -s \"https://geocoding-api.open-meteo.com/v1/search?name=Tranbjerg&count=3&language=da&format=json\")",
+      "Bash(curl -s \"https://geocoding-api.open-meteo.com/v1/search?name=Aarhus&count=2&language=da&format=json\")"
+    ]
+  },
   "enabledPlugins": {
     "expo@claude-plugins-official": true
   }
