@@ -7,6 +7,17 @@ export interface UvPlace {
   lon: number;
 }
 
+/**
+ * Steds-indstillinger gemt på KONTOEN (Firestore), så web og telefon deler de samme steder.
+ * type-alias (ikke interface) → tildelbar til Record<string, unknown> for db-facaden.
+ */
+export type UvSettings = {
+  places: UvPlace[];
+  /** Hvilket sted varslerne følger (telefonen ved ikke hvor du er). */
+  notifyPlaceId: string | null;
+  updatedAt: string;
+};
+
 /** Ét punkt i prognosen. `t` er unix-sekunder → entydigt, uafhængigt af tidszone. */
 export interface UvPoint {
   t: number;

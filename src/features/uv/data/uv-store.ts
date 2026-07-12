@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { auth, type Unsubscribe } from '@/lib/firebase';
+import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
 import { persistOptions } from '@/lib/storage/persist-options';
 import { notify } from '@/lib/toast/notify';
 import { cancelUvAlerts, ensureNotificationPermission, scheduleUvAlerts } from '../notifications';
 import type { UvPlace, UvSnapshot } from '../types';
 import { formatHour, shortPlaceName } from '../uv.utils';
 import { fetchUvForecast } from './open-meteo';
+import { saveUvSettings, subscribeUvSettings } from './uv-settings.repository';
 import { canSpend, EMPTY_USAGE, spend, type Usage } from './usage';
 
 /**
@@ -18,16 +21,20 @@ const MIN_INTERVAL_MS = 2 * 60_000;
 export const MAX_PLACES = 5;
 
 interface UvState {
+  /** Gemt på KONTOEN (Firestore) → deles mellem web og telefon. Persisteres kun som cache. */
   places: UvPlace[];
-  /** Ét snapshot PR. sted — alle steder vises samtidig. */
+  /** Ét snapshot PR. sted — alle steder vises samtidig. Ren lokal cache (vejrdata deles ikke). */
   snapshots: Record<string, UvSnapshot>;
   loading: boolean;
   error: string | null;
   /** Forbrug mod Open-Meteos grænser (minut/time/dag/måned). */
+  /** Lokalt: forbrug tælles pr. enhed (Open-Meteo sender ingen kvote-headers). */
   usage: Usage;
+  /** Lokalt: notifikations-tilladelse er per enhed. */
   notifyEnabled: boolean;
-  /** Hvilket sted varslerne gælder (kan kun være ét — telefonen ved ikke hvor du er). */
+  /** Gemt på kontoen: hvilket sted varslerne gælder (telefonen ved ikke hvor du er). */
   notifyPlaceId: string | null;
+  /** Lokalt: id'er på planlagte varsler i Androids scheduler. */
   scheduledIds: string[];
 }
 
@@ -174,6 +181,16 @@ export async function refreshUv(manual = false): Promise<void> {
   }
 }
 
+/**
+ * Skriv steder til KONTOEN (Firestore). Optimistisk: local state er allerede opdateret, så
+ * UI'et er øjeblikkeligt — Firestore-køen håndterer offline, og listeneren nedenfor bekræfter.
+ */
+function persistPlaces(places: UvPlace[], notifyPlaceId: string | null): void {
+  void saveUvSettings(places, notifyPlaceId).catch(() => {
+    notify('Kunne ikke gemme steder på kontoen');
+  });
+}
+
 /** Tilføj et sted (maks MAX_PLACES) og hent UV for det med det samme. */
 export async function addPlace(place: UvPlace): Promise<void> {
   const s = useUvStore.getState();
@@ -184,12 +201,13 @@ export async function addPlace(place: UvPlace): Promise<void> {
     return;
   }
 
-  useUvStore.setState({
-    places: exists ? s.places.map((p) => (p.id === place.id ? place : p)) : [...s.places, place],
-    notifyPlaceId: s.notifyPlaceId ?? place.id,
-    loading: true,
-    error: null,
-  });
+  const places = exists
+    ? s.places.map((p) => (p.id === place.id ? place : p))
+    : [...s.places, place];
+  const notifyPlaceId = s.notifyPlaceId ?? place.id;
+
+  useUvStore.setState({ places, notifyPlaceId, loading: true, error: null });
+  persistPlaces(places, notifyPlaceId);
 
   const { failed } = await fetchInto([place]);
   notify(
@@ -207,13 +225,16 @@ export async function removePlace(id: string): Promise<void> {
 
   const notifyPlaceId = s.notifyPlaceId === id ? (places[0]?.id ?? null) : s.notifyPlaceId;
   useUvStore.setState({ places, snapshots, notifyPlaceId, error: null });
+  persistPlaces(places, notifyPlaceId);
 
   if (s.notifyPlaceId === id) await syncAlerts();
 }
 
 /** Vælg hvilket sted varslerne gælder. */
 export async function setNotifyPlace(id: string): Promise<void> {
+  const s = useUvStore.getState();
   useUvStore.setState({ notifyPlaceId: id });
+  persistPlaces(s.places, id);
   await syncAlerts();
 }
 
@@ -238,3 +259,41 @@ export async function setUvNotifyEnabled(enabled: boolean): Promise<void> {
   useUvStore.setState({ notifyEnabled: true, error: null });
   await syncAlerts();
 }
+
+// ── Steder synkes fra kontoen (Firestore) ────────────────────────────────────────────────
+// Én listener mens brugeren er logget ind. Tilføjer/fjerner du et sted på web, slår det
+// igennem på telefonen og omvendt. De persisterede `places` er kun en cache til kold start.
+
+let unsubscribe: Unsubscribe | null = null;
+
+function start() {
+  if (unsubscribe) return;
+  unsubscribe = subscribeUvSettings((doc) => {
+    const places = doc?.places ?? [];
+    const notifyPlaceId = doc?.notifyPlaceId ?? null;
+
+    // Ryd cachede snapshots for steder der ikke findes længere (fx slettet på en anden enhed).
+    const ids = new Set(places.map((p) => p.id));
+    const snapshots = Object.fromEntries(
+      Object.entries(useUvStore.getState().snapshots).filter(([id]) => ids.has(id)),
+    );
+
+    useUvStore.setState({ places, notifyPlaceId, snapshots });
+    // Hent UV for evt. nye steder (refreshUv henter kun dem der mangler/er forældede).
+    void refreshUv();
+  });
+}
+
+function stop() {
+  unsubscribe?.();
+  unsubscribe = null;
+  useUvStore.setState({ places: [], notifyPlaceId: null, snapshots: {} });
+}
+
+hotReloadSubscribe('nyvia.uv-settings', () => {
+  const unsubAuth = auth.onAuthStateChanged((user) => (user ? start() : stop()));
+  return () => {
+    unsubAuth();
+    stop();
+  };
+});
