@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-
 import { DateField } from '@/components/ui/date-field';
 import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
+import { cn } from '@/lib/cn';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import type { Cadence } from '@/lib/recurrence/types';
 import { normalizeDateInput, type RecurrenceForm } from '@/lib/recurrence/recurrence-form';
-import { Pressable, View } from '@/tw';
+import { Pressable, Text, View } from '@/tw';
 
 const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?$/;
 
@@ -29,40 +27,45 @@ const DAY_KIND_OPTIONS = [
   { value: 'month' as const, label: 'Kun måned' },
 ];
 
-/** "Hver [N] måned(er)" — tal-felt der tillader midlertidig tom mens man skriver, og
- *  klamper til 1–120 ved blur. Lokal tekst-state så markøren ikke hopper under indtastning. */
+function StepButton({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={6}
+      className={cn('px-4 py-2', disabled ? 'opacity-30' : 'hover:bg-element active:bg-selected')}>
+      <Text className="text-xl leading-none text-fg">{label}</Text>
+    </Pressable>
+  );
+}
+
+/** "Hver N. måned" som stepper (± knapper). Bevidst uden tekstfelt/lokal state — derive-under-
+ *  render (jf. projekt-reglen), og robust på Android. Klampes til 1–120. */
 function IntervalField({ value, onChange }: { value: number; onChange: (n: number) => void }) {
-  const [text, setText] = useState(String(value));
-  const focused = useRef(false);
-  useEffect(() => {
-    if (!focused.current) setText(String(value));
-  }, [value]);
+  const set = (n: number) => onChange(Math.min(Math.max(Math.floor(n), 1), 120));
 
   return (
     <View className="gap-1.5">
-      <View className="flex-row items-center gap-2">
+      <View className="flex-row items-center gap-3">
         <AppText variant="muted">Hver</AppText>
-        <Input
-          value={text}
-          onChangeText={(t) => {
-            const clean = t.replace(/[^0-9]/g, '');
-            setText(clean);
-            const n = Number.parseInt(clean, 10);
-            if (Number.isFinite(n) && n >= 1) onChange(Math.min(n, 120));
-          }}
-          onFocus={() => {
-            focused.current = true;
-          }}
-          onBlur={() => {
-            focused.current = false;
-            const n = Number.parseInt(text, 10);
-            const clamped = Number.isFinite(n) ? Math.min(Math.max(n, 1), 120) : 1;
-            setText(String(clamped));
-            onChange(clamped);
-          }}
-          keyboardType="number-pad"
-          className="w-16 text-center"
-        />
+        <View
+          className="flex-row items-center overflow-hidden rounded-xl border border-border bg-card"
+          style={{ borderCurve: 'continuous' }}>
+          <StepButton label="−" onPress={() => set(value - 1)} disabled={value <= 1} />
+          <View className="items-center border-x border-border py-2" style={{ minWidth: 44 }}>
+            <Text className="text-base font-semibold text-fg">{value}</Text>
+          </View>
+          <StepButton label="+" onPress={() => set(value + 1)} disabled={value >= 120} />
+        </View>
         <AppText variant="muted">måned(er)</AppText>
       </View>
       <AppText variant="muted" className="text-xs">
