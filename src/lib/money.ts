@@ -39,9 +39,14 @@ export function formatDKK(ore: number): string {
   return dkk.format(normalizeZero(oreToKroner(ore).toNumber(), 2));
 }
 
-/** Formatér øre uden ører, fx 4200000 → "42.000 kr." */
+/**
+ * Formatér øre uden ører, fx 4200000 → "42.000 kr." Runder ALTID OP (væk fra nul), så et beløb
+ * aldrig vises lavere end det reelle: 314,75 → 315, 314,25 → 315, og et underskud -314,25 → -315.
+ * (Al hele-kroner-visning går gennem denne — 2-decimal-visningen `formatDKK` er eksakt.)
+ */
 export function formatDKKWhole(ore: number): string {
-  return dkkWhole.format(normalizeZero(oreToKroner(ore).toNumber(), 0));
+  const rounded = oreToKroner(ore).integerValue(BigNumber.ROUND_UP).toNumber();
+  return dkkWhole.format(normalizeZero(rounded, 0));
 }
 
 const dkkInput = new Intl.NumberFormat('da-DK', {
