@@ -293,6 +293,26 @@ export function runningForecast(
 }
 
 /**
+ * Realiserede (tidligere) budgetmåneder: fra budgetstart til og med måneden FØR forecast-
+ * ankeret (= denne måned, eller budgetstart hvis den ligger i fremtiden). Tom hvis budgettet
+ * endnu ikke er begyndt. Ældste → nyeste, så listen leder naturligt op til "Kommende måneder".
+ */
+export function pastRunningForecast(
+  input: ForecastInput,
+  budgetStartDate: string | null,
+  mode: ForecastMode = "realistic",
+): RunningMonth[] {
+  if (!budgetStartDate) return [];
+  const start = DateTime.fromISO(budgetStartDate, { zone: APP_TIMEZONE }).startOf("month");
+  const anchor = DateTime.fromISO(forecastAnchorISO(budgetStartDate), {
+    zone: APP_TIMEZONE,
+  }).startOf("month");
+  const count = Math.round(anchor.diff(start, "months").months);
+  if (count <= 0) return [];
+  return runningForecast(count, input, start.toFormat("yyyy-MM-dd"), mode);
+}
+
+/**
  * Overført saldo fra AFSLUTTEDE måneder: summen af realiserede (aktuelle) net for
  * hver måned fra budgetstart til og med sidste hele måned før denne måned. Måneder
  * der endnu ikke er omme tæller ikke med (carry-over sker først når måneden er omme).

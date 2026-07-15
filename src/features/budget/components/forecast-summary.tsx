@@ -6,16 +6,18 @@ import { Segmented } from "@/components/ui/segmented";
 import { AppText } from "@/components/ui/text";
 import { cn } from "@/lib/cn";
 import { formatMonthCopenhagen, todayISODate } from "@/lib/datetime";
-import { View } from "@/tw";
+import { Pressable, View } from "@/tw";
 import { useBudgetSettingsStore } from "../data/budget-settings-store";
 import {
   setBudgetViewMode,
+  toggleBudgetPast,
   useBudgetViewStore,
 } from "../data/budget-view-store";
 import {
   carriedBalanceOre,
   forecastAnchorISO,
   type ForecastMode,
+  pastRunningForecast,
   runningForecast,
   totalSavedOre,
 } from "../forecast";
@@ -58,6 +60,7 @@ export function ForecastSummary() {
   const startDate = useBudgetSettingsStore((s) => s.startDate);
   const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
   const mode = useBudgetViewStore((s) => s.mode);
+  const showPast = useBudgetViewStore((s) => s.showPast);
 
   const anchorISO = forecastAnchorISO(startDate);
   // Begge visninger beregnes ÉN gang (samme input) og caches → skift realistisk↔hensat er
@@ -70,6 +73,15 @@ export function ForecastSummary() {
     [input, anchorISO]
   );
   const months = mode === "smoothed" ? both.smoothed : both.realistic;
+  // Tidligere (realiserede) måneder fra budgetstart til nu — foldet ud efter ønske.
+  const pastBoth = useMemo(
+    () => ({
+      realistic: pastRunningForecast(input, startDate, "realistic"),
+      smoothed: pastRunningForecast(input, startDate, "smoothed"),
+    }),
+    [input, startDate]
+  );
+  const past = mode === "smoothed" ? pastBoth.smoothed : pastBoth.realistic;
   const anchor = months[0];
   const isThisMonth = anchorISO.slice(0, 7) === todayISODate().slice(0, 7);
   const yearlyDisposable = overview.disposableOre * 12;
@@ -163,6 +175,19 @@ export function ForecastSummary() {
             />
           </View>
         ) : null}
+        {past.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={toggleBudgetPast}
+            className="flex-row items-center gap-1 py-1"
+          >
+            <AppText variant="muted" className="text-xs">
+              {showPast
+                ? "▾ Skjul tidligere måneder"
+                : `▸ Vis tidligere måneder (${past.length})`}
+            </AppText>
+          </Pressable>
+        ) : null}
         <View className="flex-row items-baseline pb-1">
           <AppText variant="muted" className="flex-1 text-xs">
             Måned
@@ -174,6 +199,9 @@ export function ForecastSummary() {
             Aktuel
           </AppText>
         </View>
+        {showPast
+          ? past.map((m) => <ForecastMonthRow key={m.ym} month={m} />)
+          : null}
         {months.map((m) => (
           <ForecastMonthRow key={m.ym} month={m} />
         ))}
