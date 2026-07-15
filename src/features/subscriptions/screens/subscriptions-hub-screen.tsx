@@ -7,7 +7,6 @@ import { MoneyText } from '@/components/ui/money-text';
 import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { todayISODate } from '@/lib/datetime';
 import { View } from '@/tw';
 import { SubscriptionRow } from '../components/subscription-row';
 import { useSubscriptionsStore } from '../data/subscriptions-store';
@@ -23,7 +22,7 @@ export function SubscriptionsHubScreen() {
   const visible = subscriptions
     .filter((s) => !pendingIds.has(s.id))
     .sort((a, b) => b.amount - a.amount);
-  const totalMonthly = totalMonthlyAverageOre(visible, todayISODate(), 12);
+  const totalMonthly = totalMonthlyAverageOre(visible);
 
   return (
     <Screen>
