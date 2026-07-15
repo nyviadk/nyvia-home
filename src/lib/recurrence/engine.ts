@@ -30,28 +30,49 @@ function parseStartISO(iso: string): DateTime {
   return d;
 }
 
+/**
+ * Periode i måneder mellem forekomster. `monthly` bruger `intervalMonths` (default 1, mindst 1);
+ * de faste cadencer er 3/6/12/24/36; `once` = 0. Al periode-logik ét sted, så månedsgennemsnit,
+ * horisont-udvidelse og cadence-match altid er enige.
+ */
+function intervalMonthsOf(rule: Recurrence): number {
+  switch (rule.cadence) {
+    case 'once':
+      return 0;
+    case 'monthly': {
+      const n = Math.floor(rule.intervalMonths ?? 1);
+      return n >= 1 ? n : 1;
+    }
+    case 'quarterly':
+      return 3;
+    case 'half_yearly':
+      return 6;
+    case 'yearly':
+      return 12;
+    case 'biennial':
+      return 24;
+    case 'triennial':
+      return 36;
+  }
+}
+
+/**
+ * Ægte månedlig = hver måned (interval 1). "Hver N. måned" (N>1) er reelt periodisk og skal
+ * behandles som kvartal/år (fx i hensat-udjævningen), ikke som en almindelig månedlig post.
+ */
+export function isTrulyMonthly(rule: Recurrence): boolean {
+  return rule.cadence === 'monthly' && (rule.intervalMonths ?? 1) <= 1;
+}
+
 /** Rammer cadencen den givne måned (uden slut-grænse)? Start tjekkes på måneds-niveau. */
 function matchesCadenceInMonth(rule: Recurrence, year: number, month: number): boolean {
   const start = parseStartISO(rule.startDate);
   // Måneds-aritmetik i stedet for luxon-diff/-sammenligning (langt hurtigere på Hermes).
   if (year < start.year || (year === start.year && month < start.month)) return false;
   const diff = (year - start.year) * 12 + (month - start.month);
-  switch (rule.cadence) {
-    case 'once':
-      return diff === 0;
-    case 'monthly':
-      return true;
-    case 'quarterly':
-      return diff % 3 === 0;
-    case 'half_yearly':
-      return diff % 6 === 0;
-    case 'yearly':
-      return diff % 12 === 0;
-    case 'biennial':
-      return diff % 24 === 0;
-    case 'triennial':
-      return diff % 36 === 0;
-  }
+  if (rule.cadence === 'once') return diff === 0;
+  // Forekomst hver N. måned regnet fra startmåneden (N=1 → hver måned).
+  return diff % intervalMonthsOf(rule) === 0;
 }
 
 /**
@@ -121,31 +142,17 @@ export function occurrenceDate(rule: Recurrence, year: number, month: number): s
   return occ ? occ.toFormat('yyyy-MM-dd') : null;
 }
 
-/** Forekomster pr. år for en cadence (engang = 0 → indgår ikke i månedsgennemsnit). */
-function occurrencesPerYear(cadence: Recurrence['cadence']): number {
-  switch (cadence) {
-    case 'monthly':
-      return 12;
-    case 'quarterly':
-      return 4;
-    case 'half_yearly':
-      return 2;
-    case 'yearly':
-      return 1;
-    case 'biennial':
-      return 0.5;
-    case 'triennial':
-      return 1 / 3;
-    case 'once':
-      return 0;
-  }
+/** Forekomster pr. år (engang = 0 → indgår ikke i månedsgennemsnit). 12 ÷ periode-i-måneder. */
+function occurrencesPerYear(rule: Recurrence): number {
+  const interval = intervalMonthsOf(rule);
+  return interval === 0 ? 0 : 12 / interval;
 }
 
 /** Gennemsnitligt månedligt bidrag (øre): forekomster pr. år ÷ 12. Ser IKKE på start/slut
  *  → brug kun til per-måned-udjævning sammen med `isActiveInMonth`. */
 export function monthlyAverageOre(amountOre: number, rule: Recurrence): number {
   return new BigNumber(amountOre)
-    .times(occurrencesPerYear(rule.cadence))
+    .times(occurrencesPerYear(rule))
     .div(12)
     .integerValue(BigNumber.ROUND_HALF_UP)
     .toNumber();
@@ -155,7 +162,9 @@ export function monthlyAverageOre(amountOre: number, rule: Recurrence): number {
  *  den præcise per-forekomst-logik (så en betaling efter slutdatoen heller ikke tæller her);
  *  periodiske poster udjævnes over hele det aktive vindue [start-måned, slut-måned]. */
 export function isActiveInMonth(rule: Recurrence, year: number, month: number): boolean {
-  if (rule.cadence === 'monthly') return occursInMonth(rule, year, month);
+  // Ægte månedlig (hver måned) → præcis per-forekomst. "Hver N. måned" (N>1) er reelt periodisk
+  // og udjævnes derfor over hele vinduet, ligesom kvartal/år.
+  if (isTrulyMonthly(rule)) return occursInMonth(rule, year, month);
   const start = DateTime.fromISO(rule.startDate, { zone: APP_TIMEZONE });
   const target = monthStart(year, month);
   if (target < start.startOf('month')) return false;
@@ -164,26 +173,6 @@ export function isActiveInMonth(rule: Recurrence, year: number, month: number): 
     if (target > end) return false;
   }
   return true;
-}
-
-/** Cadencens periode i måneder — til horisont-udvidelse så sjældne cadencer udjævnes korrekt. */
-function periodMonths(cadence: Recurrence['cadence']): number {
-  switch (cadence) {
-    case 'monthly':
-      return 1;
-    case 'quarterly':
-      return 3;
-    case 'half_yearly':
-      return 6;
-    case 'yearly':
-      return 12;
-    case 'biennial':
-      return 24;
-    case 'triennial':
-      return 36;
-    case 'once':
-      return 0;
-  }
 }
 
 /**
@@ -201,7 +190,7 @@ export function averageMonthlyOre(
   // Udvid horisonten til mindst cadencens periode, så sjældne cadencer (biennial 24 mdr,
   // triennial 36 mdr) fanger præcis én forekomst → korrekt beløb/24 hhv. beløb/36 i stedet
   // for at hoppe mellem beløb/12 og 0. ≤årlige poster er upåvirkede (periode ≤ 12).
-  const horizon = Math.max(count, periodMonths(rule.cadence));
+  const horizon = Math.max(count, intervalMonthsOf(rule));
   const base = DateTime.fromISO(anchorISO, { zone: APP_TIMEZONE }).startOf('month');
   let occurrences = 0;
   for (let i = 0; i < horizon; i++) {
@@ -221,7 +210,7 @@ export function averageMonthlyOre(
  * hvis den faktisk forfalder i det — så poster der først starter langt ude ikke hensættes for tidligt.
  */
 export function occursWithinHorizon(rule: Recurrence, anchorISO: string, count: number): boolean {
-  const horizon = Math.max(count, periodMonths(rule.cadence));
+  const horizon = Math.max(count, intervalMonthsOf(rule));
   const base = DateTime.fromISO(anchorISO, { zone: APP_TIMEZONE }).startOf('month');
   for (let i = 0; i < horizon; i++) {
     const d = base.plus({ months: i });

@@ -7,6 +7,8 @@ import type { MonthlyDay, Recurrence } from './types';
 export const recurrenceFormSchema = z.object({
   cadence: z.enum(['monthly', 'quarterly', 'half_yearly', 'yearly', 'biennial', 'triennial', 'once']),
   monthlyDayKind: z.enum(['day', 'firstBank', 'lastBank', 'month']),
+  /** Kun for cadence='monthly': gentag hver N. måned (default 1). */
+  intervalMonths: z.number().int().min(1).max(120).optional(),
   // ÅÅÅÅ-MM (måned, ved bankdag/kun-måned) eller ÅÅÅÅ-MM-DD (bestemt dag / kvartal/år/engang).
   startDate: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, 'Vælg en startdato'),
   // Valgfri slutdato (tom = ingen).
@@ -36,11 +38,14 @@ export function toRecurrence(form: RecurrenceForm): Recurrence {
     // Ved "bestemt dag" udledes dagen af startdatoen; ellers er det selve bankdag-/måned-valget.
     monthlyDay = form.monthlyDayKind === 'day' ? dayOfDate(form.startDate) : form.monthlyDayKind;
   }
+  // Kun gem intervalMonths for månedlig og kun når > 1 (1 = default → renere data).
+  const interval = form.cadence === 'monthly' ? Math.max(1, Math.floor(form.intervalMonths ?? 1)) : 1;
   const endDate = form.endDate?.trim() ? normalizeDateInput(form.endDate.trim()) : undefined;
   return {
     cadence: form.cadence,
     startDate: normalizeDateInput(form.startDate),
     ...(monthlyDay !== undefined ? { monthlyDay } : {}),
+    ...(interval > 1 ? { intervalMonths: interval } : {}),
     ...(endDate ? { endDate } : {}),
   };
 }
@@ -63,6 +68,7 @@ export function fromRecurrence(rule: Recurrence): RecurrenceForm {
     cadence: rule.cadence,
     monthlyDayKind: kind,
     startDate,
+    intervalMonths: rule.cadence === 'monthly' ? Math.max(1, Math.floor(rule.intervalMonths ?? 1)) : 1,
     endDate: rule.endDate ?? '',
   };
 }
@@ -72,6 +78,7 @@ export function defaultRecurrenceForm(startDate?: string): RecurrenceForm {
     cadence: 'monthly',
     monthlyDayKind: 'day',
     startDate: startDate ?? todayISODate(),
+    intervalMonths: 1,
     endDate: '',
   };
 }

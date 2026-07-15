@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import { APP_TIMEZONE } from "@/lib/datetime";
 import {
   isActiveInMonth,
+  isTrulyMonthly,
   monthlyAverageOre,
   occursInMonth,
   occursWithinHorizon,
@@ -142,7 +143,8 @@ function provisionableRules(
 ): Set<ForecastRule> {
   const set = new Set<ForecastRule>();
   for (const r of rules) {
-    if (r.recurrence.cadence !== "monthly" && occursWithinHorizon(r.recurrence, anchorISO, count)) {
+    // "Hver N. måned" (N>1) er periodisk ligesom kvartal/år → forudhensættes.
+    if (!isTrulyMonthly(r.recurrence) && occursWithinHorizon(r.recurrence, anchorISO, count)) {
       set.add(r);
     }
   }
@@ -190,9 +192,9 @@ function sumForMonth(
     .reduce((sum, r) => {
       if (mode === "smoothed") {
         const rec = r.recurrence;
-        // Månedlige poster udjævnes IKKE kunstigt — de vises præcist (respekterer start/slut),
-        // så en tidsbegrænset månedlig udgift ærligt falder bort den måned den stopper.
-        if (rec.cadence === "monthly") {
+        // Ægte månedlige poster (hver måned) udjævnes IKKE kunstigt — de vises præcist
+        // (respekterer start/slut). "Hver N. måned" (N>1) falder til periodisk-grenen nedenfor.
+        if (isTrulyMonthly(rec)) {
           const active = r.advanceMonth
             ? isActiveInMonth(rec, prev.year, prev.month)
             : isActiveInMonth(rec, year, month);

@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
+
 import { DateField } from '@/components/ui/date-field';
 import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
 import { formatDateCopenhagen } from '@/lib/datetime';
@@ -25,6 +28,49 @@ const DAY_KIND_OPTIONS = [
   { value: 'lastBank' as const, label: 'Sidste bankdag' },
   { value: 'month' as const, label: 'Kun måned' },
 ];
+
+/** "Hver [N] måned(er)" — tal-felt der tillader midlertidig tom mens man skriver, og
+ *  klamper til 1–120 ved blur. Lokal tekst-state så markøren ikke hopper under indtastning. */
+function IntervalField({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [text, setText] = useState(String(value));
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setText(String(value));
+  }, [value]);
+
+  return (
+    <View className="gap-1.5">
+      <View className="flex-row items-center gap-2">
+        <AppText variant="muted">Hver</AppText>
+        <Input
+          value={text}
+          onChangeText={(t) => {
+            const clean = t.replace(/[^0-9]/g, '');
+            setText(clean);
+            const n = Number.parseInt(clean, 10);
+            if (Number.isFinite(n) && n >= 1) onChange(Math.min(n, 120));
+          }}
+          onFocus={() => {
+            focused.current = true;
+          }}
+          onBlur={() => {
+            focused.current = false;
+            const n = Number.parseInt(text, 10);
+            const clamped = Number.isFinite(n) ? Math.min(Math.max(n, 1), 120) : 1;
+            setText(String(clamped));
+            onChange(clamped);
+          }}
+          keyboardType="number-pad"
+          className="w-16 text-center"
+        />
+        <AppText variant="muted">måned(er)</AppText>
+      </View>
+      <AppText variant="muted" className="text-xs">
+        1 = hver måned · 3 = kvartal · 6 = halvår · 12 = år
+      </AppText>
+    </View>
+  );
+}
 
 /** Controlled gentagelses-vælger (genbruges af budget + abonnementer). */
 export function RecurrencePicker({
@@ -60,6 +106,15 @@ export function RecurrencePicker({
           onChange={(cadence) => onChange({ ...value, cadence })}
         />
       </FormField>
+
+      {value.cadence === 'monthly' ? (
+        <FormField label="Hvor ofte">
+          <IntervalField
+            value={value.intervalMonths ?? 1}
+            onChange={(intervalMonths) => onChange({ ...value, intervalMonths })}
+          />
+        </FormField>
+      ) : null}
 
       {value.cadence === 'monthly' ? (
         <FormField label="Hvornår på måneden">

@@ -23,4 +23,10 @@ export type Recurrence = {
   endDate?: string;
   /** Kun for cadence='monthly'. Default = dag fra startDate. */
   monthlyDay?: MonthlyDay;
+  /**
+   * Kun for cadence='monthly': gentag hver N. måned (default 1). 3 = kvartal, 12 = år, 4 =
+   * hver 4. måned. Anker = startmåneden. Generaliserer de faste cadencer, som bevares for
+   * bagudkompatibilitet (en 'quarterly'-regel er identisk med monthly + intervalMonths:3).
+   */
+  intervalMonths?: number;
 };

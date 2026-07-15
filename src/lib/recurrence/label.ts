@@ -27,7 +27,9 @@ export function recurrenceLabel(rule: Recurrence): string {
             : day === 'month'
               ? 'kun måned'
               : `d. ${day ?? ''}`;
-      return `Månedligt · ${dayLabel}${stop}`;
+      const interval = Math.max(1, Math.floor(rule.intervalMonths ?? 1));
+      const every = interval === 1 ? 'Månedligt' : `Hver ${interval}. måned`;
+      return `${every} · ${dayLabel}${stop}`;
     }
   }
 }
