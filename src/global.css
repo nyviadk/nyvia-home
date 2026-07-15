@@ -28,6 +28,7 @@
 
   /* Status */
   --color-danger: #b3261e;
+  --color-warning: #b0791f; /* dæmpet amber (afventer) */
   --color-success: #2e7d32;
 
   /* Fonts */
@@ -68,6 +69,7 @@
   --color-accent-spending: var(--color-accent-spending);
   --color-accent-evi: var(--color-accent-evi);
   --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
   --color-success: var(--color-success);
 
   --font-sans: var(--font-display);

@@ -7,11 +7,25 @@ import {
   deleteAddressChange,
   setAddressChangeStatus,
 } from '../data/address-changes.repository';
-import { ADDRESS_CHANGE_STATUSES, type AddressChange, type AddressChangeStatus } from '../types';
+import {
+  ADDRESS_CHANGE_STATUSES,
+  STATUS_TONE,
+  type AddressChange,
+  type AddressChangeStatus,
+  type StatusTone,
+} from '../types';
+
+/** Rød (ikke startet) · gul (afventer) · grøn (færdig). Statiske klasser → Tailwind-compileren ser dem. */
+const TONE_DOT: Record<StatusTone, string> = {
+  danger: 'bg-danger',
+  warning: 'bg-warning',
+  success: 'bg-success',
+};
 
 export function AddressChangeRow({ change }: { change: WithId<AddressChange> }) {
   return (
     <Card className="flex-row items-center gap-3">
+      <View className={`h-2.5 w-2.5 rounded-full ${TONE_DOT[STATUS_TONE[change.status]]}`} />
       <AppText variant="label" className="flex-1">
         {change.name}
       </AppText>
