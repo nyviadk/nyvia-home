@@ -1,6 +1,7 @@
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useDrawerStatusStore } from "@/lib/nav/drawer-status-store";
 import { dismissToast, useToastStore } from "@/lib/toast/toast-store";
 import { Pressable, Text, View } from "@/tw";
 
@@ -8,8 +9,12 @@ import { Pressable, Text, View } from "@/tw";
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
   const insets = useSafeAreaInsets();
+  // Toasteren males oven på hele navigatoren (søskende i app-roden), så en åben drawer ville
+  // ellers få toasten liggende OVEN PÅ menuen. Skjul den mens draweren er åben — toasten
+  // bliver hængende i køen og dukker op igen når menuen lukkes.
+  const drawerOpen = useDrawerStatusStore((s) => s.open);
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0 || drawerOpen) return null;
 
   // På native ligger app-headeren (med hamburger-ikonet) lige under statusbaren; en toast i
   // toppen dækkede den halvt, så hamburgeren var svær at ramme. Læg toasten UNDER headeren

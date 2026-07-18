@@ -1,7 +1,9 @@
-import { Drawer } from 'expo-router/drawer';
+import { useEffect } from 'react';
+import { Drawer, useDrawerStatus } from 'expo-router/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
+import { setDrawerOpen } from '@/lib/nav/drawer-status-store';
 import { Pressable, ScrollView, Text, View } from '@/tw';
 
 /**
@@ -59,6 +61,17 @@ function DrawerRow({
   );
 }
 
+/**
+ * Spejler drawerens status ind i en global store. Bevidst en (lille) effect: statussen er
+ * EKSTERN state fra navigatoren, og Toasteren i app-roden ligger uden for drawer-konteksten
+ * og kan derfor ikke læse den selv. Renderer intet.
+ */
+function DrawerStatusBridge() {
+  const status = useDrawerStatus();
+  useEffect(() => setDrawerOpen(status === 'open'), [status]);
+  return null;
+}
+
 function DrawerContent({ state, navigation }: DrawerContentProps) {
   const insets = useSafeAreaInsets();
   const activeName = state.routes[state.index]?.name;
@@ -71,6 +84,7 @@ function DrawerContent({ state, navigation }: DrawerContentProps) {
 
   return (
     <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
+      <DrawerStatusBridge />
       <ScrollView className="flex-1" contentContainerClassName="py-2">
         {top.map((r) => (
           <DrawerRow
