@@ -32,9 +32,27 @@ export function totalBalance(loans: WithId<AnyLoan>[]): number {
   return loans.reduce((sum, l) => sum.plus(remainingOre(l)), new BigNumber(0)).toNumber();
 }
 
-/** Samlet månedlig ydelse over alle lån (øre). */
+/** Samlet månedlig ydelse over alle lån (øre) — den rå, ubegrænsede sats. */
 export function totalMonthlyPayment(loans: WithId<AnyLoan>[]): number {
   return loans.reduce((sum, l) => sum.plus(monthlyOre(l)), new BigNumber(0)).toNumber();
+}
+
+/**
+ * Månedlig ydelse begrænset til den aktuelle restgæld (øre): 0 hvis lånet er betalt/uden
+ * hovedstol, ellers min(ydelse, restgæld). Bruges i budget-summeringen, så et lån uden
+ * restgæld ikke bliver ved med at trække en ydelse — på linje med den måned-for-måned-
+ * forecast, der også stopper ved restgæld = 0.
+ */
+export function currentMonthlyPaymentOre(loan: AnyLoan): number {
+  const remaining = BigNumber.maximum(0, remainingOre(loan));
+  return BigNumber.minimum(monthlyOre(loan), remaining).toNumber();
+}
+
+/** Samlet aktuel månedlig ydelse (øre), begrænset til restgæld. */
+export function totalCurrentMonthlyPayment(loans: WithId<AnyLoan>[]): number {
+  return loans
+    .reduce((sum, l) => sum.plus(currentMonthlyPaymentOre(l)), new BigNumber(0))
+    .toNumber();
 }
 
 /** Første afbetalingsmåned (ÅÅÅÅ-MM): custom har startMonth; standard bruger startDate. */

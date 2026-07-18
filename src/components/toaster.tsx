@@ -4,12 +4,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { dismissToast, useToastStore } from "@/lib/toast/toast-store";
 import { Pressable, Text, View } from "@/tw";
 
-/** Global toast-overlay (bund, centreret). Monteres én gang i app-roden. */
+/** Global toast-overlay (top-højre på web, top på mobil). Monteres én gang i app-roden. */
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
   const insets = useSafeAreaInsets();
 
   if (toasts.length === 0) return null;
+
+  // På native ligger app-headeren (med hamburger-ikonet) lige under statusbaren; en toast i
+  // toppen dækkede den halvt, så hamburgeren var svær at ramme. Læg toasten UNDER headeren
+  // (standard-headerhøjde ≈ 56). Web har ingen native header (sidebar) → ingen clearance.
+  const headerClearance = process.env.EXPO_OS === "web" ? 0 : 56;
 
   return (
     <View
@@ -22,7 +27,7 @@ export function Toaster() {
         // fuld bredde i toppen på smal mobil.
         left: insets.left + 16,
         right: insets.right + 16,
-        top: insets.top + 16,
+        top: insets.top + headerClearance + 16,
       }}
       className="items-end gap-2"
     >

@@ -52,6 +52,9 @@ type PaymentInput = Pick<
 /** Månedligt afdrag (øre) afhængigt af horisont + buffer. */
 export function monthlyPaymentOre(loan: PaymentInput): number {
   const principal = new BigNumber(principalOre(loan.lineItems));
+  // Ingen hovedstol (fx line items fjernet) → intet afdrag. Uden dette ville 'asap'-afdraget
+  // stadig være rådighedsbeløbet (gammel − ny bolig), selvom der intet lån er at betale af.
+  if (principal.lte(0)) return 0;
   if (loan.horizon === 'm24') return principal.div(24).integerValue(ROUND).toNumber();
   if (loan.horizon === 'm48') return principal.div(48).integerValue(ROUND).toNumber();
   // 'asap': fuldt rådighedsbeløb minus evt. buffer.

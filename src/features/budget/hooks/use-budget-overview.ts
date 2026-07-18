@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useLoansStore } from '@/features/loans/data/loans-store';
-import { totalMonthlyPayment } from '@/features/loans/loans.utils';
+import { totalCurrentMonthlyPayment } from '@/features/loans/loans.utils';
 import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptions-store';
 import { todayISODate } from '@/lib/datetime';
 import { useBudgetStore } from '../data/budget-store';
@@ -40,7 +40,7 @@ export function useBudgetOverview(): BudgetOverview {
       incomeRules: visible.filter((e) => e.type === 'income').map(toRule),
       expenseRules: visible.filter((e) => e.type === 'expense').map(toRule),
       subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
-      loansMonthlyOre: totalMonthlyPayment(loans),
+      loansMonthlyOre: totalCurrentMonthlyPayment(loans),
       savingsPercent: currentPercent,
       anchorISO: forecastAnchorISO(startDate),
       count: 12,
