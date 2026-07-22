@@ -111,6 +111,10 @@ function DrawerContent({ state, navigation }: DrawerContentProps) {
 export default function AppDrawerLayout() {
   return (
     <Drawer
+      // 'history' → tilbageknappen går til den forrige skærm man var på (fx Budget → Lån →
+      // tilbage = Budget), ikke til første rute. Standard er 'firstRoute', som sendte én helt
+      // ud til Forsiden uanset hvor man kom fra.
+      backBehavior="history"
       drawerContent={(props) => (
         <DrawerContent state={props.state} navigation={props.navigation as DrawerContentProps['navigation']} />
       )}
