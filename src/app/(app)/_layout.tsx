@@ -27,6 +27,7 @@ const LABELS: Record<string, string> = {
   subscriptions: 'Abonnementer',
   timetracker: 'Timetracker',
   evi: 'Evi',
+  planio: 'My Planio',
   settings: 'Indstillinger',
 };
 
@@ -136,6 +137,7 @@ export default function AppDrawerLayout() {
       <Drawer.Screen name="subscriptions" />
       <Drawer.Screen name="timetracker" />
       <Drawer.Screen name="evi" />
+      <Drawer.Screen name="planio" />
     </Drawer>
   );
 }

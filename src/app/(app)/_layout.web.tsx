@@ -40,6 +40,12 @@ const ITEMS = [
     accent: "text-accent-evi",
   },
   {
+    name: "planio",
+    href: "/planio",
+    label: "My Planio",
+    accent: "text-accent-planio",
+  },
+  {
     name: "settings",
     href: "/settings",
     label: "Indstillinger",

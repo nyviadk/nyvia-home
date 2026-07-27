@@ -25,6 +25,7 @@
   --color-accent-time: #6b5b95; /* violet (timetracker) */
   --color-accent-spending: #4a7c8c; /* dæmpet cyan-blå (forbrug) */
   --color-accent-evi: #9a5f7e; /* dæmpet plomme (Evi) */
+  --color-accent-planio: #5a5fa6; /* dæmpet indigo (My Planio) */
 
   /* Status */
   --color-danger: #b3261e;
@@ -68,6 +69,7 @@
   --color-accent-time: var(--color-accent-time);
   --color-accent-spending: var(--color-accent-spending);
   --color-accent-evi: var(--color-accent-evi);
+  --color-accent-planio: var(--color-accent-planio);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
   --color-success: var(--color-success);
