@@ -6,17 +6,22 @@ import { confirmAction } from '@/lib/confirm';
 import { formatDateTimeCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
-import { deleteFalsePositive, deleteLesson, deleteLessons } from '../data/planio.repository';
+import { deleteFalsePositive, deleteLesson, deleteLessons, setLessonSpot } from '../data/planio.repository';
 import { SPOTS, spotName } from '../spots';
 import type { PlanioFalsePositive, PlanioLesson, PlanioRaw, PlanioSpot } from '../types';
 import { RawDetail } from './raw-detail';
 import { WeightBadge } from './weight-badge';
 
 function LessonItem({ lesson }: { lesson: WithId<PlanioLesson> }) {
+  const [moving, setMoving] = useState(false);
   const onDelete = async () => {
     if (await confirmAction('Slet lektion', 'Fjern denne lektion fra din knowledgebase?', 'Slet')) {
       await deleteLesson(lesson.id);
     }
+  };
+  const move = async (spot: PlanioSpot) => {
+    setMoving(false);
+    if (spot !== lesson.spot) await setLessonSpot(lesson.id, spot);
   };
   return (
     <View className="border-l-2 border-border pl-3">
@@ -24,12 +29,32 @@ function LessonItem({ lesson }: { lesson: WithId<PlanioLesson> }) {
         <WeightBadge weight={lesson.weight} />
         {lesson.src ? <AppText variant="muted" className="text-[10px]">{lesson.src}</AppText> : null}
         <View className="flex-1" />
+        <Pressable accessibilityRole="button" hitSlop={6} onPress={() => setMoving((m) => !m)}>
+          <AppText className="text-xs text-fg-muted">flyt</AppText>
+        </Pressable>
         <Pressable accessibilityRole="button" hitSlop={6} onPress={onDelete}>
           <AppText className="text-xs text-danger">slet</AppText>
         </Pressable>
       </View>
       <AppText className="mt-0.5">{lesson.lesson}</AppText>
       <AppText variant="muted" className="text-xs">→ {lesson.fix}</AppText>
+      {moving ? (
+        <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
+          <AppText variant="muted" className="text-[11px]">Flyt til:</AppText>
+          {SPOTS.filter((s) => s.id !== lesson.spot).map((s) => (
+            <Pressable
+              key={s.id}
+              accessibilityRole="button"
+              onPress={() => move(s.id)}
+              style={{ backgroundColor: s.bg }}
+              className="rounded-full px-2.5 py-0.5">
+              <AppText className="text-[11px]" style={{ color: s.accent }}>
+                {s.name}
+              </AppText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -42,6 +42,19 @@ export const SPOTS: SpotConfig[] = [
     lenses: ['Trust boundary — forfalskes fra curl? server- vs klient-ejede felter?'],
   },
   {
+    id: 'api',
+    name: 'API-kontrakt',
+    tag: "Eksterne API'ers edge-cases — læs kontrakten",
+    accent: '#0d9488',
+    bg: '#ccfbf1',
+    lenses: [
+      'Pagination — følg continuation-token til ende; ét kald ≠ hele listen',
+      'Gensidigt udelukkende parametre — hvad må ikke sendes sammen?',
+      'Gør operationen reelt det, den påstår? (observerbar tilstand, ikke bare et ID)',
+      'Udled ikke fra et succes-signal — verificér forudsætningen eksplicit',
+    ],
+  },
+  {
     id: 'generelle',
     name: 'Generelle støtte-linser',
     tag: 'Gælder bredt',

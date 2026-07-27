@@ -8,6 +8,7 @@ import type {
   PlanioLessonInput,
   PlanioRaw,
   PlanioRawInput,
+  PlanioSpot,
 } from '../types';
 
 function requireUid(): string {
@@ -67,6 +68,11 @@ export async function addLessons(inputs: PlanioLessonInput[]): Promise<number> {
 
 export function deleteLesson(id: string): Promise<void> {
   return toastAfter(db.deleteDoc(lessonPath(id)), 'Lektion slettet');
+}
+
+/** Flyt en lektion til en anden blind vinkel (re-kategorisering; taksonomien ændrer sig over tid). */
+export function setLessonSpot(id: string, spot: PlanioSpot): Promise<void> {
+  return toastAfter(db.updateDoc(lessonPath(id), { spot }), 'Flyttet');
 }
 
 /** Slet flere lektioner (fx en hel indsat blok) i én batch. */

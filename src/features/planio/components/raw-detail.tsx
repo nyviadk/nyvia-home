@@ -55,7 +55,7 @@ export function RawDetail({ raw, onBack }: { raw: WithId<PlanioRaw>; onBack: () 
           <View className="flex-row gap-2">
             <ProdIdField value={prodNum} onChangeText={setProdNum} />
             <View className="flex-1">
-              <Input value={feature} onChangeText={setFeature} placeholder="Feature-navn" />
+              <Input value={feature} onChangeText={setFeature} placeholder="Feature-navn" className="h-14" />
             </View>
           </View>
           <TextInput

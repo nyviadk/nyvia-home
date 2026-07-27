@@ -1,5 +1,5 @@
 /** En af de 3 blinde vinkler + kategorien "generelle støtte-linser". Fast config, ikke data. */
-export type PlanioSpot = 'scale' | 'async' | 'trust' | 'generelle';
+export type PlanioSpot = 'scale' | 'async' | 'trust' | 'api' | 'generelle';
 
 /** Styrer bloat: kun kritisk + tilbagevendende injiceres i prompterne; enkelt ligger kun i arkivet. */
 export type PlanioWeight = 'kritisk' | 'tilbagevendende' | 'enkelt';

@@ -89,7 +89,7 @@ export const buildPass2 = (lessons: PlanioLesson[]): string => {
   };
   return `Feature/område: {{SCOPE}}
 
-Du reviewer denne feature mod mine 3 blinde vinkler + generelle støtte-linser, FØR jeg sender til min mentor. Du har koden. For hver der bider: flag konkrete steder (fil + linje), hvorfor det bider, et fix på KLASSE-niveau, og en test der fejler på nuværende adfærd. Skån mig ikke. Start med en oversigt over hvilke der er grønne, og hvilke der bider.
+Du reviewer denne feature mod mine blinde vinkler + generelle støtte-linser, FØR jeg sender til min mentor. Du har koden. For hver der bider: flag konkrete steder (fil + linje), hvorfor det bider, et fix på KLASSE-niveau, og en test der fejler på nuværende adfærd. Skån mig ikke. Start med en oversigt over hvilke der er grønne, og hvilke der bider.
 
 ${SPOTS.map(block).join('\n\n')}
 
@@ -121,12 +121,15 @@ DEDUP: Er to findings i samme input samme KLASSE, så merge dem til ÉN FINDING 
 
 SELVSTÆNDIGHED: Hver lektion skal give fuld mening ALENE, uden reviewet ved siden af. Ingen referencer som "jf. Finding 3" eller punktnumre — skriv princippet ud (fx "…af samme grund som at 'preparing' aldrig må blive terminal").
 
-KATEGORISERING efter fejlens KLASSE, ikke emneordet: findings om at udlede noget fra et succes-signal (fx "brug ikke signInSilently() som bevis på scope") hører under Generelle støtte-linser (API-kontrakt / "udleder jeg fra et succes-signal?"), IKKE Fjendtlig kalder — også når emnet er auth/scope.
+KATEGORISERING efter fejlens KLASSE, ikke emneordet:
+- Eksterne API'ers kontrakt/edge-cases → 'api': pagination (følg continuation-token til ende — ét kald ≠ hele listen), gensidigt udelukkende parametre, "gør operationen reelt det den påstår (observerbar tilstand, ikke bare et ID)", og "udleder jeg fra et succes-signal?" (fx signInSilently()-succes eller grantedScopes som bevis på scope). Dette hører under 'api', IKKE 'generelle' og IKKE 'trust' — heller ikke når emnet er auth/scope.
+- Config-drift (async) dækker OGSÅ kø-/task-infrastruktur: ack deadline vs. function-timeout, ordering, DLQ, IAM i IaC — ikke kun generel config.
+- 'generelle' er KUN for støtte-linser der ikke passer nogen blind vinkel (fx updater-/reducer-renhed) — det er en residual-kategori, ikke en losseplads for API-edge-cases.
 
 OUTPUT: KUN FINDING-blokke, i markdown — ingen preamble, ingen opsummering, ingen prosa. Adskil hver FINDING med en linje der KUN indeholder "---".
 
 FINDING
-- Blind vinkel: scale | async | trust | generelle
+- Blind vinkel: scale | async | trust | api | generelle
 - Linse: <hvilken linse>
 - Status: NY | SKÆRPER: <lektion>
 - Lektion (klasse-niveau): <hvad kan læres, så det ikke gentager sig>
@@ -134,7 +137,7 @@ FINDING
 - Vægt: kritisk | tilbagevendende | enkelt`;
 };
 
-/** Planlægning · plan-tjek mod de 3 blinde vinkler (kuraterede lektioner; planen ligger i chatten). */
+/** Planlægning · plan-tjek mod blinde vinkler + generelle støtte-linser (kuraterede lektioner; planen ligger i chatten). */
 export const buildPlan = (lessons: PlanioLesson[]): string => {
   const block = (s: (typeof SPOTS)[number]) =>
     `${s.name}: ${curated(lessons, s.id).map((l) => l.lesson).join(' · ') || '(ingen lektioner endnu)'}`;
@@ -145,9 +148,10 @@ ${SPOTS.map(block).join('\n')}
 
 For hver kategori: peger planen ind i en fælde jeg før er faldet i? Giv konkrete design-beslutninger at træffe NU, så jeg ikke bygger problemet ind:
 - Skala: hvor kan N vokse? paginer/chunk fra start; hvilken fixture-størrelse?
-- Asynk: hvilke side-effects lander bag køer? gør dem idempotente + planlæg recovery.
+- Asynk: hvilke side-effects lander bag køer? gør dem idempotente + planlæg recovery; kø-/task-config (ack deadline vs. timeout, ordering, DLQ, IAM) i IaC.
 - Trust: hvilke public endpoints/client-writes? auth-model + server-ejede felter fra dag 1.
-- Generelle: udleder planen noget fra et succes-signal? er updaters rene/sikre ved dobbelt-kald? holder API-kontrakten på edge cases?
+- API-kontrakt: følger planen continuation-tokens til ende? sender den gensidigt udelukkende parametre? udleder den noget fra et succes-signal i stedet for at verificere forudsætningen?
+- Generelle: er updaters/reducers rene og sikre ved dobbelt-kald?
 
 Afslut med en kort, konkret tjekliste.`;
 };
