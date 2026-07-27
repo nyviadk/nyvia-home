@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { notify } from '@/lib/toast/notify';
-import { TextInput, View } from '@/tw';
+import { Pressable, TextInput, View } from '@/tw';
 import { addFalsePositives, addLesson, addRaw } from '../data/planio.repository';
 import { buildIntake, parseFinding } from '../prompts';
 import type { PlanioLesson, PlanioRaw } from '../types';
@@ -21,8 +21,17 @@ const parseList = (raw: string): string[] =>
     .map((l) => l.replace(/^\s*[-*•\d.)\]]+\s*/, '').trim())
     .filter(Boolean);
 
-/** Feedback ind: rå (m. PROD-ID + feature) gemmes i arkiv; analyseret files sig selv; false
- *  positives fra Fase 1 gemmes globalt og injiceres i Pass 1. */
+/** Kanonisk PROD-ID af det tal man taster: "214" → "PROD-214". Tomt → "". */
+const canonicalProdId = (num: string): string => {
+  const n = num.trim();
+  return n ? `PROD-${n}` : '';
+};
+
+/**
+ * Feedback ind. Rå-feltet fodrer BÅDE arkivet (gem → Fase 3) OG format-prompten (analysér →
+ * lektion) — derfor rydder "gem" IKKE feltet; brug "Ryd" når du er færdig. Analysér-kortet
+ * tager kun Claudes FINDING-svar. False positives gemmes globalt + injiceres i Pass 1.
+ */
 export function InsertView({
   lessons,
   raw,
@@ -33,13 +42,16 @@ export function InsertView({
   existingFalsePositives: string[];
 }) {
   const [rawText, setRawText] = useState('');
-  const [prodId, setProdId] = useState('');
+  // Kun tallet; "PROD-" er et fast præfiks i feltet. Gemmes som canonicalProdId(prodNum).
+  const [prodNum, setProdNum] = useState('');
   const [feature, setFeature] = useState('');
   const [analyzed, setAnalyzed] = useState('');
   const [fpText, setFpText] = useState('');
 
-  // Kendt feature pr. PROD-ID (nyeste vinder — raw er sorteret desc). Bruges til at auto-udfylde
-  // feature-feltet, når man taster et PROD-ID der allerede findes (fx ved en ny feedback-runde).
+  const prodId = canonicalProdId(prodNum);
+
+  // Kendt feature pr. PROD-ID (nyeste vinder — raw er sorteret desc). Auto-udfylder feature-feltet,
+  // når man taster et PROD-ID der allerede findes (fx ved en ny feedback-runde).
   const featureByProdId = new Map<string, string>();
   for (const r of raw) {
     const pid = r.prodId?.trim().toLowerCase();
@@ -47,22 +59,26 @@ export function InsertView({
     if (pid && feat && !featureByProdId.has(pid)) featureByProdId.set(pid, feat);
   }
 
-  const onProdId = (next: string) => {
-    setProdId(next);
-    // Fyld kun hvis feature er tom, så manuelle rettelser ikke overskrives.
+  const onProdNum = (next: string) => {
+    // Strip et evt. indsat "PROD-"-præfiks, så vi ikke ender med "PROD-PROD-214".
+    const num = next.replace(/^\s*prod[-\s]*/i, '');
+    setProdNum(num);
     if (!feature.trim()) {
-      const known = featureByProdId.get(next.trim().toLowerCase());
+      const known = featureByProdId.get(canonicalProdId(num).toLowerCase());
       if (known) setFeature(known);
     }
   };
 
-  const saveRaw = async () => {
-    const t = rawText.trim();
-    if (!t) return;
+  const clearRaw = () => {
     setRawText('');
-    setProdId('');
+    setProdNum('');
     setFeature('');
-    await addRaw({ text: t, prodId, feature });
+  };
+
+  const saveRaw = async () => {
+    if (!rawText.trim()) return;
+    // Bevidst INGEN rydning — samme tekst bruges også til format-prompten nedenfor.
+    await addRaw({ text: rawText, prodId, feature });
   };
 
   const fileAnalyzed = async () => {
@@ -87,18 +103,30 @@ export function InsertView({
     <View className="gap-4">
       <View className="gap-1">
         <AppText variant="heading">Indsæt</AppText>
-        <AppText variant="muted">Rå gemmes og er søgbar. Analyseret feedback filer sig selv.</AppText>
+        <AppText variant="muted">Rå feedback fodrer både arkivet og analyse-prompten.</AppText>
       </View>
 
       <Card className="gap-2">
         <AppText variant="label">Rå feedback (markdown)</AppText>
         <AppText variant="muted" className="text-xs">
-          Gemmes og er søgbar. Fodrer ikke review-prompterne. PROD-ID + feature kobler den til en
-          feature, så Fase 3 kan hente den (flere entries = flere runder).
+          Samme tekst bruges to steder: <AppText className="text-xs text-fg">Gem i arkiv</AppText> (så Fase 3
+          kan hente den via PROD-ID + feature — flere gem = flere runder) og{' '}
+          <AppText className="text-xs text-fg">Kopiér format-prompt</AppText> (analysér den til en lektion).
+          Feltet ryddes ikke af sig selv — tryk “Ryd” når du er færdig.
         </AppText>
         <View className="flex-row gap-2">
-          <View className="flex-1">
-            <Input value={prodId} onChangeText={onProdId} placeholder="PROD-ID (fx PROD-214)" />
+          <View
+            className="h-12 flex-1 flex-row items-center gap-1 rounded-xl border border-border bg-card px-4"
+            style={{ borderCurve: 'continuous' }}>
+            <AppText variant="muted">PROD-</AppText>
+            <TextInput
+              value={prodNum}
+              onChangeText={onProdNum}
+              placeholder="214"
+              placeholderTextColor="#a8a29a"
+              className="flex-1 text-base text-fg"
+              style={{ paddingVertical: 0 }}
+            />
           </View>
           <View className="flex-1">
             <Input value={feature} onChangeText={setFeature} placeholder="Feature-navn" />
@@ -110,20 +138,26 @@ export function InsertView({
           multiline
           placeholder="Indsæt rå feedback (fx mentorens kommentarer)…"
           className={textareaClass}
-          style={{ minHeight: 96, textAlignVertical: 'top' }}
+          style={{ minHeight: 112, textAlignVertical: 'top' }}
         />
-        <View className="flex-row justify-end">
-          <Button title="Gem rå i arkiv" variant="secondary" className="h-10 px-4" onPress={saveRaw} />
+        <View className="flex-row items-center gap-3">
+          <Button title="Gem i arkiv" variant="secondary" className="h-10 px-4" onPress={saveRaw} />
+          <CopyButton text={buildIntake(rawText, lessons)} label="Kopiér format-prompt" />
+          <View className="flex-1" />
+          {rawText.trim() || prodNum.trim() || feature.trim() ? (
+            <Pressable accessibilityRole="button" hitSlop={6} onPress={clearRaw}>
+              <AppText variant="muted">Ryd</AppText>
+            </Pressable>
+          ) : null}
         </View>
       </Card>
 
       <Card className="gap-2">
-        <AppText variant="label">Analyseret feedback (fast format)</AppText>
+        <AppText variant="label">FINDING → lektion</AppText>
         <AppText variant="muted" className="text-xs">
-          Trin 1: kopiér format-prompten (den får hele arkivet + din rå feedback ovenfor med, så Claude
-          dedupper mod eksisterende). Kør den i din Claude. Trin 2: indsæt det markdown, den giver, herunder.
+          Kør format-prompten i din Claude (den dedupper mod arkivet og tagger selv). Indsæt det
+          FINDING-markdown, den giver, herunder → gem som lektion.
         </AppText>
-        <CopyButton text={buildIntake(rawText, lessons)} label="Kopiér format-prompt" />
         <TextInput
           value={analyzed}
           onChangeText={setAnalyzed}
