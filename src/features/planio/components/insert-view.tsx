@@ -7,10 +7,10 @@ import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { notify } from '@/lib/toast/notify';
 import { Pressable, TextInput, View } from '@/tw';
-import { addFalsePositives, addLessons, addRaw } from '../data/planio.repository';
+import { addFalsePositives, addRaw, saveImportedFindings } from '../data/planio.repository';
 import { buildIntake, parseFindings, sharpenReference } from '../prompts';
 import { spotConfig } from '../spots';
-import type { PlanioLesson, PlanioRaw } from '../types';
+import type { PlanioLesson, PlanioLessonInput, PlanioRaw } from '../types';
 import { CopyButton } from './copy-button';
 import { ProdIdField, canonicalProdId } from './prod-id-field';
 import { WeightBadge } from './weight-badge';
@@ -78,14 +78,28 @@ export function InsertView({
 
   // Preview: hvad parseren reelt finder i det indsatte — udledt under render (ingen state).
   const preview = parseFindings(analyzed);
+  const lessonById = new Map(lessons.map((l) => [l.id, l]));
 
   const fileAnalyzed = async () => {
     if (preview.length === 0) {
       notify("Kunne ikke finde 'Blind vinkel:' i teksten — tjek formatet");
       return;
     }
+    // ID-baseret: SKÆRPER med et kendt lektions-id → opdatér in-place; ellers ny. Ingen tekst-match.
+    const targeted = new Set<string>();
+    const updates: { id: string; input: PlanioLessonInput }[] = [];
+    const news: PlanioLessonInput[] = [];
+    for (const f of preview) {
+      const ref = sharpenReference(f.status);
+      if (ref && lessonById.has(ref) && !targeted.has(ref)) {
+        targeted.add(ref);
+        updates.push({ id: ref, input: f });
+      } else {
+        news.push(f);
+      }
+    }
     setAnalyzed('');
-    await addLessons(preview);
+    await saveImportedFindings(updates, news);
   };
 
   const saveFalsePositives = async () => {
@@ -158,14 +172,19 @@ export function InsertView({
               <AppText variant="muted" className="text-[11px] uppercase">
                 Preview · {preview.length} lektion(er) fundet
               </AppText>
-              {preview.some((f) => sharpenReference(f.status) !== null) ? (
+              {preview.some((f) => {
+                const r = sharpenReference(f.status);
+                return r !== null && lessonById.has(r);
+              }) ? (
                 <AppText variant="muted" className="text-xs">
-                  ⟳ = skærper en eksisterende lektion — slet den gamle i Arkiv bagefter.
+                  ⟳ = erstatter en eksisterende lektion in-place (samme id, ingen dublet).
                 </AppText>
               ) : null}
               {preview.map((f, i) => {
                 const cfg = spotConfig(f.spot);
                 const ref = sharpenReference(f.status);
+                const replaces = ref !== null ? lessonById.get(ref) : undefined;
+                const orphan = ref !== null && !replaces; // SKÆRPER men id ukendt → gemmes som ny
                 return (
                   <View key={i} className="border-l-2 pl-3" style={{ borderColor: cfg?.accent ?? '#ccc' }}>
                     <View className="flex-row items-center gap-2">
@@ -173,8 +192,10 @@ export function InsertView({
                         {cfg?.name ?? f.spot}
                       </AppText>
                       <WeightBadge weight={f.weight} />
-                      {ref !== null ? (
-                        <AppText className="text-[10px] text-accent-planio">⟳ skærper</AppText>
+                      {replaces ? (
+                        <AppText className="text-[10px] text-accent-planio">⟳ erstatter</AppText>
+                      ) : orphan ? (
+                        <AppText className="text-[10px] text-fg-muted">ny (skærpe-id ukendt)</AppText>
                       ) : null}
                     </View>
                     <AppText className="text-sm" numberOfLines={2}>
@@ -183,9 +204,9 @@ export function InsertView({
                     <AppText variant="muted" className="text-xs">
                       → {f.fix}
                     </AppText>
-                    {ref ? (
+                    {replaces ? (
                       <AppText className="text-[11px] text-accent-planio" numberOfLines={1}>
-                        ⟳ skærper: {ref}
+                        ⟳ erstatter: {replaces.lesson}
                       </AppText>
                     ) : null}
                   </View>

@@ -97,8 +97,10 @@ TIL SIDST: fandt du noget der IKKE passer under nogen af ovenstående? Flag det 
 };
 
 /** Intake · sender HELE arkivet + rå feedback, beder ekstern Claude om FINDING-format + dedup. */
-export const buildIntake = (raw: string, lessons: PlanioLesson[]): string => {
-  const archive = lessons.map((l) => `- [${l.spot} · ${l.weight}] ${l.lesson} (fix: ${l.fix})`).join('\n');
+export const buildIntake = (raw: string, lessons: (PlanioLesson & { id: string })[]): string => {
+  const archive = lessons
+    .map((l) => `- [id: ${l.id} · ${l.spot} · ${l.weight}] ${l.lesson} (fix: ${l.fix})`)
+    .join('\n');
   return `Her er hele min eksisterende knowledgebase (alle lektioner):
 ${archive}
 
@@ -117,7 +119,7 @@ Konsekvens: kun kritisk + tilbagevendende injiceres i Fase 2. Udtrykker en lekti
 
 KONSISTENS: Hører to findings til samme klasse/blinde vinkel (fx to skala-grænse-fejl eller to teardown-fejl), skal de have SAMME vægt, medmindre der er en reel grund til forskel. Uens vægt på søskende er en fejl.
 
-DEDUP: Er to findings i samme input samme KLASSE, så merge dem til ÉN FINDING med "Status: SKÆRPER" og behold BEGGE konkrete eksempler i lektionen — lav ikke to næsten-ens lektioner. Skærper en finding en EKSISTERENDE lektion fra arkivet ovenfor, så referér den under Status.
+DEDUP: Er to findings i samme input samme KLASSE, så merge dem til ÉN FINDING og behold BEGGE konkrete eksempler i lektionen — lav ikke to næsten-ens lektioner. SKÆRPER er KUN når du refererer en EKSISTERENDE lektion fra arkivet ovenfor: sæt da "Status: SKÆRPER: <lektion-id>" med lektionens ID (det efter "id:" i arkivet — IKKE dens tekst), så erstattes den gamle lektion automatisk in-place. En merge af NYE findings (intet arkiv-match, fx tomt arkiv) er ÉN FINDING med Status: NY.
 
 SELVSTÆNDIGHED: Hver lektion skal give fuld mening ALENE, uden reviewet ved siden af. Ingen referencer som "jf. Finding 3" eller punktnumre — skriv princippet ud (fx "…af samme grund som at 'preparing' aldrig må blive terminal").
 
@@ -131,7 +133,7 @@ OUTPUT: KUN FINDING-blokke, i markdown — ingen preamble, ingen opsummering, in
 FINDING
 - Blind vinkel: scale | async | trust | api | generelle
 - Linse: <hvilken linse>
-- Status: NY | SKÆRPER: <lektion>
+- Status: NY | SKÆRPER: <lektion-id fra arkivet ovenfor>
 - Lektion (klasse-niveau): <hvad kan læres, så det ikke gentager sig>
 - Klasse-fix: <den ene centrale rettelse der forhindrer genindførelse>
 - Vægt: kritisk | tilbagevendende | enkelt`;
@@ -156,13 +158,14 @@ For hver kategori: peger planen ind i en fælde jeg før er faldet i? Giv konkre
 Afslut med en kort, konkret tjekliste.`;
 };
 
-/**
- * Parser Claudes FINDING-markdown → en lektion. Læser linje-for-linje (robust mod bullets og
- * "(klasse-niveau)"-parentesen i det faste format). Returnerer null hvis blind vinkel mangler.
- * Status (NY/SKÆRPER) læses ikke — dedup afgøres eksternt; skærper man, sletter man den gamle.
- */
-/** En parset FINDING = en lektion + valgfri Status (NY / SKÆRPER: …) til preview/dedup-hint. */
+/** En parset FINDING = en lektion + valgfri Status (NY / SKÆRPER: <id>) til ID-baseret dedup. */
 export type ParsedFinding = PlanioLessonInput & { status?: string };
+
+/**
+ * Parser én FINDING-blok → en lektion. Læser linje-for-linje (robust mod bullets og
+ * "(klasse-niveau)"-parentesen). Returnerer null hvis blind vinkel mangler. Status LÆSES nu
+ * (bruges til ID-baseret skærpning i import-flowet).
+ */
 
 function parseFindingBlock(text: string): ParsedFinding | null {
   // Nøglen skal stå ALENE (evt. med én parentes) før kolon — ellers ville "Fix" ramme "Fixering:"
@@ -209,9 +212,9 @@ export function parseFindings(text: string): ParsedFinding[] {
 }
 
 /**
- * Er en Status en skærpning, og af HVILKEN lektion? `get('Status')` fanger hele resten af linjen
- * ("SKÆRPER: <lektion>"), så her trimmes "SKÆRPER:"-præfikset af, hvis en kalder vil slå den gamle
- * lektion op. Returnerer referencen (kan være ''), eller null hvis det ikke er en skærpning.
+ * Er en Status en skærpning, og af HVILKEN lektion (dens ID)? Formatet er "SKÆRPER: <lektion-id>";
+ * her trimmes "SKÆRPER:"-præfikset af, så kalderen får det rå id til ID-baseret opslag. Returnerer
+ * id'et (kan være ''), eller null hvis det ikke er en skærpning.
  */
 export function sharpenReference(status?: string): string | null {
   if (!status || !/sk(?:æ|ae)rper/i.test(status)) return null;

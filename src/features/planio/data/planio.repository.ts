@@ -38,32 +38,48 @@ export function subscribeLessons(
   );
 }
 
+/** Felt-data for en lektions-skrivning (uden id/batchId/createdAt). */
+function lessonData(input: PlanioLessonInput): Record<string, unknown> {
+  const src = input.src?.trim();
+  return {
+    spot: input.spot,
+    weight: input.weight,
+    lesson: input.lesson.trim(),
+    fix: input.fix.trim(),
+    ...(src ? { src } : {}),
+  };
+}
+
 /**
- * Fil én eller flere lektioner (fra ét analyse-svar) i ÉN batch. Alle får samme `batchId`, så
- * hele indsættelsen kan slettes samlet igen. Returnerer antal filet.
+ * Gem et analyse-svar i ÉN batch. SKÆRPER-findings med et kendt lektions-id opdaterer DEN lektion
+ * in-place (samme doc-id → ingen dublet, ingen manuel sletning); nye findings oprettes med delt
+ * `batchId`, så indsættelsen kan slettes som blok. ID-baseret — ingen tekst-matching.
  */
-export async function addLessons(inputs: PlanioLessonInput[]): Promise<number> {
-  if (inputs.length === 0) return 0;
-  const now = nowISO();
-  const batchId = genId();
-  const ops: BatchOp[] = inputs.map((input) => {
-    const src = input.src?.trim();
-    return {
-      type: 'set',
-      path: `${lessonsPath()}/${genId()}`,
-      data: {
-        spot: input.spot,
-        weight: input.weight,
-        lesson: input.lesson.trim(),
-        fix: input.fix.trim(),
-        ...(src ? { src } : {}),
-        batchId,
-        createdAt: now,
-      },
-    };
-  });
-  await toastAfter(db.commitBatch(ops), `${inputs.length} lektion(er) filet`);
-  return inputs.length;
+export async function saveImportedFindings(
+  updates: { id: string; input: PlanioLessonInput }[],
+  news: PlanioLessonInput[],
+): Promise<void> {
+  const ops: BatchOp[] = updates.map((u) => ({
+    type: 'update',
+    path: lessonPath(u.id),
+    data: lessonData(u.input),
+  }));
+  if (news.length > 0) {
+    const now = nowISO();
+    const batchId = genId();
+    for (const input of news) {
+      ops.push({
+        type: 'set',
+        path: `${lessonsPath()}/${genId()}`,
+        data: { ...lessonData(input), batchId, createdAt: now },
+      });
+    }
+  }
+  if (ops.length === 0) return;
+  await toastAfter(
+    db.commitBatch(ops),
+    `${news.length} ny(e)${updates.length ? `, ${updates.length} skærpet` : ''}`,
+  );
 }
 
 export function deleteLesson(id: string): Promise<void> {
