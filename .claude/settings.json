@@ -5,7 +5,10 @@
       "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=55.6761&longitude=12.5683&current=uv_index&hourly=uv_index&daily=uv_index_max&timezone=auto&forecast_days=3&timeformat=unixtime\")",
       "Bash(curl -s \"https://ipwho.is/\")",
       "Bash(curl -s \"https://geocoding-api.open-meteo.com/v1/search?name=Tranbjerg&count=3&language=da&format=json\")",
-      "Bash(curl -s \"https://geocoding-api.open-meteo.com/v1/search?name=Aarhus&count=2&language=da&format=json\")"
+      "Bash(curl -s \"https://geocoding-api.open-meteo.com/v1/search?name=Aarhus&count=2&language=da&format=json\")",
+      "PowerShell(npx expo export --platform web 2>&1)",
+      "PowerShell(npx expo export --platform web 2>&1 | Select-String -Pattern \"Exported|error:|Error:|Unable|Cannot|failed|Bundled\" | Select-Object -Last 8; \"web exit: $LASTEXITCODE\")",
+      "PowerShell(npx expo export --platform android 2>&1 | Select-String -Pattern \"Exported|error:|Error:|Unable|Cannot|failed|Bundled\" | Select-Object -Last 8; \"android exit: $LASTEXITCODE\")"
     ]
   },
   "enabledPlugins": {

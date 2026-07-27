@@ -7,10 +7,13 @@ import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { notify } from '@/lib/toast/notify';
 import { Pressable, TextInput, View } from '@/tw';
-import { addFalsePositives, addLesson, addRaw } from '../data/planio.repository';
-import { buildIntake, parseFinding } from '../prompts';
+import { addFalsePositives, addLessons, addRaw } from '../data/planio.repository';
+import { buildIntake, parseFindings } from '../prompts';
+import { spotConfig } from '../spots';
 import type { PlanioLesson, PlanioRaw } from '../types';
 import { CopyButton } from './copy-button';
+import { ProdIdField, canonicalProdId } from './prod-id-field';
+import { WeightBadge } from './weight-badge';
 
 const textareaClass = 'rounded-lg border border-border bg-card px-3 py-2 text-sm text-fg';
 
@@ -20,12 +23,6 @@ const parseList = (raw: string): string[] =>
     .split('\n')
     .map((l) => l.replace(/^\s*[-*•\d.)\]]+\s*/, '').trim())
     .filter(Boolean);
-
-/** Kanonisk PROD-ID af det tal man taster: "214" → "PROD-214". Tomt → "". */
-const canonicalProdId = (num: string): string => {
-  const n = num.trim();
-  return n ? `PROD-${n}` : '';
-};
 
 /**
  * Feedback ind. Rå-feltet fodrer BÅDE arkivet (gem → Fase 3) OG format-prompten (analysér →
@@ -59,9 +56,7 @@ export function InsertView({
     if (pid && feat && !featureByProdId.has(pid)) featureByProdId.set(pid, feat);
   }
 
-  const onProdNum = (next: string) => {
-    // Strip et evt. indsat "PROD-"-præfiks, så vi ikke ender med "PROD-PROD-214".
-    const num = next.replace(/^\s*prod[-\s]*/i, '');
+  const onProdNum = (num: string) => {
     setProdNum(num);
     if (!feature.trim()) {
       const known = featureByProdId.get(canonicalProdId(num).toLowerCase());
@@ -81,14 +76,16 @@ export function InsertView({
     await addRaw({ text: rawText, prodId, feature });
   };
 
+  // Preview: hvad parseren reelt finder i det indsatte — udledt under render (ingen state).
+  const preview = parseFindings(analyzed);
+
   const fileAnalyzed = async () => {
-    const parsed = parseFinding(analyzed);
-    if (!parsed) {
+    if (preview.length === 0) {
       notify("Kunne ikke finde 'Blind vinkel:' i teksten — tjek formatet");
       return;
     }
     setAnalyzed('');
-    await addLesson(parsed);
+    await addLessons(preview);
   };
 
   const saveFalsePositives = async () => {
@@ -115,19 +112,7 @@ export function InsertView({
           Feltet ryddes ikke af sig selv — tryk “Ryd” når du er færdig.
         </AppText>
         <View className="flex-row gap-2">
-          <View
-            className="h-12 flex-1 flex-row items-center gap-1 rounded-xl border border-border bg-card px-4"
-            style={{ borderCurve: 'continuous' }}>
-            <AppText variant="muted">PROD-</AppText>
-            <TextInput
-              value={prodNum}
-              onChangeText={onProdNum}
-              placeholder="214"
-              placeholderTextColor="#a8a29a"
-              className="flex-1 text-base text-fg"
-              style={{ paddingVertical: 0 }}
-            />
-          </View>
+          <ProdIdField value={prodNum} onChangeText={onProdNum} />
           <View className="flex-1">
             <Input value={feature} onChangeText={setFeature} placeholder="Feature-navn" />
           </View>
@@ -166,8 +151,47 @@ export function InsertView({
           className={textareaClass}
           style={{ minHeight: 128, fontFamily: 'monospace', textAlignVertical: 'top' }}
         />
+
+        {analyzed.trim() ? (
+          preview.length ? (
+            <View className="gap-2 rounded-lg bg-element px-3 py-2.5">
+              <AppText variant="muted" className="text-[11px] uppercase">
+                Preview · {preview.length} lektion(er) fundet
+              </AppText>
+              {preview.map((f, i) => {
+                const cfg = spotConfig(f.spot);
+                return (
+                  <View key={i} className="border-l-2 pl-3" style={{ borderColor: cfg?.accent ?? '#ccc' }}>
+                    <View className="flex-row items-center gap-2">
+                      <AppText className="text-[11px]" style={{ color: cfg?.accent }}>
+                        {cfg?.name ?? f.spot}
+                      </AppText>
+                      <WeightBadge weight={f.weight} />
+                    </View>
+                    <AppText className="text-sm" numberOfLines={2}>
+                      {f.lesson}
+                    </AppText>
+                    <AppText variant="muted" className="text-xs">
+                      → {f.fix}
+                    </AppText>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <AppText variant="muted" className="text-xs">
+              Ingen FINDING fundet endnu — tjek formatet (Blind vinkel / Lektion / Klasse-fix / Vægt).
+            </AppText>
+          )
+        ) : null}
+
         <View className="flex-row justify-end">
-          <Button title="Gem som lektion" className="h-10 px-4" onPress={fileAnalyzed} />
+          <Button
+            title={preview.length ? `Gem ${preview.length} lektion(er)` : 'Gem som lektion'}
+            className="h-10 px-4"
+            disabled={preview.length === 0}
+            onPress={fileAnalyzed}
+          />
         </View>
       </Card>
 

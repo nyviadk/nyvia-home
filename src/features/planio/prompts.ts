@@ -105,7 +105,15 @@ ${archive}
 Her er ny rå feedback:
 ${raw && raw.trim() ? raw.trim() : '[indsæt rå feedback her, eller indsæt den ovenfor]'}
 
-Opgave: omsæt hver ny finding til mit faste FINDING-format nedenfor. For hver, afgør: SKÆRPER den en EKSISTERENDE lektion (referér den under Status — vi skærper, vi laver aldrig en næsten-ens dublet)? Eller er den en NY blind vinkel? Vær striks med dedup. Sæt Vægt = kritisk hvis den ville have blokeret et review, tilbagevendende hvis mønstret er set før, ellers enkelt. Output: KUN FINDING-blokke, i markdown, intet andet.
+Opgave: omsæt inputtet til mit faste FINDING-format nedenfor.
+
+FULDSTÆNDIGHED: Producér ÉN FINDING pr. DISTINKT problem, og dæk ALLE distinkte problemer i inputtet — et review med mange punkter skal give mange FINDINGs. Collaps ALDRIG et helt review til én FINDING.
+
+DEDUP: Er to punkter samme KLASSE af fejl, så merge dem til ÉN FINDING med "Status: SKÆRPER: <lektion>". Skærper en finding en EKSISTERENDE lektion fra arkivet ovenfor, så referér den under Status (vi laver aldrig en næsten-ens dublet). Men distinkte problemer får HVER sin FINDING.
+
+VÆGT: kritisk hvis den ville have blokeret et review, tilbagevendende hvis mønstret er set før, ellers enkelt.
+
+OUTPUT: KUN FINDING-blokke, i markdown — ingen preamble, ingen opsummering, ingen prosa. Adskil hver FINDING med en linje der KUN indeholder "---".
 
 FINDING
 - Blind vinkel: scale | async | trust | generelle
@@ -138,7 +146,7 @@ Afslut med en kort, konkret tjekliste.`;
  * "(klasse-niveau)"-parentesen i det faste format). Returnerer null hvis blind vinkel mangler.
  * Status (NY/SKÆRPER) læses ikke — dedup afgøres eksternt; skærper man, sletter man den gamle.
  */
-export function parseFinding(text: string): PlanioLessonInput | null {
+function parseFindingBlock(text: string): PlanioLessonInput | null {
   const get = (key: string): string | undefined => {
     const m = text.match(new RegExp('^\\s*[-*]?\\s*' + key + '[^:\\n]*:\\s*(.+)$', 'im'));
     return m?.[1]?.trim();
@@ -156,4 +164,23 @@ export function parseFinding(text: string): PlanioLessonInput | null {
   const fix = get('Klasse-fix') || get('Fix') || '(fix)';
   const src = get('Kilde');
   return { spot, weight, lesson, fix, ...(src ? { src } : {}) };
+}
+
+/**
+ * Parser ALLE FINDING-blokke i et indsat markdown → én lektion pr. blok. Splitter primært på en
+ * linje med kun "---" (samme separator som format-prompten beder om); findes den ikke, deles der
+ * på hver "Blind vinkel:"-linje. Tolerant over for whitespace/prosa mellem blokke; ugyldige
+ * blokke (uden blind vinkel) droppes.
+ */
+export function parseFindings(text: string): PlanioLessonInput[] {
+  let blocks = text.split(/^[ \t]*-{3,}[ \t]*$/m);
+  if (blocks.length <= 1) {
+    blocks = text.split(/(?=^[ \t]*[-*]?[ \t]*Blind vinkel[ \t]*:)/im);
+  }
+  const out: PlanioLessonInput[] = [];
+  for (const block of blocks) {
+    const parsed = parseFindingBlock(block);
+    if (parsed) out.push(parsed);
+  }
+  return out;
 }

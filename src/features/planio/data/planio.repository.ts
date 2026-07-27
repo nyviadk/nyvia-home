@@ -37,23 +37,43 @@ export function subscribeLessons(
   );
 }
 
-export function addLesson(input: PlanioLessonInput): Promise<string> {
-  const src = input.src?.trim();
-  return toastAfter(
-    db.addDoc<PlanioLesson>(lessonsPath(), {
-      spot: input.spot,
-      weight: input.weight,
-      lesson: input.lesson.trim(),
-      fix: input.fix.trim(),
-      ...(src ? { src } : {}),
-      createdAt: nowISO(),
-    }),
-    'Lektion filet i knowledgebase',
-  );
+/**
+ * Fil én eller flere lektioner (fra ét analyse-svar) i ÉN batch. Alle får samme `batchId`, så
+ * hele indsættelsen kan slettes samlet igen. Returnerer antal filet.
+ */
+export async function addLessons(inputs: PlanioLessonInput[]): Promise<number> {
+  if (inputs.length === 0) return 0;
+  const now = nowISO();
+  const batchId = genId();
+  const ops: BatchOp[] = inputs.map((input) => {
+    const src = input.src?.trim();
+    return {
+      type: 'set',
+      path: `${lessonsPath()}/${genId()}`,
+      data: {
+        spot: input.spot,
+        weight: input.weight,
+        lesson: input.lesson.trim(),
+        fix: input.fix.trim(),
+        ...(src ? { src } : {}),
+        batchId,
+        createdAt: now,
+      },
+    };
+  });
+  await toastAfter(db.commitBatch(ops), `${inputs.length} lektion(er) filet`);
+  return inputs.length;
 }
 
 export function deleteLesson(id: string): Promise<void> {
   return toastAfter(db.deleteDoc(lessonPath(id)), 'Lektion slettet');
+}
+
+/** Slet flere lektioner (fx en hel indsat blok) i én batch. */
+export async function deleteLessons(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const ops: BatchOp[] = ids.map((id) => ({ type: 'delete', path: lessonPath(id) }));
+  await toastAfter(db.commitBatch(ops), `${ids.length} lektion(er) slettet`);
 }
 
 /* ---- Rå feedback (arkiv) ---- */
@@ -83,6 +103,18 @@ export function addRaw(input: PlanioRawInput): Promise<string> {
       createdAt: nowISO(),
     }),
     'Rå feedback gemt i arkiv',
+  );
+}
+
+/** Redigér en rå feedback-entry. Ryddede PROD-ID/feature gemmes som '' (aldrig undefined). */
+export function updateRaw(id: string, input: PlanioRawInput): Promise<void> {
+  return toastAfter(
+    db.updateDoc(rawDocPath(id), {
+      text: input.text.trim(),
+      prodId: input.prodId?.trim() ?? '',
+      feature: input.feature?.trim() ?? '',
+    }),
+    'Gemt',
   );
 }
 

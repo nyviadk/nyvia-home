@@ -14,6 +14,8 @@ export type PlanioLesson = {
   fix: string;
   /** Valgfri kilde, fx "PROD-214" — kun metadata, ikke organisering. */
   src?: string;
+  /** Delt id for alle lektioner filet i SAMME indsættelse — så en hel blok kan slettes samlet. */
+  batchId?: string;
   createdAt: string;
 };
 
