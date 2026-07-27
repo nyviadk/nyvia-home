@@ -9,8 +9,10 @@ import { Text, View } from '@/tw';
  * Ikke en fuld CommonMark-parser — bevidst simpel og OTA-venlig.
  */
 
-// Ét inline-mønster (backticks først, så ** inde i kode ikke tolkes).
-const INLINE = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
+// Ét inline-mønster (backticks først, så ** inde i kode ikke tolkes). BEVIDST ingen `_kursiv_`:
+// dev-feedback er fuld af snake_case (invalid_grant, GOOGLE_CALENDAR_QUEUE) som ikke må mistes —
+// kursiv laves kun med *stjerner*.
+const INLINE = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
 
 function openUrl(url: string) {
   if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener');
@@ -35,7 +37,7 @@ function renderInline(text: string): ReactNode {
           </Text>
         );
       }
-      if (/^\*[^*]+\*$/.test(part) || /^_[^_]+_$/.test(part)) {
+      if (/^\*[^*]+\*$/.test(part)) {
         return (
           <Text key={i} style={{ fontStyle: 'italic' }}>
             {part.slice(1, -1)}
