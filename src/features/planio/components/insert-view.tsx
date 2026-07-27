@@ -8,7 +8,7 @@ import type { WithId } from '@/lib/firebase';
 import { notify } from '@/lib/toast/notify';
 import { Pressable, TextInput, View } from '@/tw';
 import { addFalsePositives, addLessons, addRaw } from '../data/planio.repository';
-import { buildIntake, parseFindings } from '../prompts';
+import { buildIntake, parseFindings, sharpenReference } from '../prompts';
 import { spotConfig } from '../spots';
 import type { PlanioLesson, PlanioRaw } from '../types';
 import { CopyButton } from './copy-button';
@@ -158,8 +158,14 @@ export function InsertView({
               <AppText variant="muted" className="text-[11px] uppercase">
                 Preview · {preview.length} lektion(er) fundet
               </AppText>
+              {preview.some((f) => sharpenReference(f.status) !== null) ? (
+                <AppText variant="muted" className="text-xs">
+                  ⟳ = skærper en eksisterende lektion — slet den gamle i Arkiv bagefter.
+                </AppText>
+              ) : null}
               {preview.map((f, i) => {
                 const cfg = spotConfig(f.spot);
+                const ref = sharpenReference(f.status);
                 return (
                   <View key={i} className="border-l-2 pl-3" style={{ borderColor: cfg?.accent ?? '#ccc' }}>
                     <View className="flex-row items-center gap-2">
@@ -167,6 +173,9 @@ export function InsertView({
                         {cfg?.name ?? f.spot}
                       </AppText>
                       <WeightBadge weight={f.weight} />
+                      {ref !== null ? (
+                        <AppText className="text-[10px] text-accent-planio">⟳ skærper</AppText>
+                      ) : null}
                     </View>
                     <AppText className="text-sm" numberOfLines={2}>
                       {f.lesson}
@@ -174,6 +183,11 @@ export function InsertView({
                     <AppText variant="muted" className="text-xs">
                       → {f.fix}
                     </AppText>
+                    {ref ? (
+                      <AppText className="text-[11px] text-accent-planio" numberOfLines={1}>
+                        ⟳ skærper: {ref}
+                      </AppText>
+                    ) : null}
                   </View>
                 );
               })}

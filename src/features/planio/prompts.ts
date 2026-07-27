@@ -89,7 +89,7 @@ export const buildPass2 = (lessons: PlanioLesson[]): string => {
   };
   return `Feature/område: {{SCOPE}}
 
-Du reviewer denne feature mod mine 3 dokumenterede blinde vinkler, FØR jeg sender til min mentor. Du har koden. For hver der bider: flag konkrete steder (fil + linje), hvorfor det bider, et fix på KLASSE-niveau, og en test der fejler på nuværende adfærd. Skån mig ikke. Start med en oversigt over hvilke der er grønne, og hvilke der bider.
+Du reviewer denne feature mod mine 3 blinde vinkler + generelle støtte-linser, FØR jeg sender til min mentor. Du har koden. For hver der bider: flag konkrete steder (fil + linje), hvorfor det bider, et fix på KLASSE-niveau, og en test der fejler på nuværende adfærd. Skån mig ikke. Start med en oversigt over hvilke der er grønne, og hvilke der bider.
 
 ${SPOTS.map(block).join('\n\n')}
 
@@ -109,9 +109,19 @@ Opgave: omsæt inputtet til mit faste FINDING-format nedenfor.
 
 FULDSTÆNDIGHED: Producér ÉN FINDING pr. DISTINKT problem, og dæk ALLE distinkte problemer i inputtet — et review med mange punkter skal give mange FINDINGs. Collaps ALDRIG et helt review til én FINDING.
 
-DEDUP: Er to punkter samme KLASSE af fejl, så merge dem til ÉN FINDING med "Status: SKÆRPER: <lektion>". Skærper en finding en EKSISTERENDE lektion fra arkivet ovenfor, så referér den under Status (vi laver aldrig en næsten-ens dublet). Men distinkte problemer får HVER sin FINDING.
+VÆGT (VIGTIGST) — vægt handler om hvor meget lektionen skal STYRE fremtidige reviews, IKKE om hvor mange gange jeg tilfældigvis har set den (arkivet er tomt i starten):
+- kritisk: ville have blokeret et review, eller kan give sikkerheds-, data- eller stabilitetsbrud (auth, datatab, korruption, permanente retry-loops, OOM).
+- tilbagevendende: en generel KLASSE-fejl der let opstår igen på tværs af features (skala-/memory-grænser, idempotens, recovery-invarianter, pagination-kontrakt, rene updaters, best-effort teardown, trust-boundaries). DEFAULT for alt der er et genanvendeligt mønster.
+- enkelt: et snævert engangstilfælde der IKKE er en klasse (fx en ren formaterings-/kommentar-note). Brug SJÆLDENT.
+Konsekvens: kun kritisk + tilbagevendende injiceres i Fase 2. Udtrykker en lektion et genbrugeligt mønster, må den ALDRIG være "enkelt" — konkret er batch/memory-grænser, idempotens, recovery-invarianter, pagination og trust-boundaries MINDST tilbagevendende.
 
-VÆGT: kritisk hvis den ville have blokeret et review, tilbagevendende hvis mønstret er set før, ellers enkelt.
+KONSISTENS: Hører to findings til samme klasse/blinde vinkel (fx to skala-grænse-fejl eller to teardown-fejl), skal de have SAMME vægt, medmindre der er en reel grund til forskel. Uens vægt på søskende er en fejl.
+
+DEDUP: Er to findings i samme input samme KLASSE, så merge dem til ÉN FINDING med "Status: SKÆRPER" og behold BEGGE konkrete eksempler i lektionen — lav ikke to næsten-ens lektioner. Skærper en finding en EKSISTERENDE lektion fra arkivet ovenfor, så referér den under Status.
+
+SELVSTÆNDIGHED: Hver lektion skal give fuld mening ALENE, uden reviewet ved siden af. Ingen referencer som "jf. Finding 3" eller punktnumre — skriv princippet ud (fx "…af samme grund som at 'preparing' aldrig må blive terminal").
+
+KATEGORISERING efter fejlens KLASSE, ikke emneordet: findings om at udlede noget fra et succes-signal (fx "brug ikke signInSilently() som bevis på scope") hører under Generelle støtte-linser (API-kontrakt / "udleder jeg fra et succes-signal?"), IKKE Fjendtlig kalder — også når emnet er auth/scope.
 
 OUTPUT: KUN FINDING-blokke, i markdown — ingen preamble, ingen opsummering, ingen prosa. Adskil hver FINDING med en linje der KUN indeholder "---".
 
@@ -128,15 +138,16 @@ FINDING
 export const buildPlan = (lessons: PlanioLesson[]): string => {
   const block = (s: (typeof SPOTS)[number]) =>
     `${s.name}: ${curated(lessons, s.id).map((l) => l.lesson).join(' · ') || '(ingen lektioner endnu)'}`;
-  return `Du har lige lavet en plan for denne feature (den ligger i denne chat). FØR jeg bygger: tjek planen mod mine 3 blinde vinkler.
+  return `Du har lige lavet en plan for denne feature (den ligger i denne chat). FØR jeg bygger: tjek planen mod mine blinde vinkler + generelle støtte-linser.
 
 Mine blinde vinkler + lektioner jeg før er blevet bidt af:
-${SPOTS.slice(0, 3).map(block).join('\n')}
+${SPOTS.map(block).join('\n')}
 
-For hver blind vinkel: peger planen ind i en fælde jeg før er faldet i? Giv konkrete design-beslutninger at træffe NU, så jeg ikke bygger problemet ind:
+For hver kategori: peger planen ind i en fælde jeg før er faldet i? Giv konkrete design-beslutninger at træffe NU, så jeg ikke bygger problemet ind:
 - Skala: hvor kan N vokse? paginer/chunk fra start; hvilken fixture-størrelse?
 - Asynk: hvilke side-effects lander bag køer? gør dem idempotente + planlæg recovery.
 - Trust: hvilke public endpoints/client-writes? auth-model + server-ejede felter fra dag 1.
+- Generelle: udleder planen noget fra et succes-signal? er updaters rene/sikre ved dobbelt-kald? holder API-kontrakten på edge cases?
 
 Afslut med en kort, konkret tjekliste.`;
 };
@@ -146,9 +157,16 @@ Afslut med en kort, konkret tjekliste.`;
  * "(klasse-niveau)"-parentesen i det faste format). Returnerer null hvis blind vinkel mangler.
  * Status (NY/SKÆRPER) læses ikke — dedup afgøres eksternt; skærper man, sletter man den gamle.
  */
-function parseFindingBlock(text: string): PlanioLessonInput | null {
+/** En parset FINDING = en lektion + valgfri Status (NY / SKÆRPER: …) til preview/dedup-hint. */
+export type ParsedFinding = PlanioLessonInput & { status?: string };
+
+function parseFindingBlock(text: string): ParsedFinding | null {
+  // Nøglen skal stå ALENE (evt. med én parentes) før kolon — ellers ville "Fix" ramme "Fixering:"
+  // og løs fritekst med kolon i kunne forgifte get(). Parentesen tillader "Lektion (klasse-niveau):".
   const get = (key: string): string | undefined => {
-    const m = text.match(new RegExp('^\\s*[-*]?\\s*' + key + '[^:\\n]*:\\s*(.+)$', 'im'));
+    const m = text.match(
+      new RegExp('^\\s*[-*]?\\s*' + key + '(?:\\s*\\([^)]*\\))?\\s*:\\s*(.+)$', 'im'),
+    );
     return m?.[1]?.trim();
   };
   const rawSpot = (get('Blind vinkel') || '').toLowerCase().split('|')[0].trim();
@@ -163,7 +181,8 @@ function parseFindingBlock(text: string): PlanioLessonInput | null {
   const lesson = get('Lektion') || '(lektion)';
   const fix = get('Klasse-fix') || get('Fix') || '(fix)';
   const src = get('Kilde');
-  return { spot, weight, lesson, fix, ...(src ? { src } : {}) };
+  const status = get('Status');
+  return { spot, weight, lesson, fix, ...(src ? { src } : {}), ...(status ? { status } : {}) };
 }
 
 /**
@@ -172,15 +191,25 @@ function parseFindingBlock(text: string): PlanioLessonInput | null {
  * på hver "Blind vinkel:"-linje. Tolerant over for whitespace/prosa mellem blokke; ugyldige
  * blokke (uden blind vinkel) droppes.
  */
-export function parseFindings(text: string): PlanioLessonInput[] {
+export function parseFindings(text: string): ParsedFinding[] {
   let blocks = text.split(/^[ \t]*-{3,}[ \t]*$/m);
   if (blocks.length <= 1) {
     blocks = text.split(/(?=^[ \t]*[-*]?[ \t]*Blind vinkel[ \t]*:)/im);
   }
-  const out: PlanioLessonInput[] = [];
+  const out: ParsedFinding[] = [];
   for (const block of blocks) {
     const parsed = parseFindingBlock(block);
     if (parsed) out.push(parsed);
   }
   return out;
+}
+
+/**
+ * Er en Status en skærpning, og af HVILKEN lektion? `get('Status')` fanger hele resten af linjen
+ * ("SKÆRPER: <lektion>"), så her trimmes "SKÆRPER:"-præfikset af, hvis en kalder vil slå den gamle
+ * lektion op. Returnerer referencen (kan være ''), eller null hvis det ikke er en skærpning.
+ */
+export function sharpenReference(status?: string): string | null {
+  if (!status || !/sk(?:æ|ae)rper/i.test(status)) return null;
+  return status.replace(/^.*?sk(?:æ|ae)rper\s*:?\s*/i, '').trim();
 }

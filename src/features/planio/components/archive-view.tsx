@@ -123,30 +123,56 @@ function lessonBatches(lessons: WithId<PlanioLesson>[]): LessonBatch[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-function BatchRow({ batch }: { batch: LessonBatch }) {
-  const onDelete = async () => {
+function BatchRow({ batch, onOpen }: { batch: LessonBatch; onOpen: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onOpen}>
+      <Card className="flex-row items-center gap-3">
+        <View className="flex-1">
+          <AppText variant="label">{batch.ids.length} lektioner</AppText>
+          <AppText variant="muted" className="text-xs">
+            {formatDateTimeCopenhagen(batch.createdAt)} · {[...batch.spots].map(spotName).join(', ')}
+          </AppText>
+        </View>
+        <AppText variant="muted">›</AppText>
+      </Card>
+    </Pressable>
+  );
+}
+
+/** Detalje for én indsat blok: se de enkelte lektioner (hver kan slettes) + slet hele blokken. */
+function BlockDetail({ lessons, onBack }: { lessons: WithId<PlanioLesson>[]; onBack: () => void }) {
+  const ids = lessons.map((l) => l.id);
+  const spots = new Set(lessons.map((l) => l.spot));
+  const onDeleteAll = async () => {
     if (
-      await confirmAction(
-        'Slet blok',
-        `Slet alle ${batch.ids.length} lektioner fra denne indsættelse?`,
-        'Slet',
-      )
+      await confirmAction('Slet blok', `Slet alle ${ids.length} lektioner fra denne indsættelse?`, 'Slet')
     ) {
-      await deleteLessons(batch.ids);
+      await deleteLessons(ids);
+      onBack();
     }
   };
   return (
-    <Card className="flex-row items-center gap-3">
-      <View className="flex-1">
-        <AppText variant="label">{batch.ids.length} lektioner</AppText>
-        <AppText variant="muted" className="text-xs">
-          {formatDateTimeCopenhagen(batch.createdAt)} · {[...batch.spots].map(spotName).join(', ')}
+    <View className="gap-3">
+      <Pressable accessibilityRole="button" hitSlop={6} onPress={onBack}>
+        <AppText variant="muted">‹ tilbage til arkiv</AppText>
+      </Pressable>
+      <View className="gap-0.5">
+        <AppText variant="label" className="text-base">{ids.length} lektioner</AppText>
+        <AppText variant="muted" className="text-[11px]">
+          {formatDateTimeCopenhagen(lessons[0].createdAt)} · {[...spots].map(spotName).join(', ')}
         </AppText>
       </View>
-      <Pressable accessibilityRole="button" hitSlop={6} onPress={onDelete}>
-        <AppText className="text-sm text-danger">Slet blok</AppText>
-      </Pressable>
-    </Card>
+      <View className="gap-2.5">
+        {lessons.map((l) => (
+          <LessonItem key={l.id} lesson={l} />
+        ))}
+      </View>
+      <View className="flex-row border-t border-border pt-3">
+        <Pressable accessibilityRole="button" hitSlop={6} onPress={onDeleteAll}>
+          <AppText className="text-sm text-danger">Slet hele blokken</AppText>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -162,9 +188,15 @@ export function ArchiveView({
 }) {
   const [open, setOpen] = useState<PlanioSpot | null>('scale');
   const [openRawId, setOpenRawId] = useState<string | null>(null);
+  const [openBatchId, setOpenBatchId] = useState<string | null>(null);
 
   const openRaw = openRawId ? (raw.find((r) => r.id === openRawId) ?? null) : null;
   if (openRaw) return <RawDetail raw={openRaw} onBack={() => setOpenRawId(null)} />;
+
+  const openBatchLessons = openBatchId ? lessons.filter((l) => l.batchId === openBatchId) : [];
+  if (openBatchId && openBatchLessons.length) {
+    return <BlockDetail lessons={openBatchLessons} onBack={() => setOpenBatchId(null)} />;
+  }
 
   const batches = lessonBatches(lessons);
 
@@ -195,10 +227,10 @@ export function ArchiveView({
             Indsatte blokke ({batches.length})
           </AppText>
           <AppText variant="muted" className="text-xs">
-            Slet en hel indsættelse på én gang (fx et helt review du vil køre om).
+            Klik ind for at se de enkelte lektioner, eller slet en hel indsættelse på én gang.
           </AppText>
           {batches.map((b) => (
-            <BatchRow key={b.batchId} batch={b} />
+            <BatchRow key={b.batchId} batch={b} onOpen={() => setOpenBatchId(b.batchId)} />
           ))}
         </View>
       ) : null}
