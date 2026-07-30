@@ -7,9 +7,8 @@ import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
-import { formatDKKWhole, parseKronerInput } from '@/lib/money';
+import { formatDKKWhole } from '@/lib/money';
 import { Pressable, View } from '@/tw';
-import { Input } from '@/components/ui/input';
 import { GiftPrice } from '../components/gift-price';
 import { NameField, namesFromField } from '../components/name-field';
 import { setReservations } from '../data/wishlist-public.repository';
@@ -18,6 +17,7 @@ import {
   namesLabel,
   remainingCount,
   reservationNames,
+  sumContributions,
   type Wish,
   type WishReservation,
 } from '../types';
@@ -44,12 +44,15 @@ function ReserveForm({
   wish,
   index,
   contributors,
+  pledgedOre,
 }: {
   ownerUid: string;
   wish: WithId<Wish>;
   index?: number;
   /** Dem der har givet tilskud — man deler reelt gaven med dem. */
   contributors: string[];
+  /** Sum af tilskud på gaven. Den der reserverer dækker resten. */
+  pledgedOre: number;
 }) {
   const router = useRouter();
   const existing = index != null ? (wish.reservations ?? [])[index] : undefined;
@@ -60,6 +63,9 @@ function ReserveForm({
   const [busy, setBusy] = useState(false);
 
   const goal = typeof wish.priceOre === 'number' ? wish.priceOre : 0;
+  // Tilskuddene dækker en del af prisen — den der reserverer lægger resten. Vises kun når nogen
+  // rent faktisk HAR lagt penge; ellers siger prisen alt hvad der er at sige.
+  const missingOre = goal > 0 && pledgedOre > 0 ? Math.max(0, goal - pledgedOre) : null;
 
   // Ved redigering må man bruge det resterende PLUS det, denne reservation allerede optager.
   const maxQty = Math.max(1, remainingCount(wish) + (existing?.qty ?? 0));
@@ -98,6 +104,13 @@ function ReserveForm({
         <GiftPrice wish={wish} />
         {contributors.length > 0 ? (
           <AppText className="text-xl text-fg">sammen med {contributors.join(', ')}</AppText>
+        ) : null}
+        {missingOre !== null ? (
+          <AppText className="text-xl font-semibold leading-relaxed text-fg">
+            {missingOre > 0
+              ? `Du lægger de sidste ${formatDKKWhole(missingOre)} — ${formatDKKWhole(pledgedOre)} er givet i tilskud.`
+              : `Hele prisen er dækket af ${formatDKKWhole(pledgedOre)} i tilskud.`}
+          </AppText>
         ) : null}
       </View>
 
@@ -154,6 +167,7 @@ export function ReserveScreen({
 }) {
   const { wishes, pot, loading } = usePublicWishlist(ownerUid);
   const wish = wishes.find((w) => w.id === wishId);
+  const onThisWish = pot.filter((c) => c.wishId === wishId);
 
   if (!wish) {
     return (
@@ -170,9 +184,8 @@ export function ReserveScreen({
       ownerUid={ownerUid}
       wish={wish}
       index={index}
-      contributors={[
-        ...new Set(pot.filter((c) => c.wishId === wish.id).map((c) => namesLabel(c.by))),
-      ]}
+      contributors={[...new Set(onThisWish.map((c) => namesLabel(c.by)))]}
+      pledgedOre={sumContributions(onThisWish)}
     />
   );
 }

@@ -63,8 +63,20 @@ export function oreToInput(ore: number): string {
 }
 
 /**
+ * Kun et rent decimaltal (evt. negativt) må nå BigNumber. En efterfølgende separator uden decimaler
+ * ("12,") er tilladt, fordi man taster igennem den.
+ */
+const DECIMAL = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
+/**
  * Parse brugerinput (dansk format med komma eller punktum) til øre.
  * Returnerer null hvis input ikke er et gyldigt tal.
+ *
+ * Mønstret SKAL tjekkes før BigNumber: bignumber.js returnerer ikke NaN på ugyldigt input — den
+ * KASTER ("[BigNumber Error] Not a number: abc"). Så et enkelt bogstav i et beløbsfelt væltede hele
+ * skærmen, fordi flere felter parser mens man taster. Regexet lukker samtidig for de formater
+ * BigNumber ellers accepterer, men som ingen taster i et kronefelt: hex ("0x1f" blev til 31 kr.),
+ * eksponenter og "Infinity"/"NaN".
  */
 export function parseKronerInput(input: string | null | undefined): number | null {
   if (typeof input !== 'string') return null;
@@ -73,8 +85,9 @@ export function parseKronerInput(input: string | null | undefined): number | nul
     .replace(/\./g, '')
     .replace(',', '.')
     .trim();
-  if (cleaned === '') return null;
+  if (!DECIMAL.test(cleaned)) return null;
   const value = new BigNumber(cleaned);
   if (!value.isFinite()) return null;
-  return value.times(100).integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+  const ore = value.times(100).integerValue(BigNumber.ROUND_HALF_UP).toNumber();
+  return Number.isFinite(ore) ? ore : null;
 }
