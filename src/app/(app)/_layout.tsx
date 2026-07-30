@@ -32,6 +32,16 @@ const LABELS: Record<string, string> = {
   settings: 'Indstillinger',
 };
 
+/**
+ * Skjules i den native menu. Begge er web-features — Planio kører kun på web, og Evis følsomme
+ * felter kan kun læses der — så de fyldte bare i menuen på telefonen. Ruterne er stadig
+ * registreret, så et direkte link virker fortsat; de har bare ingen indgang i draweren.
+ *
+ * Filtrering sker HER og ikke ved at fjerne <Drawer.Screen>: expo-router registrerer ruter ud fra
+ * filsystemet, så de ville stadig ligge i `state.routes` og dukke op i menuen.
+ */
+const HIDDEN: readonly string[] = ['evi', 'planio'];
+
 type DrawerRoute = { key: string; name: string };
 type DrawerContentProps = {
   state: { index: number; routes: readonly DrawerRoute[] };
@@ -81,7 +91,7 @@ function DrawerContent({ state, navigation }: DrawerContentProps) {
     navigation.navigate(name);
     navigation.closeDrawer();
   };
-  const top = state.routes.filter((r) => r.name !== 'settings');
+  const top = state.routes.filter((r) => r.name !== 'settings' && !HIDDEN.includes(r.name));
   const hasSettings = state.routes.some((r) => r.name === 'settings');
 
   return (
