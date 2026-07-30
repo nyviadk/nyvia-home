@@ -14,6 +14,11 @@ import type { CollectionSnapshot, Unsubscribe, WithId } from '@/lib/firebase';
  * `key` skal FULDT bestemme `subscribe` (typisk Firestore-stien): abonnementet genstartes kun når
  * key ændrer sig, og den nyeste `subscribe` bruges via en ref — så en ny funktions-identitet ved
  * hver render ikke river forbindelsen ned.
+ *
+ * VIGTIGT: `key` er også nøgle i den GLOBALE cache nedenfor og skal derfor være unik for de data
+ * den henter — ikke bare for stien. To forskellige kollektioner med samme key overskriver hinandens
+ * cache, og næste montering starter så op med den anden kollektions dokumenter (typed som T, uden
+ * at TypeScript kan fange det). Præfiks derfor altid med hvad der hentes, fx `wishes:${uid}`.
  */
 
 type Subscribe<S> = (onChange: (snap: S) => void, onError?: (e: Error) => void) => Unsubscribe;
