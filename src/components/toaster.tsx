@@ -1,4 +1,5 @@
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useDrawerStatusStore } from "@/lib/nav/drawer-status-store";
@@ -9,6 +10,9 @@ import { Pressable, Text, View } from "@/tw";
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
   const insets = useSafeAreaInsets();
+  // Containeren er ikke længere fuldbredde, så toasten skal selv holde sig inden for skærmen.
+  const { width } = useWindowDimensions();
+  const maxWidth = Math.min(440, width - insets.left - insets.right - 32);
   // Toasteren males oven på hele navigatoren (søskende i app-roden), så en åben drawer ville
   // ellers få toasten liggende OVEN PÅ menuen. Skjul den mens draweren er åben — toasten
   // bliver hængende i køen og dukker op igen når menuen lukkes.
@@ -23,14 +27,15 @@ export function Toaster() {
 
   return (
     <View
+      // Som PROP, ikke i `style`: style-varianten slår ikke pålideligt igennem her (css-wrapperen),
+      // og så opfangede den usynlige fuldbredde-container alle klik i sin egen linje.
+      pointerEvents="box-none"
       style={{
-        pointerEvents: "box-none",
         position: "absolute",
-        // Både left OG right sættes → containeren får en reel bredde. Uden left kollapser
-        // absolut-boksen til indholdsbredde på Android (Yoga), og child'ens width:100% blev
-        // til en tynd lodret kasse uden plads til teksten. items-end = top-højre på web,
-        // fuld bredde i toppen på smal mobil.
-        left: insets.left + 16,
+        // KUN `right` — ingen `left`. Med begge sat blev containeren fuldbredde, og selv en kort
+        // toast lå så i en usynlig boks tværs over skærmen der opfangede klik i sin egen linje.
+        // Uden `left` kollapser boksen til indholdets bredde (toasten selv har en maks-bredde),
+        // så der simpelthen ikke er noget at ramme ved siden af — uafhængigt af pointerEvents.
         right: insets.right + 16,
         top: insets.top + headerClearance + 16,
       }}
@@ -43,14 +48,17 @@ export function Toaster() {
           exiting={FadeOutUp.duration(150)}
           // Ingen width:100% — så fyldte hver toast hele bredden og opfangede tryk tværs over
           // skærmen, også hvor der ikke var noget at se. Den skrumper nu til sit indhold og
-          // ligger i højre side (containerens items-end); box-none lader tryk gå igennem
-          // alt andet end selve boblen.
-          style={{ maxWidth: 440, alignSelf: "flex-end", pointerEvents: "box-none" }}
+          // ligger i højre side; box-none (som prop) lader tryk gå igennem alt andet end boblen.
+          pointerEvents="box-none"
+          style={{ maxWidth, alignSelf: "flex-end" }}
         >
           <View
             style={{
               boxShadow: "0 4px 14px rgba(40, 40, 38, 0.20)",
               borderCurve: "continuous",
+              // En toast er ikke tekst man skal markere — uden dette blev den bare "valgt"
+              // når man forsøgte at klikke på noget bagved.
+              userSelect: "none",
             }}
             className="flex-row items-center justify-between gap-3 rounded-xl bg-fg px-4 py-3"
           >
