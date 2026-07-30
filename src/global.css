@@ -26,10 +26,12 @@
   --color-accent-spending: #4a7c8c; /* dæmpet cyan-blå (forbrug) */
   --color-accent-evi: #9a5f7e; /* dæmpet plomme (Evi) */
   --color-accent-planio: #5a5fa6; /* dæmpet indigo (My Planio) */
+  --color-accent-wishlist: #b06a8f; /* dæmpet rosa (Ønskeliste) */
 
   /* Status */
   --color-danger: #b3261e;
   --color-warning: #b0791f; /* dæmpet amber (afventer) */
+  --color-star: #f2d98c; /* blød guld (favorit-badge) */
   --color-success: #2e7d32;
 
   /* Fonts */
@@ -70,8 +72,10 @@
   --color-accent-spending: var(--color-accent-spending);
   --color-accent-evi: var(--color-accent-evi);
   --color-accent-planio: var(--color-accent-planio);
+  --color-accent-wishlist: var(--color-accent-wishlist);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
+  --color-star: var(--color-star);
   --color-success: var(--color-success);
 
   --font-sans: var(--font-display);

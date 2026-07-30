@@ -28,6 +28,7 @@ const LABELS: Record<string, string> = {
   timetracker: 'Timetracker',
   evi: 'Evi',
   planio: 'My Planio',
+  onskeliste: 'Ønskeliste',
   settings: 'Indstillinger',
 };
 
@@ -138,6 +139,7 @@ export default function AppDrawerLayout() {
       <Drawer.Screen name="timetracker" />
       <Drawer.Screen name="evi" />
       <Drawer.Screen name="planio" />
+      <Drawer.Screen name="onskeliste" />
     </Drawer>
   );
 }

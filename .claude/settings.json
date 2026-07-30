@@ -13,7 +13,9 @@
       "PowerShell(npx expo export --platform web 2>&1 | Select-String -Pattern \"Exported|Bundled|error:|Error:|failed\" | Select-Object -Last 5; \"web exit: $LASTEXITCODE\")",
       "PowerShell(npx expo export --platform android 2>&1 | Select-String -Pattern \"Exported|Bundled|error:|Error:|failed\" | Select-Object -Last 5; \"android exit: $LASTEXITCODE\")",
       "PowerShell(npx expo export --platform web 2>&1 | Select-String -Pattern \"Exported|Bundled|error:|Error:|failed\" | Select-Object -Last 4; \"web exit: $LASTEXITCODE\")",
-      "PowerShell(npx expo export --platform android 2>&1 | Select-String -Pattern \"Exported|Bundled|error:|Error:|failed\" | Select-Object -Last 4; \"android exit: $LASTEXITCODE\")"
+      "PowerShell(npx expo export --platform android 2>&1 | Select-String -Pattern \"Exported|Bundled|error:|Error:|failed\" | Select-Object -Last 4; \"android exit: $LASTEXITCODE\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | Select-Object -First 20; \"tsc exit: $LASTEXITCODE\")",
+      "PowerShell(npx expo export --platform web 2>&1 | Select-String -Pattern \"Exported|metadata|error:|Error:|failed\" | Select-Object -Last 6; \"web exit: $LASTEXITCODE\")"
     ]
   },
   "enabledPlugins": {

@@ -23,8 +23,11 @@ function RootNavigator() {
   }
 
   // Deklarativ guard: (app) mountes kun når der er en bruger, (auth) kun uden.
+  // `w/[uid]` (delt ønskeliste) står bevidst UDEN FOR begge guards — gæster skal kunne åbne
+  // linket uden login, og ejeren skal kunne åbne det uden at blive smidt ud i login-flowet.
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="w/[uid]" />
       <Stack.Protected guard={!!user}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>

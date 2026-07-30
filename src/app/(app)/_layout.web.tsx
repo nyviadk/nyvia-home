@@ -46,6 +46,12 @@ const ITEMS = [
     accent: "text-accent-planio",
   },
   {
+    name: "onskeliste",
+    href: "/onskeliste",
+    label: "Ønskeliste",
+    accent: "text-accent-wishlist",
+  },
+  {
     name: "settings",
     href: "/settings",
     label: "Indstillinger",

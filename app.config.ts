@@ -53,9 +53,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     predictiveBackGestureEnabled: false,
   },
   web: {
-    // SPA frem for statisk SSG: appen er client-only (Firebase i browseren),
-    // så vi vil ikke server-rendere ruterne i Node.
-    output: 'single',
+    // 'server' (ikke 'single'): kræves for API-ruter — vi bruger `/metadata+api.ts` til at hente
+    // JSON-LD/OG fra en ønske-URL server-side (browseren må ikke pga. CORS). Ruterne præ-renderes
+    // i Node ved build, så NY kode må aldrig røre window/document/localStorage på modul-niveau
+    // eller i første render — kun i effects/handlers (eksisterende kode er allerede guardet).
+    output: 'server',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
