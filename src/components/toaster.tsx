@@ -41,7 +41,11 @@ export function Toaster() {
           key={toast.id}
           entering={FadeInDown.duration(200)}
           exiting={FadeOutUp.duration(150)}
-          style={{ width: "100%", maxWidth: 440 }}
+          // Ingen width:100% — så fyldte hver toast hele bredden og opfangede tryk tværs over
+          // skærmen, også hvor der ikke var noget at se. Den skrumper nu til sit indhold og
+          // ligger i højre side (containerens items-end); box-none lader tryk gå igennem
+          // alt andet end selve boblen.
+          style={{ maxWidth: 440, alignSelf: "flex-end", pointerEvents: "box-none" }}
         >
           <View
             style={{
@@ -50,7 +54,9 @@ export function Toaster() {
             }}
             className="flex-row items-center justify-between gap-3 rounded-xl bg-fg px-4 py-3"
           >
-            <Text className="flex-1 text-sm text-card">{toast.message}</Text>
+            {/* `shrink` frem for `flex-1`: boblen sizes nu efter sit indhold, og flex-1 ville
+                kollapse teksten til nul bredde i stedet for at fylde den plads der er. */}
+            <Text className="shrink text-sm text-card">{toast.message}</Text>
             {toast.actionLabel ? (
               <Pressable
                 accessibilityRole="button"
