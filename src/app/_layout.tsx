@@ -25,15 +25,22 @@ function RootNavigator() {
   // Deklarativ guard: (app) mountes kun når der er en bruger, (auth) kun uden.
   // `w/[uid]` (delt ønskeliste) står bevidst UDEN FOR begge guards — gæster skal kunne åbne
   // linket uden login, og ejeren skal kunne åbne det uden at blive smidt ud i login-flowet.
+  //
+  // RÆKKEFØLGEN BETYDER NOGET: expo-router bruger JSX-rækkefølgen som skærm-rækkefølge, og
+  // `Stack.Protected` filtrerer de spærrede skærme HELT ud. Peger URL'en på en filtreret skærm
+  // (fx `/` → `(app)` når man er logget ud), falder react-navigation tilbage til den FØRSTE
+  // skærm i listen. Lå `w/[uid]` først, blev det fallbacket — og da ruten er dynamisk uden
+  // `uid` at indsætte, landede man på `/w/undefined`. Den skal derfor stå SIDST, så fallback
+  // altid bliver (app) eller (auth).
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="w/[uid]" />
       <Stack.Protected guard={!!user}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
       <Stack.Protected guard={!user}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      <Stack.Screen name="w/[uid]" />
     </Stack>
   );
 }
