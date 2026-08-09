@@ -1,8 +1,10 @@
 import { Card } from '@/components/ui/card';
+import { DeleteRowButton } from '@/components/ui/delete-row-button';
 import { SelectField } from '@/components/ui/select-field';
 import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
-import { Pressable, View } from '@/tw';
+import { View } from '@/tw';
+import { useAddressChangesStore } from '../data/address-changes-store';
 import {
   deleteAddressChange,
   setAddressChangeStatus,
@@ -36,9 +38,13 @@ export function AddressChangeRow({ change }: { change: WithId<AddressChange> }) 
           onChange={(status) => setAddressChangeStatus(change.id, status)}
         />
       </View>
-      <Pressable accessibilityRole="button" hitSlop={6} onPress={() => deleteAddressChange(change.id)}>
-        <AppText className="text-sm text-danger">Slet</AppText>
-      </Pressable>
+      <DeleteRowButton
+        id={change.id}
+        title="Slet adresseændring"
+        name={change.name}
+        pending={useAddressChangesStore.pending}
+        remove={() => deleteAddressChange(change.id)}
+      />
     </Card>
   );
 }

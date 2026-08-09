@@ -1,12 +1,8 @@
 import { nowISO } from '@/lib/datetime';
-import { auth, db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import type { UvPlace, UvSettings } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 /**
  * Ét fast dokument pr. bruger — i SAMME `settings`-kollektion som budget, så de eksisterende

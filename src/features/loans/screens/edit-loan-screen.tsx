@@ -2,25 +2,13 @@ import { router } from 'expo-router';
 
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
+import type { WithId } from '@/lib/firebase';
 import { LoanForm } from '../components/loan-form';
 import { updateLoan } from '../data/loans.repository';
-import { useLoan } from '../hooks/use-loan';
-import { isCustomLoan } from '../types';
+import type { Loan } from '../types';
 
-export function EditLoanScreen({ id }: { id: string }) {
-  const { loan, loading } = useLoan(id);
-
-  if (loading || !loan) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
-  }
-
-  // Custom-lån redigeres af CustomLoanFormScreen (ruten brancher).
-  if (isCustomLoan(loan)) return null;
-
+export function EditLoanScreen({ loan }: { loan: WithId<Loan> }) {
+  const id = loan.id;
   return (
     <Screen>
       <AppText variant="title">Redigér lån</AppText>

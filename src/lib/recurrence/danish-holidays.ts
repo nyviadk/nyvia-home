@@ -60,7 +60,7 @@ function bankClosedDates(year: number): Set<string> {
 }
 
 /** True hvis banken er lukket (weekend eller dansk helligdag/lukkedag). */
-export function isBankClosed(date: DateTime): boolean {
+function isBankClosed(date: DateTime): boolean {
   const weekday = date.weekday; // 6 = lørdag, 7 = søndag
   if (weekday === 6 || weekday === 7) return true;
   return bankClosedDates(date.year).has(date.toFormat('yyyy-MM-dd'));
@@ -93,17 +93,3 @@ export function firstBankDayOfMonth(year: number, month: number): DateTime {
   return d;
 }
 
-/** Ryk en dato bagud til foregående bankdag (overførsler kan ikke ske på lukkedage). */
-export function previousBankDay(date: DateTime): DateTime {
-  let d = date;
-  while (isBankClosed(d)) d = d.minus({ days: 1 });
-  return d;
-}
-
-/** Ryk en dato FREM til næste bankdag (en betaling på en lukkedag gennemføres den
- *  førstkommende hverdag). Bruges til faste dage/anker — modsat 'sidste bankdag'. */
-export function nextBankDay(date: DateTime): DateTime {
-  let d = date;
-  while (isBankClosed(d)) d = d.plus({ days: 1 });
-  return d;
-}

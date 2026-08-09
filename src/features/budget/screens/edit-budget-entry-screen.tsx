@@ -1,24 +1,20 @@
 import { router } from 'expo-router';
 
+import { DeleteEntityLink } from '@/components/ui/delete-entity-link';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { View } from '@/tw';
 import { BudgetEntryForm } from '../components/budget-entry-form';
-import { DeleteBudgetLink } from '../components/delete-budget-link';
+import { useBudgetStore } from '../data/budget-store';
 import { PriceChangeEditor } from '../components/price-change-editor';
-import { updateBudgetEntry, updateBudgetPriceChanges } from '../data/budget.repository';
+import { updateBudgetEntry, updateBudgetPriceChanges, deleteBudgetEntry } from '../data/budget.repository';
 import { useBudgetEntry } from '../hooks/use-budget-entry';
 
 export function EditBudgetEntryScreen({ id }: { id: string }) {
   const { entry, loading } = useBudgetEntry(id);
 
-  if (loading || !entry) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
-  }
+  if (loading || !entry) return <LoadingScreen />;
 
   return (
     <Screen>
@@ -37,7 +33,13 @@ export function EditBudgetEntryScreen({ id }: { id: string }) {
           onSave={(changes) => updateBudgetPriceChanges(id, changes)}
         />
       </View>
-      <DeleteBudgetLink id={id} name={entry.name} />
+      <DeleteEntityLink
+        id={id}
+        label="Slet post"
+        name={entry.name}
+        pending={useBudgetStore.pending}
+        remove={() => deleteBudgetEntry(id)}
+      />
     </Screen>
   );
 }

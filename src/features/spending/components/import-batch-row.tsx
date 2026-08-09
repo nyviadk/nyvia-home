@@ -6,13 +6,13 @@ import { formatDateCopenhagen, formatDateTimeCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
 import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { useTransactionsStore } from '../data/transactions-store';
+import { useVisibleTransactions } from '../data/pending-deletes';
 import { displayAccountName } from '../spending.utils';
 import type { ImportBatch } from '../types';
 
 /** En import i historikken — klik for at se posteringer, ændre eller slette. */
 export function ImportBatchRow({ batch }: { batch: WithId<ImportBatch> }) {
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const transactions = useVisibleTransactions();
   const accounts = useSpendingSettingsStore((s) => s.accounts);
   const own = transactions.filter((t) => t.importBatchId === batch.id);
   const batchAccounts = Array.from(new Set(own.map((t) => t.account))).map((number) =>

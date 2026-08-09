@@ -18,7 +18,6 @@ import {
   setEviAnswer,
 } from '../data/evi-customers.repository';
 import { useEviCustomersStore } from '../data/evi-customers-store';
-import { markEviPendingDelete, unmarkEviPendingDelete } from '../data/evi-pending-deletes';
 import { useEviTemplateStore } from '../data/evi-template-store';
 import { formatAnswerText } from '../format';
 import { collectReuseValues } from '../reuse';
@@ -46,7 +45,7 @@ const MODE_OPTIONS = [
 ];
 
 export function EviCustomerDetailScreen({ id }: { id: string }) {
-  const customer = useEviCustomersStore((s) => s.items.find((c) => c.id === id));
+  const customer = useEviCustomersStore.useItem(id).item;
   const allFields = useEviTemplateStore((s) => s.fields);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
@@ -152,10 +151,10 @@ export function EviCustomerDetailScreen({ id }: { id: string }) {
 
       {mode === 'edit' ? (
         <DeleteEntityLink
+          id={id}
           label="Slet kunde"
           name={customer.companyName || 'Kunde'}
-          markPending={() => markEviPendingDelete(id)}
-          unmarkPending={() => unmarkEviPendingDelete(id)}
+          pending={useEviCustomersStore.pending}
           remove={() => deleteEviCustomer(id)}
         />
       ) : null}

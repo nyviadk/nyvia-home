@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { useFlushOnUnmount } from '@/hooks/use-flush-on-unmount';
 
 /**
  * Tekstfelt der gemmer LØBENDE: skriver ved blur og flush'er ugemte ændringer hvis
@@ -26,21 +27,22 @@ export function InlineTextInput({
   latest.current = draft;
   const prevValue = useRef(value);
 
-  useEffect(() => {
-    if (value === prevValue.current) return;
+  // Justering af state UNDER render (React-dokkenes anbefaling), ikke i en effect: en effect
+  // ville give et ekstra render-gennemløb hvor det gamle udkast stadig stod i feltet.
+  // Skriver brugeren netop nu, rører vi ikke feltet — så et sent svar fra serveren ikke
+  // overskriver det man er i gang med.
+  if (value !== prevValue.current) {
     prevValue.current = value;
     if (!focusedRef.current) setDraft(value);
-  }, [value]);
+  }
 
   const flush = () => {
     if (!dirty.current) return;
     dirty.current = false;
     onSave(latest.current.trim());
   };
-  const flushRef = useRef(flush);
-  flushRef.current = flush;
   // Gem ved unmount hvis der er ugemte ændringer (blur når ikke altid at fyre).
-  useEffect(() => () => flushRef.current(), []);
+  useFlushOnUnmount(flush);
 
   return (
     <Input

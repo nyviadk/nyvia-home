@@ -34,11 +34,6 @@ export function isOvernight(startTime: string, endTime: string): boolean {
   return start !== null && end !== null && end <= start;
 }
 
-/** Nuværende tidspunkt som HH:mm (Copenhagen). */
-export function nowHm(): string {
-  return DateTime.now().setZone(APP_TIMEZONE).toFormat('HH:mm');
-}
-
 /**
  * Maskér tastet input til HH:mm uden at brugeren selv skriver ":". De første to cifre
  * er timer, resten minutter (fx "0930" → "09:30", "09" → "09").
@@ -77,14 +72,6 @@ export function timeSuggestions(value: string): string[] {
   const m = Number.parseInt(digits.slice(2, 4), 10);
   if (h > 23 || m > 59) return [];
   return [`${hh(h)}:${hh(m)}`];
-}
-
-/** Læg minutter til et HH:mm (wrapper rundt om midnat), eller null hvis ugyldigt. */
-export function addMinutesToHm(hm: string, minutes: number): string | null {
-  const base = parseHm(hm);
-  if (base === null) return null;
-  const t = (((base + minutes) % (24 * 60)) + 24 * 60) % (24 * 60);
-  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 }
 
 /** Minutter → "2t 30m" / "45m" / "0m". */

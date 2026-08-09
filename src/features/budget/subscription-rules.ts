@@ -4,7 +4,7 @@ import { APP_TIMEZONE } from '@/lib/datetime';
 import { occursInMonth } from '@/lib/recurrence/engine';
 import type { Subscription } from '@/features/subscriptions/types';
 import type { ForecastRule } from './forecast';
-import { effectivePriceOre, ym } from './pricing';
+import { effectivePriceOre, ymFromParts } from './pricing';
 
 function addMonthsISO(iso: string, months: number): string {
   return DateTime.fromISO(iso, { zone: APP_TIMEZONE }).plus({ months }).toISODate() ?? iso;
@@ -38,7 +38,7 @@ export function subscriptionChargeInMonth(
   year: number,
   month: number
 ): number {
-  const monthYm = ym(year, month);
+  const monthYm = ymFromParts(year, month);
   return subscriptionToRules(sub).reduce(
     (sum, r) =>
       sum + (occursInMonth(r.recurrence, year, month) ? effectivePriceOre(r.amount, r.priceChanges, monthYm) : 0),

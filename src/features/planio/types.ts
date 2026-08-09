@@ -46,11 +46,3 @@ export type PlanioFalsePositive = {
   text: string;
   createdAt: string;
 };
-
-export type PlanioFalsePositiveInput = Pick<PlanioFalsePositive, 'text'>;
-
-export const WEIGHT_LABELS: Record<PlanioWeight, string> = {
-  kritisk: 'kritisk',
-  tilbagevendende: 'tilbagevendende',
-  enkelt: 'enkelt',
-};

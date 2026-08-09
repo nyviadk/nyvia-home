@@ -14,7 +14,7 @@ import {
   actualTotalOre,
   effectivePriceOre,
   effectiveSavingsPercent,
-  ym as toYm,
+  ymFromParts as toYm,
 } from "./pricing";
 import type { ActualLine, PriceChange, SavingsPercentChange } from "./types";
 
@@ -365,22 +365,3 @@ export function forecastAnchorISO(budgetStartDate: string | null): string {
   return (start > now ? start : now).toFormat("yyyy-MM-dd");
 }
 
-/** Ankermåned + de næste (count-1) måneder. Default-anker = denne måned. */
-export function forecastMonths(
-  count: number,
-  input: ForecastInput,
-  fromMonthISO?: string,
-  mode: ForecastMode = "realistic",
-): MonthForecast[] {
-  const base = fromMonthISO
-    ? DateTime.fromISO(fromMonthISO, { zone: APP_TIMEZONE })
-    : DateTime.now().setZone(APP_TIMEZONE);
-  const start = base.startOf("month");
-  const smoothWindow = buildSmoothWindow(input, start.toFormat("yyyy-MM-dd"), count, mode);
-  const out: MonthForecast[] = [];
-  for (let i = 0; i < count; i++) {
-    const d = start.plus({ months: i });
-    out.push(monthForecast(d.year, d.month, input, mode, true, smoothWindow));
-  }
-  return out;
-}

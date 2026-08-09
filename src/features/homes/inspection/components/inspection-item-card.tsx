@@ -2,20 +2,16 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
+import { DeleteRowButton } from '@/components/ui/delete-row-button';
 import { AppText } from '@/components/ui/text';
 import { formatDateCopenhagen } from '@/lib/datetime';
-import { confirmAction } from '@/lib/confirm';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
+import { useInspectionStore } from '../data/inspection-store';
 import { deleteInspectionItem } from '../data/inspection.repository';
 import type { InspectionItem } from '../types';
 
 export function InspectionItemCard({ item }: { item: WithId<InspectionItem> }) {
-  async function onDelete() {
-    const ok = await confirmAction('Slet syns-post', `Slet "${item.title}"?`, 'Slet');
-    if (ok) await deleteInspectionItem(item);
-  }
-
   return (
     <Card className="gap-2">
       <View className="flex-row items-start justify-between gap-3">
@@ -35,9 +31,13 @@ export function InspectionItemCard({ item }: { item: WithId<InspectionItem> }) {
               <AppText className="text-sm text-primary">Rediger</AppText>
             </Pressable>
           </Link>
-          <Pressable accessibilityRole="button" onPress={onDelete} hitSlop={8}>
-            <AppText className="text-sm text-danger">Slet</AppText>
-          </Pressable>
+          <DeleteRowButton
+            id={item.id}
+            title="Slet syns-post"
+            name={item.title}
+            pending={useInspectionStore.pending}
+            remove={() => deleteInspectionItem(item)}
+          />
         </View>
       </View>
 

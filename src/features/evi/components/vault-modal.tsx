@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Modal } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ModalSheet } from '@/components/ui/modal-sheet';
 import { AppText } from '@/components/ui/text';
-import { Pressable, View } from '@/tw';
+import { View } from '@/tw';
 import {
   setupVault,
   unlockVaultWith,
@@ -65,19 +65,7 @@ export function VaultModal() {
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={cancel}>
-      <Pressable
-        onPress={cancel}
-        style={{ backgroundColor: 'rgba(40, 40, 38, 0.35)', cursor: 'auto' }}
-        className="flex-1 items-center justify-center p-6">
-        <Pressable
-          onPress={() => {}}
-          style={{
-            boxShadow: '0 8px 24px rgba(40, 40, 38, 0.18)',
-            borderCurve: 'continuous',
-            cursor: 'auto',
-          }}
-          className="w-full max-w-96 gap-3 rounded-2xl border border-border bg-card p-5">
+    <ModalSheet visible onClose={cancel} className="max-w-96 p-5">
           <AppText variant="heading">
             {isSetup ? 'Opret adgangssætning' : 'Lås følsomme felter op'}
           </AppText>
@@ -113,8 +101,6 @@ export function VaultModal() {
               onPress={() => void submit()}
             />
           </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    </ModalSheet>
   );
 }

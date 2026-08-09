@@ -13,18 +13,15 @@ import type { WithId } from "@/lib/firebase";
 import { Pressable, View } from "@/tw";
 import { AccountRow } from "../components/account-row";
 import { useSpendingSettingsStore } from "../data/spending-settings-store";
+import { useVisibleTransactions } from "../data/pending-deletes";
 import { useTransactionsStore } from "../data/transactions-store";
 import { monthlyTotals, spendingInMonthOre } from "../spending.utils";
 import type { BankTransaction } from "../types";
 
-function capitalize(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
-}
-
 const isWeb = process.env.EXPO_OS === "web";
 
 export function SpendingOverviewScreen() {
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const transactions = useVisibleTransactions();
   const loading = useTransactionsStore((s) => s.loading);
   const fromCache = useTransactionsStore((s) => s.fromCache);
   const accounts = useSpendingSettingsStore((s) => s.accounts);
@@ -112,7 +109,7 @@ export function SpendingOverviewScreen() {
                     className="flex-row items-center justify-between rounded-lg py-1"
                   >
                     <AppText variant="muted">
-                      {capitalize(formatMonthCopenhagen(`${ymKey}-01`))}
+                      {formatMonthCopenhagen(`${ymKey}-01`)}
                     </AppText>
                     <View className="flex-row items-center gap-2">
                       <MoneyText

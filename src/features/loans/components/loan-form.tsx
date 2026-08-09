@@ -3,10 +3,9 @@ import BigNumber from "bignumber.js";
 import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { ControlledField } from "@/components/ui/controlled-field";
 import { DateField } from "@/components/ui/date-field";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { MoneyInput } from "@/components/ui/money-input";
 import { todayISODate } from "@/lib/datetime";
 import { oreToInput, parseKronerInput } from "@/lib/money";
 import { View } from "@/tw";
@@ -69,114 +68,26 @@ export function LoanForm({ loan, submitLabel, onSubmit }: LoanFormProps) {
 
   return (
     <View className="gap-4">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Navn" error={errors.name?.message}>
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.name}
-              placeholder="Fx SU-lån"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="name" label="Navn"
+        error={errors.name?.message} placeholder="Fx SU-lån" />
 
-      <Controller
-        control={control}
-        name="lender"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Långiver" error={errors.lender?.message}>
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.lender}
-              placeholder="Fx Udbetaling Danmark"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="lender" label="Långiver"
+        error={errors.lender?.message} placeholder="Fx Udbetaling Danmark" />
 
-      <Controller
-        control={control}
-        name="originalAmount"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Oprindeligt beløb (kr.)"
-            error={errors.originalAmount?.message}
-          >
-            <MoneyInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.originalAmount}
-              placeholder="80.000"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="originalAmount" money
+        label="Oprindeligt beløb (kr.)" error={errors.originalAmount?.message}
+        placeholder="80.000" />
 
-      <Controller
-        control={control}
-        name="currentBalance"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Restgæld (kr.)"
-            error={errors.currentBalance?.message}
-          >
-            <MoneyInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.currentBalance}
-              placeholder="42.000"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="currentBalance" money
+        label="Restgæld (kr.)" error={errors.currentBalance?.message}
+        placeholder="42.000" />
 
-      <Controller
-        control={control}
-        name="interestRate"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Rente (% p.a.)"
-            error={errors.interestRate?.message}
-          >
-            <Input
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.interestRate}
-              keyboardType="decimal-pad"
-              placeholder="4,2"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="interestRate" label="Rente (% p.a.)"
+        error={errors.interestRate?.message} keyboardType="decimal-pad" placeholder="4,2" />
 
-      <Controller
-        control={control}
-        name="monthlyPayment"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField
-            label="Ydelse / md. (kr.)"
-            error={errors.monthlyPayment?.message}
-          >
-            <MoneyInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              invalid={!!errors.monthlyPayment}
-              placeholder="1.200"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="monthlyPayment" money
+        label="Ydelse / md. (kr.)" error={errors.monthlyPayment?.message}
+        placeholder="1.200" />
 
       <Controller
         control={control}

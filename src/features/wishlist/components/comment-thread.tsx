@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
 import { formatDateTimeCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
 import { Pressable, TextInput, View } from '@/tw';
 import { setGuestName, useGuestStore } from '../data/guest-store';
+import { pendingCommentDeletes } from '../data/pending-deletes';
 import { addComment, deleteComment } from '../data/wishlist-public.repository';
 import { namesLabel, type WishComment } from '../types';
 
@@ -47,11 +48,16 @@ export function CommentThread({
     }
   };
 
-  const remove = async (id: string) => {
-    if (await confirmAction('Slet kommentar', 'Kommentaren fjernes for alle.', 'Slet')) {
-      await deleteComment(ownerUid, id);
-    }
-  };
+  const remove = (c: WithId<WishComment>) =>
+    void confirmDelete({
+      title: 'Slet kommentar',
+      name: c.text,
+      message: 'Kommentaren fjernes for alle.',
+      toast: 'Kommentar slettet',
+      markPending: () => pendingCommentDeletes.mark(c.id),
+      unmarkPending: () => pendingCommentDeletes.unmark(c.id),
+      remove: () => deleteComment(ownerUid, c.id),
+    });
 
   const bodyClass = compact ? 'text-lg' : 'text-xl';
 
@@ -69,7 +75,7 @@ export function CommentThread({
                   {namesLabel(c.by)}
                 </AppText>
                 <AppText className="text-base text-fg">{formatDateTimeCopenhagen(c.createdAt)}</AppText>
-                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => void remove(c.id)}>
+                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(c)}>
                   <AppText className="text-base font-semibold text-danger">Slet</AppText>
                 </Pressable>
               </View>

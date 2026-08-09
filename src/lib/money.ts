@@ -25,7 +25,7 @@ export function kronerToOre(kroner: BigNumber.Value): number {
 }
 
 /** Øre (heltal) → kroner som BigNumber (til videre beregning). */
-export function oreToKroner(ore: BigNumber.Value): BigNumber {
+function oreToKroner(ore: BigNumber.Value): BigNumber {
   return new BigNumber(ore).div(100);
 }
 
@@ -60,6 +60,11 @@ const dkkInput = new Intl.NumberFormat('da-DK', {
  */
 export function oreToInput(ore: number): string {
   return dkkInput.format(normalizeZero(oreToKroner(ore).toNumber(), 2));
+}
+
+/** Beløbet uden fortegn som redigerbar streng — fortegnet styres af en type-toggle i UI'et. */
+export function absToInput(ore: number): string {
+  return oreToInput(Math.abs(ore));
 }
 
 /**

@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import { nowISO } from "@/lib/datetime";
@@ -17,6 +16,7 @@ import {
   type ReviewFilter,
   type ReviewFilterOption,
 } from "../components/review-filter-bar";
+import { NewAccountsEditor } from "../components/new-accounts-editor";
 import { ReviewRow } from "../components/review-row";
 import { useImportBatchesStore } from "../data/import-batches-store";
 import { createImportBatch } from "../data/import-batches.repository";
@@ -51,7 +51,8 @@ export function ImportScreen() {
   >({});
 
   const accounts = useSpendingSettingsStore((s) => s.accounts);
-  const batches = useImportBatchesStore((s) => s.batches);
+  const rules = useSpendingSettingsStore((s) => s.scrubRules);
+  const batches = useImportBatchesStore.useVisibleItems();
 
   // Konti der optræder som export-konto er helt sikkert mine egne → default intern.
   const exportNumbers = new Set((preview?.rows ?? []).map((r) => r.account));
@@ -88,7 +89,7 @@ export function ImportScreen() {
       const file = await pickAndReadCsv();
       if (!file) return;
       const existingIds = new Set(
-        useTransactionsStore.getState().transactions.map((t) => t.id),
+        useTransactionsStore.getAllItems().map((t) => t.id),
       );
       const result = buildImportPreview(
         file.content,
@@ -266,61 +267,11 @@ export function ImportScreen() {
           />
 
           {preview.newAccounts.length > 0 ? (
-            <Card className="gap-3">
-              <View className="gap-0.5">
-                <AppText variant="label">Nye konti fundet</AppText>
-                <AppText variant="muted">
-                  Navngiv dem, og sæt kryds i “Intern konto” ved dine egne — så
-                  tæller overførsler til/fra dem ikke som forbrug. Eksterne
-                  matches på transaktions-teksten.
-                </AppText>
-              </View>
-              {preview.newAccounts.map((acc) => {
-                const d = draftFor(acc);
-                return (
-                  <View
-                    key={acc.number}
-                    className="gap-1.5 border-b border-border pb-3"
-                  >
-                    <AppText variant="muted">ID/Konto: {acc.number}</AppText>
-
-                    <Input
-                      value={d.text}
-                      onChangeText={(t) =>
-                        setNewDrafts((m) => ({
-                          ...m,
-                          [acc.number]: { ...draftFor(acc), text: t },
-                        }))
-                      }
-                      placeholder="Transaktions-tekst (fx Netto)"
-                    />
-
-                    <Input
-                      value={d.name}
-                      onChangeText={(t) =>
-                        setNewDrafts((m) => ({
-                          ...m,
-                          [acc.number]: { ...draftFor(acc), name: t },
-                        }))
-                      }
-                      placeholder="Navn (fx Madkonto / Dagligvarer)"
-                    />
-                    <View className="flex-row items-center justify-between">
-                      <AppText variant="label">Intern konto (min egen)</AppText>
-                      <Switch
-                        value={d.internal}
-                        onValueChange={(internal) =>
-                          setNewDrafts((m) => ({
-                            ...m,
-                            [acc.number]: { ...draftFor(acc), internal },
-                          }))
-                        }
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-            </Card>
+            <NewAccountsEditor
+              accounts={preview.newAccounts}
+              draftFor={draftFor}
+              onChange={(number, draft) => setNewDrafts((m) => ({ ...m, [number]: draft }))}
+            />
           ) : null}
 
           {duplicateCount > 0 ? (
@@ -367,6 +318,7 @@ export function ImportScreen() {
                 key={row.id}
                 row={row}
                 kind={classify(row)}
+                rules={rules}
                 onToggleInclude={(id, include) => patchRow(id, { include })}
                 onChangeKind={(id, kindOverride) =>
                   patchRow(id, { kindOverride })

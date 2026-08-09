@@ -1,5 +1,12 @@
+import { withoutPending } from '@/lib/db/pending-deletes';
 import { useLiveCollection, useLiveDoc } from '@/lib/db/use-live-query';
 import { auth } from '@/lib/firebase';
+import {
+  pendingCommentDeletes,
+  pendingContributionDeletes,
+  pendingExtraDeletes,
+} from '../data/pending-deletes';
+import { useWishlistStore } from '../data/wishlist-store';
 import {
   subscribeComments,
   subscribeExtras,
@@ -57,14 +64,21 @@ export function usePublicWishlist(ownerUid: string) {
     (onChange, onError) => subscribePublicSettings(ownerUid, onChange, onError),
   );
 
-  const pot = potQuery.items;
-
+  // Optimistisk slettede filtreres væk ÉT sted, så alle gæste-skærme (oversigt, gave,
+  // ekstra) viser det samme under fortryd-vinduet.
+  const wishes = withoutPending(wishesQuery.items, useWishlistStore.pending.useStore((s) => s.ids));
+  const extras = withoutPending(extrasQuery.items, pendingExtraDeletes.useStore((s) => s.ids));
+  const pot = withoutPending(potQuery.items, pendingContributionDeletes.useStore((s) => s.ids));
+  const comments = withoutPending(
+    commentsQuery.items,
+    pendingCommentDeletes.useStore((s) => s.ids)
+  );
 
   return {
-    wishes: sortWishes(wishesQuery.items),
-    extras: extrasQuery.items,
+    wishes: sortWishes(wishes),
+    extras,
     pot,
-    comments: commentsQuery.items,
+    comments,
     settings: settingsQuery.data,
     loading: wishesQuery.loading,
     failed: wishesQuery.failed,

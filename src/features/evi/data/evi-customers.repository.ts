@@ -1,65 +1,27 @@
-import { nowISO } from '@/lib/datetime';
-import { auth, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
-import { toastAfter } from '@/lib/toast/notify';
-import type { EviAnswerValue, EviCustomer } from '../types';
+import { createUserCollectionRepo } from '@/lib/db/user-collection-repo';
+import type { EviAnswers, EviAnswerValue, EviCustomer } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
+const repo = createUserCollectionRepo<EviCustomer, { companyName: string; answers: EviAnswers }>({
+  collection: 'eviCustomers',
+  orderBy: { field: 'updatedAt', direction: 'desc' },
+  createdToast: 'Kunde oprettet',
+});
 
-const customersPath = () => `users/${requireUid()}/eviCustomers`;
-const customerPath = (id: string) => `${customersPath()}/${id}`;
+export const subscribeEviCustomers = repo.subscribe;
 
-export function subscribeEviCustomers(
-  onChange: (snap: CollectionSnapshot<EviCustomer>) => void,
-  onError?: (e: Error) => void,
-): Unsubscribe {
-  return db.subscribeCollection<EviCustomer>(
-    customersPath(),
-    { orderByField: 'updatedAt', orderDirection: 'desc' },
-    onChange,
-    onError,
-  );
-}
+export const createEviCustomer = (companyName: string) =>
+  repo.create({ companyName: companyName.trim(), answers: {} });
 
-export function createEviCustomer(companyName: string): Promise<string> {
-  const now = nowISO();
-  return toastAfter(
-    db.addDoc<EviCustomer>(customersPath(), {
-      companyName: companyName.trim(),
-      answers: {},
-      createdAt: now,
-      updatedAt: now,
-    }),
-    'Kunde oprettet',
-  );
-}
-
-export function renameEviCustomer(id: string, companyName: string): Promise<void> {
-  return db.updateDoc(customerPath(id), {
-    companyName: companyName.trim(),
-    updatedAt: nowISO(),
-  });
-}
+export const renameEviCustomer = (id: string, companyName: string) =>
+  repo.patch(id, { companyName: companyName.trim() }, null);
 
 /**
  * Sæt ét svar. Dot-path (`answers.<feltId>`) rører KUN dette felt — de øvrige svar
  * bevares. Silent (løbende gem); UI viser selv en gem-status. Feltet ryddes ved at
  * sætte en tom værdi ('' / [] / false), ikke ved at slette nøglen.
  */
-export function setEviAnswer(
-  id: string,
-  fieldId: string,
-  value: EviAnswerValue,
-): Promise<void> {
-  return db.updateDoc(customerPath(id), {
-    [`answers.${fieldId}`]: value,
-    updatedAt: nowISO(),
-  });
-}
+export const setEviAnswer = (id: string, fieldId: string, value: EviAnswerValue) =>
+  repo.patch(id, { [`answers.${fieldId}`]: value }, null);
 
-export function deleteEviCustomer(id: string): Promise<void> {
-  return db.deleteDoc(customerPath(id));
-}
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
+export const deleteEviCustomer = repo.remove;

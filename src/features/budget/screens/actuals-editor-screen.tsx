@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { MoneyText } from '@/components/ui/money-text';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { formatMonthCopenhagen, todayISODate } from '@/lib/datetime';
@@ -14,11 +15,7 @@ export function ActualsEditorScreen({ id, ym }: { id: string; ym: string }) {
   const { entry, loading } = useBudgetEntry(id);
 
   if (loading || !entry) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
+    return <LoadingScreen />;
   }
 
   const forventet = effectivePriceOre(entry.amount, entry.priceChanges, ym);

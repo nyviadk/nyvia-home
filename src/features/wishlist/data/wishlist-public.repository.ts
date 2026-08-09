@@ -1,6 +1,5 @@
 import { nowISO } from '@/lib/datetime';
-import { type BatchOp, type CollectionSnapshot, db, type Unsubscribe, type WithId } from '@/lib/firebase';
-import { genId } from '@/lib/id';
+import { type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
 import { toastAfter } from '@/lib/toast/notify';
 import type {
   WishlistSettings,
@@ -36,17 +35,18 @@ export function subscribePublicWishes(
   );
 }
 
-/** Skriv den fulde reservations-liste for ét ønske (last-write-wins). */
+/**
+ * Skriv den fulde reservations-liste for ét ønske (last-write-wins).
+ * `message: null` skriver uden kvittering — når kalderen selv viser en fortryd-toast.
+ */
 export function setReservations(
   ownerUid: string,
   wishId: string,
   reservations: WishReservation[],
-  message: string,
+  message: string | null,
 ): Promise<void> {
-  return toastAfter(
-    db.updateDoc(`${collPath(ownerUid)}/${wishId}`, { reservations }),
-    message,
-  );
+  const write = db.updateDoc(`${collPath(ownerUid)}/${wishId}`, { reservations });
+  return message === null ? write : toastAfter(write, message);
 }
 
 /* ---- Købt uden for listen ---- */
@@ -88,8 +88,9 @@ export function updateExtra(
   );
 }
 
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
 export function deleteExtra(ownerUid: string, id: string): Promise<void> {
-  return toastAfter(db.deleteDoc(`${extrasPath(ownerUid)}/${id}`), 'Fjernet fra listen');
+  return db.deleteDoc(`${extrasPath(ownerUid)}/${id}`);
 }
 
 /* ---- Pengebidrag (fælles pulje + øremærket pr. gave) ---- */
@@ -122,8 +123,9 @@ export function addContribution(
   );
 }
 
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
 export function deleteContribution(ownerUid: string, id: string): Promise<void> {
-  return toastAfter(db.deleteDoc(`${potPath(ownerUid)}/${id}`), 'Fjernet');
+  return db.deleteDoc(`${potPath(ownerUid)}/${id}`);
 }
 
 /* ---- Kommentarer ---- */
@@ -153,8 +155,9 @@ export function addComment(
   });
 }
 
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
 export function deleteComment(ownerUid: string, id: string): Promise<void> {
-  return toastAfter(db.deleteDoc(`${commentsPath(ownerUid)}/${id}`), 'Kommentar fjernet');
+  return db.deleteDoc(`${commentsPath(ownerUid)}/${id}`);
 }
 
 /* ---- Ejerens indstillinger (navn + titel), læses af den offentlige side ---- */

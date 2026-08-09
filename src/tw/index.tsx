@@ -7,19 +7,16 @@
  * uden manuelle wrappers eller `any`.
  */
 import { forwardRef, type ComponentProps, type ComponentRef } from 'react';
-import { useNativeVariable } from 'react-native-css';
 import { Pressable as CssPressable } from 'react-native-css/components';
 
 import { cn } from '@/lib/cn';
 
 export {
   ActivityIndicator,
-  FlatList,
   ScrollView,
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native-css/components';
 
@@ -39,9 +36,3 @@ export const Pressable = forwardRef<ComponentRef<typeof CssPressable>, Pressable
     return <CssPressable ref={ref} className={cn('active:opacity-60', className)} {...props} />;
   },
 );
-
-/** Læs en CSS-variabel i JS. Web returnerer `var(...)`, native læser den funktionelt. */
-export const useCSSVariable =
-  process.env.EXPO_OS !== 'web'
-    ? useNativeVariable
-    : (variable: string) => `var(${variable})`;

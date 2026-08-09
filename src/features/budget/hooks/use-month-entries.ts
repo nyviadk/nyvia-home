@@ -5,7 +5,6 @@ import type { WithId } from '@/lib/firebase';
 import { occursInMonth } from '@/lib/recurrence/engine';
 import { useBudgetStore } from '../data/budget-store';
 import { entryCategories } from '../data/categories';
-import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import { actualTotalOre, effectivePriceOre } from '../pricing';
 import type { BudgetEntry, BudgetEntryType } from '../types';
 
@@ -20,8 +19,7 @@ export type MonthEntryRow = {
 
 /** Budget-poster der bidrager til en given måned (ÅÅÅÅ-MM), med forventet + faktisk. */
 export function useMonthEntries(monthYm: string): MonthEntryRow[] {
-  const entries = useBudgetStore((s) => s.entries);
-  const pending = usePendingBudgetDeletes((s) => s.ids);
+  const entries = useBudgetStore.useVisibleItems();
 
   const [year, month] = monthYm.split('-').map((n) => Number.parseInt(n, 10));
   const prev = DateTime.fromObject({ year, month }, { zone: APP_TIMEZONE }).minus({ months: 1 });
@@ -32,7 +30,7 @@ export function useMonthEntries(monthYm: string): MonthEntryRow[] {
       : occursInMonth(e.recurrence, year, month);
 
   return entries
-    .filter((e) => !pending.has(e.id))
+
     .filter(contributes)
     .map((e) => ({
       id: e.id,

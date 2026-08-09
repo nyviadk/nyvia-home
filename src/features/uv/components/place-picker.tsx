@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
+import { withoutPending } from '@/lib/db/pending-deletes';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
 import { Pressable, Text, View } from '@/tw';
 import { browserLocationAvailable, fetchBrowserLocation } from '../data/browser-location';
 import { searchPlaces } from '../data/geocode';
+import { pendingUvPlaceDeletes } from '../data/pending-deletes';
 import { addPlace, MAX_PLACES, removePlace, useUvStore } from '../data/uv-store';
 import type { UvPlace } from '../types';
 
@@ -15,7 +18,8 @@ import type { UvPlace } from '../types';
  * er involveret → VPN-immun.
  */
 export function PlacePicker() {
-  const places = useUvStore((s) => s.places);
+  const pendingIds = pendingUvPlaceDeletes.useStore((s) => s.ids);
+  const places = withoutPending(useUvStore((s) => s.places), pendingIds);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UvPlace[]>([]);
@@ -76,7 +80,19 @@ export function PlacePicker() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => void removePlace(p.id)}
+                accessibilityLabel={`Fjern ${p.name}`}
+                onPress={() =>
+                  void confirmDelete({
+                    title: 'Fjern sted',
+                    name: p.name,
+                    message: `Fjern "${p.name}" fra UV-oversigten?`,
+                    confirmLabel: 'Fjern',
+                    toast: `"${p.name}" fjernet`,
+                    markPending: () => pendingUvPlaceDeletes.mark(p.id),
+                    unmarkPending: () => pendingUvPlaceDeletes.unmark(p.id),
+                    remove: () => removePlace(p.id),
+                  })
+                }
                 hitSlop={6}
                 className="px-2 py-2">
                 <Text className="text-fg-muted">✕</Text>

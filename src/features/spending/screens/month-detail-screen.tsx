@@ -5,17 +5,20 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MoneyText } from '@/components/ui/money-text';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { formatMonthCopenhagen } from '@/lib/datetime';
+import { formatMonthCopenhagen, ym } from '@/lib/datetime';
 import { View } from '@/tw';
 import { TransactionRow } from '../components/transaction-row';
 import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { useTransactionsStore } from '../data/transactions-store';
-import { accountNumbers, displayAccountName, spendingInMonthOre, ym } from '../spending.utils';
+import { useVisibleTransactions } from '../data/pending-deletes';
+import { accountNumbers, displayAccountName, makeClassifier, spendingInMonthOre } from '../spending.utils';
 
 export function MonthDetailScreen() {
   const { ym: month } = useLocalSearchParams<{ ym: string }>();
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const transactions = useVisibleTransactions();
   const accounts = useSpendingSettingsStore((s) => s.accounts);
+  const rules = useSpendingSettingsStore((s) => s.scrubRules);
+  // Bygges ÉN gang for hele listen, ikke pr. række.
+  const classify = makeClassifier(accounts);
 
   const monthTxns = transactions.filter((t) => ym(t.date) === month);
   const total = spendingInMonthOre(monthTxns, month ?? '', accounts);
@@ -23,7 +26,7 @@ export function MonthDetailScreen() {
 
   return (
     <Screen>
-      <AppText variant="title">{capitalize(formatMonthCopenhagen(`${month}-01`))}</AppText>
+      <AppText variant="title">{formatMonthCopenhagen(`${month}-01`)}</AppText>
 
       {monthTxns.length === 0 ? (
         <EmptyState title="Ingen posteringer" description="Der er ingen poster i denne måned." />
@@ -49,7 +52,7 @@ export function MonthDetailScreen() {
                   </View>
                 </Card>
                 {accTxns.map((t) => (
-                  <TransactionRow key={t.id} transaction={t} />
+                  <TransactionRow key={t.id} transaction={t} kind={classify(t)} rules={rules} />
                 ))}
               </View>
             );
@@ -58,8 +61,4 @@ export function MonthDetailScreen() {
       )}
     </Screen>
   );
-}
-
-function capitalize(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }

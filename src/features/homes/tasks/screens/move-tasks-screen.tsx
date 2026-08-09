@@ -4,20 +4,24 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
+import { withoutPending } from '@/lib/db/pending-deletes';
 import { confirmAction } from '@/lib/confirm';
 import { Pressable, View } from '@/tw';
 import { QuickAddRow } from '../../components/quick-add-row';
 import { TaskRow } from '../components/task-row';
+import { writeWithUndo } from '@/lib/undo/perform-with-undo';
 import {
   createMoveTask,
   createMoveTasks,
-  resetMoveTasks,
+  setMoveTasksDone,
 } from '../data/move-tasks.repository';
 import { useMoveTasksStore } from '../data/move-tasks-store';
 import { MOVE_TASK_PRESETS } from '../data/presets';
 
 export function MoveTasksScreen() {
-  const allTasks = useMoveTasksStore((s) => s.items);
+  const items = useMoveTasksStore.useVisibleItems();
+  const pendingIds = useMoveTasksStore.pending.useStore((s) => s.ids);
+  const allTasks = withoutPending(items, pendingIds);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -59,7 +63,15 @@ export function MoveTasksScreen() {
       'Sæt alle tilbage til ikke-klaret? Listen beholdes, så den kan genbruges til næste flytning.',
       'Nulstil'
     );
-    if (ok) await resetMoveTasks(tasks.map((t) => t.id));
+    if (!ok) return;
+    // Nulstillingen sker med det samme (man skal se felterne springe tilbage), så fortryd
+    // skriver de gamle done-værdier tilbage frem for at udskyde skrivningen.
+    const before = tasks.map((t) => ({ id: t.id, done: t.done }));
+    writeWithUndo({
+      message: 'Nulstillet',
+      write: () => setMoveTasksDone(before.map((t) => ({ id: t.id, done: false }))),
+      restore: () => setMoveTasksDone(before),
+    });
   }
 
   return (

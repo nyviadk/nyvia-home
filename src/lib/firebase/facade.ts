@@ -36,8 +36,6 @@ export interface CollectionSnapshot<T> {
   docs: WithId<T>[];
   /** Data kommer fra den lokale cache (offline eller endnu ikke synket). */
   fromCache: boolean;
-  /** Der findes lokale skrivninger som endnu ikke er bekræftet af serveren. */
-  hasPendingWrites: boolean;
 }
 
 export interface QueryOptions {

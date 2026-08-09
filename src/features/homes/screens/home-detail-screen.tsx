@@ -13,7 +13,7 @@ import { type Landlord, homeLocation } from '../types';
 
 export function HomeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const home = useHomesStore((s) => s.items.find((h) => h.id === id));
+  const home = useHomesStore.useItem(id).item;
 
   if (!home) {
     return (

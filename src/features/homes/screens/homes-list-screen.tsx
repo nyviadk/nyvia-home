@@ -1,32 +1,28 @@
 import { Link } from "expo-router";
 
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ListGate } from "@/components/ui/list-gate";
 import { OfflineNotice } from "@/components/ui/offline-notice";
 import { Screen } from "@/components/ui/screen";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { AppText } from "@/components/ui/text";
 import { View } from "@/tw";
 import { HomeCard } from "../components/home-card";
 import { useHomesStore } from "../data/homes-store";
-import { usePendingHomeDeletes } from "../data/pending-deletes";
+import { withoutPending } from "@/lib/db/pending-deletes";
 import { HOME_STATUSES } from "../types";
 
 export function HomesListScreen() {
-  const homes = useHomesStore((s) => s.items);
+  const homes = useHomesStore.useVisibleItems();
   const loading = useHomesStore((s) => s.loading);
   const fromCache = useHomesStore((s) => s.fromCache);
-  const pendingIds = usePendingHomeDeletes((s) => s.ids);
+  const pendingIds = useHomesStore.pending.useStore((s) => s.ids);
 
-  const visible = homes.filter((h) => !pendingIds.has(h.id));
+  const visible = withoutPending(homes, pendingIds);
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between gap-3">
-        <AppText variant="title">Hjem</AppText>
-        <Link href="/homes/new" asChild>
-          <Button title="Tilføj bolig" className="h-10 px-4" />
-        </Link>
-      </View>
+      <ScreenHeader title="Hjem" addHref="/homes/new" addLabel="Tilføj bolig" />
 
       {/* Globale flytte-værktøjer (ikke bundet til én bolig) */}
       <View className="flex-row gap-2">
@@ -40,15 +36,15 @@ export function HomesListScreen() {
 
       <OfflineNotice fromCache={fromCache} />
 
-      {visible.length === 0 ? (
-        loading ? null : (
-          <EmptyState
-            title="Ingen boliger endnu"
-            description="Opret din nuværende eller kommende bolig for at samle flytning, adresseændringer og indflytningssyn ét sted."
-          />
-        )
-      ) : (
-        HOME_STATUSES.map(({ value, label }) => {
+      <ListGate
+        count={visible.length}
+        loading={loading}
+        empty={{
+          title: 'Ingen boliger endnu',
+          description:
+            'Opret din nuværende eller kommende bolig for at samle flytning, adresseændringer og indflytningssyn ét sted.',
+        }}>
+        {HOME_STATUSES.map(({ value, label }) => {
           const group = visible.filter((h) => h.status === value);
           if (group.length === 0) return null;
           return (
@@ -59,8 +55,8 @@ export function HomesListScreen() {
               ))}
             </View>
           );
-        })
-      )}
+        })}
+      </ListGate>
     </Screen>
   );
 }

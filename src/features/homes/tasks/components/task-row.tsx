@@ -1,8 +1,10 @@
 import { Card } from '@/components/ui/card';
+import { DeleteRowButton } from '@/components/ui/delete-row-button';
 import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, Text, View } from '@/tw';
+import { useMoveTasksStore } from '../data/move-tasks-store';
 import { deleteMoveTask, setMoveTaskDone } from '../data/move-tasks.repository';
 import type { MoveTask } from '../types';
 
@@ -24,9 +26,13 @@ export function TaskRow({ task }: { task: WithId<MoveTask> }) {
           {task.title}
         </AppText>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => deleteMoveTask(task.id)} hitSlop={8}>
-        <AppText className="text-sm text-danger">Slet</AppText>
-      </Pressable>
+      <DeleteRowButton
+        id={task.id}
+        title="Slet opgave"
+        name={task.title}
+        pending={useMoveTasksStore.pending}
+        remove={() => deleteMoveTask(task.id)}
+      />
     </Card>
   );
 }

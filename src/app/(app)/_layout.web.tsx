@@ -3,105 +3,52 @@ import { useWindowDimensions } from "react-native";
 
 import { NavItem } from "@/components/nav/nav-item";
 import { AppText } from "@/components/ui/text";
+import { FEATURE_NAV, HOME_ITEM, SETTINGS_ITEM } from "@/constants/features";
+import { THEME_HEX } from "@/constants/theme";
 import { Pressable, View } from "@/tw";
-import React from "react";
-
-const ITEMS = [
-  { name: "homes", href: "/homes", label: "Hjem", accent: "text-accent-moving" },
-  {
-    name: "budget",
-    href: "/budget",
-    label: "Budget",
-    accent: "text-accent-budget",
-  },
-  {
-    name: "spending",
-    href: "/spending",
-    label: "Forbrug",
-    accent: "text-accent-spending",
-  },
-  { name: "loans", href: "/loans", label: "Lån", accent: "text-accent-loans" },
-  {
-    name: "subscriptions",
-    href: "/subscriptions",
-    label: "Abonnementer",
-    accent: "text-primary",
-  },
-  {
-    name: "timetracker",
-    href: "/timetracker",
-    label: "Timetracker",
-    accent: "text-accent-time",
-  },
-  {
-    name: "evi",
-    href: "/evi",
-    label: "Evi",
-    accent: "text-accent-evi",
-  },
-  {
-    name: "planio",
-    href: "/planio",
-    label: "My Planio",
-    accent: "text-accent-planio",
-  },
-  {
-    name: "onskeliste",
-    href: "/onskeliste",
-    label: "Ønskeliste",
-    accent: "text-accent-wishlist",
-  },
-  {
-    name: "settings",
-    href: "/settings",
-    label: "Indstillinger",
-    accent: "text-fg",
-  },
-] as const;
-
-// Token-hex (TabList er en plain RN-View → className virker ikke; vi styler via style).
-const BORDER = "#e8e3da";
-const CARD = "#ffffff";
 
 /**
  * Web-skal: venstre sidebar på desktop, bund-bar på smal skærm. Ingen glas.
  * TabList + TabSlot SKAL være direkte børn af <Tabs>; TabList styles via `style`
  * (ikke className), da den renderer en almindelig RN-View.
+ *
+ * Menuens indhold kommer fra `@/constants/features`, som den native drawer også bruger.
  */
+const LIST_BASE = {
+  gap: 4,
+  borderColor: THEME_HEX.border,
+  backgroundColor: THEME_HEX.card,
+} as const;
+
+const SIDEBAR = {
+  ...LIST_BASE,
+  flexDirection: "column",
+  justifyContent: "flex-start",
+  width: 240,
+  padding: 12,
+  borderRightWidth: 1,
+} as const;
+
+const BOTTOM_BAR = {
+  ...LIST_BASE,
+  flexDirection: "row",
+  justifyContent: "space-around",
+  paddingHorizontal: 8,
+  paddingVertical: 6,
+  borderTopWidth: 1,
+} as const;
+
 export default function AppWebLayout() {
   const { width } = useWindowDimensions();
   const wide = width >= 768;
+  const layout = wide ? "sidebar" : "bottom";
 
   const nav = (
-    <TabList
-      style={
-        wide
-          ? {
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              width: 240,
-              gap: 4,
-              padding: 12,
-              borderRightWidth: 1,
-              borderColor: BORDER,
-              backgroundColor: CARD,
-            }
-          : {
-              flexDirection: "row",
-              justifyContent: "space-around",
-              gap: 4,
-              paddingHorizontal: 8,
-              paddingVertical: 6,
-              borderTopWidth: 1,
-              borderColor: BORDER,
-              backgroundColor: CARD,
-            }
-      }
-    >
+    <TabList style={wide ? SIDEBAR : BOTTOM_BAR}>
       {/* Logoet ER index-triggeren: definerer forsiden i navigatoren (så TabSlot kan
           rendere den) og navigerer dertil — uden et synligt "Forside"-punkt i listen.
           Skjules på smal skærm, hvor der ikke er plads til et logo i bund-baren. */}
-      <TabTrigger name="index" href="/" asChild>
+      <TabTrigger name={HOME_ITEM.name} href={HOME_ITEM.href} asChild>
         <Pressable
           accessibilityRole="link"
           className="px-3 pb-2 pt-3 hover:opacity-80"
@@ -111,20 +58,18 @@ export default function AppWebLayout() {
           </AppText>
         </Pressable>
       </TabTrigger>
-      {ITEMS.map((item) => (
-        <React.Fragment key={item.name}>
-          {/* Hvis det er en bred skærm, og vi er nået til 'settings', indsæt en spacer */}
-          {wide && item.name === "settings" && <View style={{ flex: 1 }} />}
 
-          <TabTrigger name={item.name} href={item.href} asChild>
-            <NavItem
-              label={item.label}
-              accent={item.accent}
-              layout={wide ? "sidebar" : "bottom"}
-            />
-          </TabTrigger>
-        </React.Fragment>
+      {FEATURE_NAV.map((item) => (
+        <TabTrigger key={item.name} name={item.name} href={item.href} asChild>
+          <NavItem label={item.label} accent={item.accent} layout={layout} />
+        </TabTrigger>
       ))}
+
+      {/* Skubber Indstillinger ned i bunden af sidebaren; i bund-baren står den bare sidst. */}
+      {wide ? <View style={{ flex: 1 }} /> : null}
+      <TabTrigger name={SETTINGS_ITEM.name} href={SETTINGS_ITEM.href} asChild>
+        <NavItem label={SETTINGS_ITEM.label} accent={SETTINGS_ITEM.accent} layout={layout} />
+      </TabTrigger>
     </TabList>
   );
 

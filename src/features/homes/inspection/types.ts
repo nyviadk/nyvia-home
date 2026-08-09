@@ -12,4 +12,3 @@ export type InspectionItem = {
   updatedAt: string;
 };
 
-export type InspectionItemInput = Pick<InspectionItem, 'homeId' | 'room' | 'title' | 'notes'>;

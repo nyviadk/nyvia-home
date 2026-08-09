@@ -5,20 +5,10 @@ import { Linking } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
-import { formatDKKWhole } from '@/lib/money';
 import { Pressable, View } from '@/tw';
+import { priceLine } from '../price-line';
 import { setFavorite } from '../data/wishlist.repository';
 import type { Wish } from '../types';
-
-/** Pris-linje: "1.299 kr. + 49 kr. fragt" / "… inkl. fragt" / kun pris / tomt. */
-function priceLine(w: Wish): string {
-  if (typeof w.priceOre !== 'number') return '';
-  const base = formatDKKWhole(w.priceOre);
-  if (w.priceInclShipping) return `${base} inkl. fragt`;
-  if (typeof w.shippingOre === 'number' && w.shippingOre > 0)
-    return `${base} + ${formatDKKWhole(w.shippingOre)} fragt`;
-  return base;
-}
 
 /** Ejer-kort. Viser ALDRIG reservationer. */
 export function WishCard({ wish }: { wish: WithId<Wish> }) {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { auth, db } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
 import type { EviCipher, EviVaultConfig } from '../types';
 import {
@@ -35,11 +36,6 @@ export const useEviVaultStore = create<VaultState>(() => ({
 
 export { WrongPassphraseError };
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 const vaultPath = () => `users/${requireUid()}/evi/vault`;
 

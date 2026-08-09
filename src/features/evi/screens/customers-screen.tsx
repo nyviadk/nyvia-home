@@ -6,13 +6,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Screen } from '@/components/ui/screen';
-import { AppText } from '@/components/ui/text';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
 import { CustomerListItem } from '../components/customer-list-item';
 import { createEviCustomer } from '../data/evi-customers.repository';
 import { useEviCustomersStore } from '../data/evi-customers-store';
-import { useEviPendingDeletes } from '../data/evi-pending-deletes';
 import { useEviTemplateStore } from '../data/evi-template-store';
 import { formatAnswerText } from '../format';
 import type { EviCustomer, EviField } from '../types';
@@ -28,11 +27,11 @@ function subtitleFor(fields: EviField[], customer: WithId<EviCustomer>): string 
 
 export function EviCustomersScreen() {
   const router = useRouter();
-  const customers = useEviCustomersStore((s) => s.items);
+  const customers = useEviCustomersStore.useVisibleItems();
   const loading = useEviCustomersStore((s) => s.loading);
   const fromCache = useEviCustomersStore((s) => s.fromCache);
   const fields = useEviTemplateStore((s) => s.fields);
-  const pendingIds = useEviPendingDeletes((s) => s.ids);
+  const pendingIds = useEviCustomersStore.pending.useStore((s) => s.ids);
 
   const [name, setName] = useState('');
   const [query, setQuery] = useState('');
@@ -61,12 +60,11 @@ export function EviCustomersScreen() {
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between">
-        <AppText variant="title">Evi</AppText>
+      <ScreenHeader title="Evi">
         <Link href="/evi/template" asChild>
           <Button title="Skabelon" variant="secondary" className="h-10 px-4" />
         </Link>
-      </View>
+      </ScreenHeader>
 
       <OfflineNotice fromCache={fromCache} />
 

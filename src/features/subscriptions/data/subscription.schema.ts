@@ -3,6 +3,7 @@ import { z } from "zod";
 import { recurrenceWithBudgetStart } from "@/features/budget/data/recurrence-validation";
 import { defaultStartDate } from "@/features/budget/data/budget-start";
 import { oreToInput, parseKronerInput } from "@/lib/money";
+import { moneyField } from "@/lib/validation/fields";
 import {
   defaultRecurrenceForm,
   fromRecurrence,
@@ -10,18 +11,10 @@ import {
 } from "@/lib/recurrence/recurrence-form";
 import type { Subscription, SubscriptionInput } from "../types";
 
-const moneyField = z.string().refine(
-  (s) => {
-    const ore = parseKronerInput(s);
-    return ore !== null && ore >= 0;
-  },
-  { message: "Beløb skal være et gyldigt tal" },
-);
-
 export const subscriptionFormSchema = z
   .object({
     name: z.string().trim().min(1, "Navn kræves"),
-    amount: moneyField,
+    amount: moneyField(),
     category: z.enum([
       "forsikring",
       "skatteservice",

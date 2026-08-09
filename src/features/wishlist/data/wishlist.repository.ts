@@ -1,13 +1,9 @@
-import { auth, type BatchOp, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
+import { type BatchOp, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import { nowISO } from '@/lib/datetime';
 import { toastAfter } from '@/lib/toast/notify';
 import type { Wish, WishInput, WishlistSettings } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 const collPath = () => `users/${requireUid()}/wishlist`;
 const docPath = (id: string) => `${collPath()}/${id}`;
@@ -65,8 +61,9 @@ export function updateWish(id: string, input: WishInput): Promise<void> {
   return toastAfter(db.updateDoc(docPath(id), { ...cleanInput(input), updatedAt: nowISO() }), 'Gemt');
 }
 
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
 export function deleteWish(id: string): Promise<void> {
-  return toastAfter(db.deleteDoc(docPath(id)), 'Slettet');
+  return db.deleteDoc(docPath(id));
 }
 
 export function setFavorite(id: string, favorite: boolean): Promise<void> {
@@ -98,7 +95,7 @@ export async function resetAllReservations(
 
 /** Sti til en af ejerens gæste-collections (bruges kun til at kunne nulstille dem). */
 export type GuestCollection = 'wishlistExtras' | 'wishlistPot' | 'wishlistComments';
-export const guestCollectionPath = (coll: GuestCollection): string =>
+const guestCollectionPath = (coll: GuestCollection): string =>
   `users/${requireUid()}/${coll}`;
 
 /**

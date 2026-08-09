@@ -2,9 +2,17 @@ import { useEffect } from 'react';
 import { Drawer, useDrawerStatus } from 'expo-router/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cn } from '@/lib/cn';
+import { NavItem } from '@/components/nav/nav-item';
+import {
+  FEATURE_NAV,
+  HOME_ITEM,
+  NATIVE_HIDDEN,
+  navLabel,
+  SETTINGS_ITEM,
+} from '@/constants/features';
+import { THEME_HEX } from '@/constants/theme';
 import { setDrawerOpen } from '@/lib/nav/drawer-status-store';
-import { Pressable, ScrollView, Text, View } from '@/tw';
+import { ScrollView, View } from '@/tw';
 
 /**
  * Native-skal: en Drawer (side-menu) i stedet for bund-faner. Android-bund-baren kan
@@ -13,65 +21,14 @@ import { Pressable, ScrollView, Text, View } from '@/tw';
  *
  * Custom indhold: alle punkter øverst, "Indstillinger" pinnet i BUNDEN af draweren.
  * Bygget uden @react-navigation/drawer-imports (blokeret i SDK 56) — vi bruger bare
- * drawerens state/navigation.
+ * drawerens state/navigation. Menuens indhold kommer fra `@/constants/features`,
+ * som web-skallen også bruger.
  */
-const CARD = '#ffffff';
-const FG = '#2a2a28';
-
-const LABELS: Record<string, string> = {
-  index: 'Forside',
-  homes: 'Hjem',
-  budget: 'Budget',
-  spending: 'Forbrug',
-  loans: 'Lån',
-  subscriptions: 'Abonnementer',
-  timetracker: 'Timetracker',
-  evi: 'Evi',
-  planio: 'My Planio',
-  onskeliste: 'Ønskeliste',
-  settings: 'Indstillinger',
-};
-
-/**
- * Skjules i den native menu. Begge er web-features — Planio kører kun på web, og Evis følsomme
- * felter kan kun læses der — så de fyldte bare i menuen på telefonen. Ruterne er stadig
- * registreret, så et direkte link virker fortsat; de har bare ingen indgang i draweren.
- *
- * Filtrering sker HER og ikke ved at fjerne <Drawer.Screen>: expo-router registrerer ruter ud fra
- * filsystemet, så de ville stadig ligge i `state.routes` og dukke op i menuen.
- */
-const HIDDEN: readonly string[] = ['evi', 'planio'];
-
 type DrawerRoute = { key: string; name: string };
 type DrawerContentProps = {
   state: { index: number; routes: readonly DrawerRoute[] };
   navigation: { navigate: (name: string) => void; closeDrawer: () => void };
 };
-
-function DrawerRow({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={{ borderCurve: 'continuous' }}
-      className={cn(
-        'will-change-pressable mx-3 my-0.5 rounded-lg px-4 py-3 hover:bg-element active:bg-selected',
-        active && 'bg-element',
-      )}>
-      <Text className={cn('text-base', active ? 'font-semibold text-primary' : 'text-fg')}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
 
 /**
  * Spejler drawerens status ind i en global store. Bevidst en (lille) effect: statussen er
@@ -91,29 +48,34 @@ function DrawerContent({ state, navigation }: DrawerContentProps) {
     navigation.navigate(name);
     navigation.closeDrawer();
   };
-  const top = state.routes.filter((r) => r.name !== 'settings' && !HIDDEN.includes(r.name));
-  const hasSettings = state.routes.some((r) => r.name === 'settings');
+
+  // Filtrering sker HER og ikke ved at fjerne <Drawer.Screen>: expo-router registrerer ruter
+  // ud fra filsystemet, så de ville stadig ligge i `state.routes` og dukke op i menuen.
+  const top = state.routes.filter(
+    (r) => r.name !== SETTINGS_ITEM.name && !NATIVE_HIDDEN.includes(r.name)
+  );
+  const hasSettings = state.routes.some((r) => r.name === SETTINGS_ITEM.name);
+
+  const row = (name: string, key = name) => (
+    <NavItem
+      key={key}
+      layout="drawer"
+      label={navLabel(name)}
+      isFocused={name === activeName}
+      accent="text-primary"
+      onPress={() => go(name)}
+    />
+  );
 
   return (
     <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
       <DrawerStatusBridge />
       <ScrollView className="flex-1" contentContainerClassName="py-2">
-        {top.map((r) => (
-          <DrawerRow
-            key={r.key}
-            label={LABELS[r.name] ?? r.name}
-            active={r.name === activeName}
-            onPress={() => go(r.name)}
-          />
-        ))}
+        {top.map((r) => row(r.name, r.key))}
       </ScrollView>
       {hasSettings ? (
         <View className="border-t border-border pt-1" style={{ paddingBottom: insets.bottom + 4 }}>
-          <DrawerRow
-            label={LABELS.settings}
-            active={activeName === 'settings'}
-            onPress={() => go('settings')}
-          />
+          {row(SETTINGS_ITEM.name)}
         </View>
       ) : null}
     </View>
@@ -128,28 +90,26 @@ export default function AppDrawerLayout() {
       // ud til Forsiden uanset hvor man kom fra.
       backBehavior="history"
       drawerContent={(props) => (
-        <DrawerContent state={props.state} navigation={props.navigation as DrawerContentProps['navigation']} />
+        <DrawerContent
+          state={props.state}
+          navigation={props.navigation as DrawerContentProps['navigation']}
+        />
       )}
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
         swipeEnabled: false,
-        headerStyle: { backgroundColor: CARD },
+        headerStyle: { backgroundColor: THEME_HEX.card },
         headerShadowVisible: false,
-        headerTintColor: FG,
+        headerTintColor: THEME_HEX.fg,
         headerTitle: '',
       }}>
-      <Drawer.Screen name="index" options={{ headerShown: true }} />
-      <Drawer.Screen name="settings" options={{ headerShown: true }} />
-      <Drawer.Screen name="homes" />
-      <Drawer.Screen name="budget" />
-      <Drawer.Screen name="spending" />
-      <Drawer.Screen name="loans" />
-      <Drawer.Screen name="subscriptions" />
-      <Drawer.Screen name="timetracker" />
-      <Drawer.Screen name="evi" />
-      <Drawer.Screen name="planio" />
-      <Drawer.Screen name="onskeliste" />
+      {/* Forside og Indstillinger har en synlig header (de har ingen egen feature-stak). */}
+      <Drawer.Screen name={HOME_ITEM.name} options={{ headerShown: true }} />
+      <Drawer.Screen name={SETTINGS_ITEM.name} options={{ headerShown: true }} />
+      {FEATURE_NAV.map((f) => (
+        <Drawer.Screen key={f.name} name={f.name} />
+      ))}
     </Drawer>
   );
 }

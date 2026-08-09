@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-import type { CollectionSnapshot, Unsubscribe, WithId } from '@/lib/firebase';
+import { auth, type CollectionSnapshot, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { hotReloadSubscribe } from '@/lib/hot-reload-singleton';
 
 /**
  * Abonnementer på Firestore fra en KOMPONENT.
@@ -32,6 +33,21 @@ type LiveState<T> = { items: WithId<T>[]; loading: boolean; failed: boolean };
  */
 const snapshotCache = new Map<string, unknown[]>();
 const docCache = new Map<string, unknown>();
+
+/**
+ * Ryd cachen ved logout. Uden dette overlever de hentede dokumenter i JS-konteksten, og
+ * logger en ANDEN bruger ind i samme session, ville skærmen nå at male forrige brugers data
+ * inden den nye listener svarer. De auth-bundne stores nulstiller allerede sig selv
+ * (`createCollectionStore.stop`); disse to maps havde ingen tilsvarende oprydning.
+ */
+hotReloadSubscribe('nyvia.live-query-cache', () =>
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      snapshotCache.clear();
+      docCache.clear();
+    }
+  })
+);
 
 export function useLiveCollection<T>(
   key: string | null,

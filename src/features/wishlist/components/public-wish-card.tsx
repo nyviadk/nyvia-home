@@ -5,6 +5,7 @@ import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { formatDKKWhole } from '@/lib/money';
 import { Pressable, View } from '@/tw';
+import { priceLine } from '../price-line';
 import {
   remainingCount,
   reservedCount,
@@ -12,15 +13,6 @@ import {
   type GiftContribution,
   type Wish,
 } from '../types';
-
-function priceLine(w: Wish): string {
-  if (typeof w.priceOre !== 'number') return '';
-  const base = formatDKKWhole(w.priceOre);
-  if (w.priceInclShipping) return `${base} inkl. fragt`;
-  if (typeof w.shippingOre === 'number' && w.shippingOre > 0)
-    return `${base} + ${formatDKKWhole(w.shippingOre)} fragt`;
-  return base;
-}
 
 /**
  * Oversigtskort — bevidst KORT: billede, titel, pris og en enkelt status-linje.

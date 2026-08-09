@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
 import { formatDateTimeCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
 import { Pressable, TextInput, View } from '@/tw';
+import { usePlanioRawStore } from '../data/planio-stores';
 import { deleteRaw, updateRaw } from '../data/planio.repository';
 import type { PlanioRaw } from '../types';
 import { MarkdownText } from './markdown-text';
@@ -35,12 +36,17 @@ export function RawDetail({ raw, onBack }: { raw: WithId<PlanioRaw>; onBack: () 
     setEditing(false);
   };
 
-  const onDelete = async () => {
-    if (await confirmAction('Slet', 'Fjern denne rå feedback fra arkivet?', 'Slet')) {
-      await deleteRaw(raw.id);
-      onBack();
-    }
-  };
+  const onDelete = () =>
+    void confirmDelete({
+      title: 'Slet rå feedback',
+      name: raw.text,
+      message: 'Fjern denne rå feedback fra arkivet?',
+      toast: 'Rå feedback slettet',
+      markPending: () => usePlanioRawStore.pending.mark(raw.id),
+      unmarkPending: () => usePlanioRawStore.pending.unmark(raw.id),
+      remove: () => deleteRaw(raw.id),
+      after: onBack,
+    });
 
   const meta = [raw.prodId, raw.feature].filter(Boolean).join(' · ') || raw.src;
 

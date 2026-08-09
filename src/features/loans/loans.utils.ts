@@ -43,7 +43,7 @@ export function totalMonthlyPayment(loans: WithId<AnyLoan>[]): number {
  * restgæld ikke bliver ved med at trække en ydelse — på linje med den måned-for-måned-
  * forecast, der også stopper ved restgæld = 0.
  */
-export function currentMonthlyPaymentOre(loan: AnyLoan): number {
+function currentMonthlyPaymentOre(loan: AnyLoan): number {
   const remaining = BigNumber.maximum(0, remainingOre(loan));
   return BigNumber.minimum(monthlyOre(loan), remaining).toNumber();
 }

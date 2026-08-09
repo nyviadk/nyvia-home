@@ -1,16 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { DeleteEntityLink } from '@/components/ui/delete-entity-link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { DeleteHomeLink } from '../components/delete-home-link';
 import { HomeForm } from '../components/home-form';
 import { useHomesStore } from '../data/homes-store';
-import { updateHome } from '../data/homes.repository';
+import { deleteHome, updateHome } from '../data/homes.repository';
 
 export function EditHomeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const home = useHomesStore((s) => s.items.find((h) => h.id === id));
+  const home = useHomesStore.useItem(id).item;
 
   if (!home) {
     return (
@@ -31,7 +31,14 @@ export function EditHomeScreen() {
           router.back();
         }}
       />
-      <DeleteHomeLink id={home.id} label={home.address} />
+      <DeleteEntityLink
+        id={home.id}
+        label="Slet bolig"
+        name={home.address}
+        confirmMessage={`Vil du slette "${home.address}"? Flytte-data på boligen forbliver, men knyttes ikke længere til en synlig bolig.`}
+        pending={useHomesStore.pending}
+        remove={() => deleteHome(home.id)}
+      />
     </Screen>
   );
 }

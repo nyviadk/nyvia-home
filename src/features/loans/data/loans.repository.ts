@@ -1,112 +1,60 @@
 import BigNumber from 'bignumber.js';
 
 import { nowISO } from '@/lib/datetime';
-import { auth, type CollectionSnapshot, db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { createUserCollectionRepo } from '@/lib/db/user-collection-repo';
+import { db } from '@/lib/firebase';
 import { genId } from '@/lib/id';
 import { toastAfter } from '@/lib/toast/notify';
 import type { CustomLoan } from '../custom/types';
-import type { AnyLoan, Loan, LoanInput, Payment } from '../types';
+import type { AnyLoan, LoanInput, Payment } from '../types';
 
 /** Custom-lån uden afledte/tidsstempel-felter (det brugeren redigerer). */
 export type CustomLoanInput = Omit<CustomLoan, 'createdAt' | 'updatedAt'>;
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
+// Kollektionen rummer bevidst to dokument-former (standard + custom), derfor union'en.
+// `LoanInput` uden `type` er update-formen; med `type: 'standard'` er det create-formen.
+const repo = createUserCollectionRepo<
+  AnyLoan,
+  LoanInput | (LoanInput & { type: 'standard' }) | CustomLoanInput
+>({
+  collection: 'loans',
+  orderBy: { field: 'createdAt', direction: 'desc' },
+  createdToast: 'Lån oprettet',
+});
 
-const loansPath = () => `users/${requireUid()}/loans`;
-const loanPath = (id: string) => `${loansPath()}/${id}`;
+export const subscribeLoans = repo.subscribe;
 
-export function subscribeLoans(
-  onChange: (snap: CollectionSnapshot<AnyLoan>) => void,
-  onError?: (e: Error) => void
-): Unsubscribe {
-  return db.subscribeCollection<AnyLoan>(
-    loansPath(),
-    { orderByField: 'createdAt', orderDirection: 'desc' },
-    onChange,
-    onError
-  );
-}
+export const createLoan = (input: LoanInput) => repo.create({ ...input, type: 'standard' });
+export const updateLoan = (id: string, input: LoanInput) => repo.update(id, input);
 
-export function subscribeLoan(
-  id: string,
-  onChange: (loan: WithId<AnyLoan> | null) => void,
-  onError?: (e: Error) => void
-): Unsubscribe {
-  return db.subscribeDoc<AnyLoan>(loanPath(id), onChange, onError);
-}
-
-export function createLoan(input: LoanInput): Promise<string> {
-  const now = nowISO();
-  return toastAfter(
-    db.addDoc<Loan>(loansPath(), { ...input, type: 'standard', createdAt: now, updatedAt: now }),
-    'Lån oprettet'
-  );
-}
-
-export function updateLoan(id: string, input: LoanInput): Promise<void> {
-  return toastAfter(db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
-}
-
-export function createCustomLoan(input: CustomLoanInput): Promise<string> {
-  const now = nowISO();
-  return toastAfter(
-    db.addDoc<CustomLoan>(loansPath(), { ...input, createdAt: now, updatedAt: now }),
-    'Lån oprettet'
-  );
-}
-
-export function updateCustomLoan(id: string, input: CustomLoanInput): Promise<void> {
-  return toastAfter(db.updateDoc(loanPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
-}
+export const createCustomLoan = (input: CustomLoanInput) => repo.create(input);
+export const updateCustomLoan = (id: string, input: CustomLoanInput) => repo.update(id, input);
 
 /** Gem kun de faktiske afdrag (faktisk-vs-forventet). */
-export function updateCustomActuals(id: string, actuals: Record<string, number>): Promise<void> {
-  return toastAfter(
-    db.updateDoc(loanPath(id), { actuals, updatedAt: nowISO() }),
-    'Faktisk afdrag gemt'
-  );
-}
+export const updateCustomActuals = (id: string, actuals: Record<string, number>) =>
+  repo.patch(id, { actuals }, 'Faktisk afdrag gemt');
 
 /** Gem kun posterne (bruges af medtag/fravælg-filteret i oversigten). */
-export function updateCustomLineItems(
-  id: string,
-  lineItems: CustomLoan['lineItems']
-): Promise<void> {
-  return toastAfter(
-    db.updateDoc(loanPath(id), { lineItems, updatedAt: nowISO() }),
-    'Poster opdateret'
-  );
-}
+export const updateCustomLineItems = (id: string, lineItems: CustomLoan['lineItems']) =>
+  repo.patch(id, { lineItems }, 'Poster opdateret');
 
 /** Gem kun afbetalings-horisonten (vælges dynamisk i afbetalingsplanen). */
-export function updateCustomHorizon(id: string, horizon: CustomLoan['horizon']): Promise<void> {
-  return toastAfter(
-    db.updateDoc(loanPath(id), { horizon, updatedAt: nowISO() }),
-    'Tidshorisont opdateret'
-  );
-}
+export const updateCustomHorizon = (id: string, horizon: CustomLoan['horizon']) =>
+  repo.patch(id, { horizon }, 'Tidshorisont opdateret');
 
 /** Gem kun buffer (vælges i afbetalingsplanen, kun relevant ved 'asap'). */
-export function updateCustomBuffer(id: string, buffer: CustomLoan['buffer']): Promise<void> {
-  return toastAfter(db.updateDoc(loanPath(id), { buffer, updatedAt: nowISO() }), 'Buffer opdateret');
-}
+export const updateCustomBuffer = (id: string, buffer: CustomLoan['buffer']) =>
+  repo.patch(id, { buffer }, 'Buffer opdateret');
 
 /** Gem kun én udgiftstabel (ny/nuværende bolig) — inline-redigering i oversigten. */
-export function updateCustomExpenseTable(
+export const updateCustomExpenseTable = (
   id: string,
   key: 'newHome' | 'oldHome',
   table: CustomLoan['newHome']
-): Promise<void> {
-  return toastAfter(db.updateDoc(loanPath(id), { [key]: table, updatedAt: nowISO() }), 'Udgifter gemt');
-}
+) => repo.patch(id, { [key]: table }, 'Udgifter gemt');
 
-export function deleteLoan(id: string): Promise<void> {
-  return db.deleteDoc(loanPath(id));
-}
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
+export const deleteLoan = repo.remove;
 
 /**
  * Registrerer et afdrag i lån-dokumentets `payments`-array og nedskriver restgælden
@@ -122,7 +70,7 @@ export function addPayment(
   const entry: Payment = payment.note ? { ...base, note: payment.note } : base;
   const newBalance = BigNumber.maximum(0, new BigNumber(currentBalance).minus(payment.amount)).toNumber();
   return toastAfter(
-    db.updateDoc(loanPath(loanId), {
+    db.updateDoc(repo.docPath(loanId), {
       payments: [...existingPayments, entry],
       currentBalance: newBalance,
       updatedAt: nowISO(),

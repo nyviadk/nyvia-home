@@ -3,9 +3,11 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
+import { THEME_HEX } from '@/constants/theme';
 import type { WithId } from '@/lib/firebase';
-import { Pressable, View } from '@/tw';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
+import { ActivityIndicator, Pressable, View } from '@/tw';
+import { pendingExtraDeletes } from '../data/pending-deletes';
 import { CardGrid } from '../components/card-grid';
 import { CommentThread } from '../components/comment-thread';
 import { PublicWishCard } from '../components/public-wish-card';
@@ -46,11 +48,17 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
   ) =>
     router.push({ pathname, params: { uid: ownerUid, ...params } });
 
-  const onRemoveExtra = async (extra: WithId<WishlistExtra>) => {
-    if (await confirmAction('Fjern fra listen', `Fjern “${extra.text}”?`, 'Fjern')) {
-      await deleteExtra(ownerUid, extra.id);
-    }
-  };
+  const onRemoveExtra = (extra: WithId<WishlistExtra>) =>
+    void confirmDelete({
+      title: 'Fjern fra listen',
+      name: extra.text,
+      message: `Fjern “${extra.text}”?`,
+      confirmLabel: 'Fjern',
+      toast: `“${extra.text}” fjernet`,
+      markPending: () => pendingExtraDeletes.mark(extra.id),
+      unmarkPending: () => pendingExtraDeletes.unmark(extra.id),
+      remove: () => deleteExtra(ownerUid, extra.id),
+    });
 
   if (failed) {
     return (
@@ -59,6 +67,15 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
       </Screen>
     );
   }
+
+  /**
+   * Gæstens FØRSTE besøg har ingen cache, så der er en reel netværks-ventetid. Uden en
+   * loader var siden tom bortset fra "Købt uden for listen" med tilføj-knappen — den lignede
+   * en tom ønskeliste, ikke en der var på vej. Derfor skjules HELE gæste-indholdet imens,
+   * ikke kun gave-grid'et. Ved genbesøg maler `useLiveCollection` fra cachen, og
+   * `loading` er allerede false — så loaderen ses sjældent.
+   */
+  const stillLoading = loading && wishes.length === 0;
 
   const generalComments = comments.filter((c) => !c.wishId);
 
@@ -77,8 +94,13 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
 
       <View className="h-10" />
 
-      {wishes.length === 0 ? (
-        loading ? null : <EmptyState title="Ingen ønsker endnu" description="Listen er tom lige nu." />
+      {stillLoading ? (
+        <View className="items-center gap-4 py-24">
+          <ActivityIndicator size="large" color={THEME_HEX.primary} />
+          <AppText className="text-xl text-fg-muted">Henter gaver…</AppText>
+        </View>
+      ) : wishes.length === 0 ? (
+        <EmptyState title="Ingen ønsker endnu" description="Listen er tom lige nu." />
       ) : (
         <CardGrid
           items={wishes}
@@ -98,7 +120,7 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
         />
       )}
 
-      {isOwner ? null : (
+      {isOwner || stillLoading ? null : (
         <>
           {/* Købt uden for listen */}
           <View className="h-16" />

@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { MoneyText } from '@/components/ui/money-text';
-import { ProgressBar } from '@/components/ui/progress-bar';
+import { LoanProgressBlock } from '../../components/loan-progress-block';
 import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
@@ -29,20 +29,13 @@ export function CustomLoanCard({ loan }: { loan: WithId<CustomLoan> }) {
             </AppText>
           </View>
 
-          <View className="gap-1.5">
-            <View className="flex-row items-baseline justify-between">
-              <MoneyText ore={remaining} whole variant="heading" />
-              <View className="flex-row items-baseline gap-1">
-                <AppText variant="muted">af</AppText>
-                <MoneyText ore={principal} whole variant="muted" />
-              </View>
-            </View>
-            <ProgressBar value={paidRatio} />
-            <View className="flex-row justify-between">
-              <AppText variant="muted">afdrag / md.</AppText>
-              <MoneyText ore={monthlyPaymentOre(loan)} whole variant="muted" />
-            </View>
-          </View>
+          <LoanProgressBlock
+            currentOre={remaining}
+            originalOre={principal}
+            progress={paidRatio}
+            footerLeft="afdrag / md."
+            footerRight={<MoneyText ore={monthlyPaymentOre(loan)} whole variant="muted" />}
+          />
         </Card>
       </Pressable>
     </Link>

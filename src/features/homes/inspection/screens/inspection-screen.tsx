@@ -7,6 +7,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
+import { withoutPending } from '@/lib/db/pending-deletes';
 import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
 import { updateHomeReportInfo } from '../../data/homes.repository';
@@ -19,8 +20,11 @@ import type { InspectionItem } from '../types';
 
 export function InspectionScreen() {
   const { id: homeId } = useLocalSearchParams<{ id: string }>();
-  const home = useHomesStore((s) => s.items.find((h) => h.id === homeId));
-  const items = useInspectionStore((s) => s.items).filter((i) => i.homeId === homeId);
+  const home = useHomesStore.useItem(homeId ?? "").item;
+  const pendingIds = useInspectionStore.pending.useStore((s) => s.ids);
+  const items = withoutPending(useInspectionStore.useVisibleItems(), pendingIds).filter(
+    (i) => i.homeId === homeId
+  );
 
   return (
     <Screen>

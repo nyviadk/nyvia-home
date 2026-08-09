@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { oreToInput, parseKronerInput } from '@/lib/money';
+import { isMoney } from '@/lib/validation/fields';
 import {
   defaultRecurrenceForm,
   fromRecurrence,
-  normalizeDateInput,
   recurrenceFormSchema,
   toRecurrence,
 } from '@/lib/recurrence/recurrence-form';
@@ -13,18 +13,12 @@ import type { BudgetEntry, BudgetEntryInput, SalaryCalc } from '../types';
 import { entryCategories } from './categories';
 import { useBudgetSettingsStore } from './budget-settings-store';
 import { defaultStartDate, effectiveStartMin } from './budget-start';
-
-const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?$/;
+import { startBeforeMin } from './recurrence-validation';
 
 function parsePct(input: string): number | null {
   const n = Number.parseFloat(input.replace(',', '.').trim());
   return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
 }
-
-const isMoney = (s: string) => {
-  const ore = parseKronerInput(s);
-  return ore !== null && ore >= 0;
-};
 
 export const budgetFormSchema = z
   .object({
@@ -62,13 +56,9 @@ export const budgetFormSchema = z
     // må dog starte måneden før, da pengene udbetales i forvejen.
     const advance = values.type === 'income' && values.advanceMonth;
     const min = effectiveStartMin(useBudgetSettingsStore.getState().startDate, advance);
-    const start = normalizeDateInput(values.recurrence.startDate);
-    if (min && ISO_DATE.test(values.recurrence.startDate) && start < min) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['recurrence', 'startDate'],
-        message: `Kan ikke være før budgettets start (${min})`,
-      });
+    const message = startBeforeMin(values.recurrence.startDate, min);
+    if (message) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['recurrence', 'startDate'], message });
     }
   });
 

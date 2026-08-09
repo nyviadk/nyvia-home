@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OfflineNotice } from "@/components/ui/offline-notice";
 import { Screen } from "@/components/ui/screen";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { AppText } from "@/components/ui/text";
 import type { WithId } from "@/lib/firebase";
 import { View } from "@/tw";
@@ -11,7 +12,7 @@ import { BudgetEntryRow } from "../components/budget-entry-row";
 import { ForecastSummary } from "../components/forecast-summary";
 import { LoanBudgetCard } from "../components/loan-budget-card";
 import { useBudgetStore } from "../data/budget-store";
-import { usePendingBudgetDeletes } from "../data/pending-deletes";
+import { withoutPending } from "@/lib/db/pending-deletes";
 import type { BudgetEntry } from "../types";
 
 function Section({
@@ -34,12 +35,12 @@ function Section({
 }
 
 export function BudgetScreen() {
-  const entries = useBudgetStore((s) => s.entries);
+  const entries = useBudgetStore.useVisibleItems();
   const loading = useBudgetStore((s) => s.loading);
   const fromCache = useBudgetStore((s) => s.fromCache);
-  const pendingIds = usePendingBudgetDeletes((s) => s.ids);
+  const pendingIds = useBudgetStore.pending.useStore((s) => s.ids);
 
-  const visible = entries.filter((e) => !pendingIds.has(e.id));
+  const visible = withoutPending(entries, pendingIds);
   const byAmountDesc = (a: WithId<BudgetEntry>, b: WithId<BudgetEntry>) =>
     b.amount - a.amount;
   const incomes = visible.filter((e) => e.type === "income").sort(byAmountDesc);
@@ -49,21 +50,11 @@ export function BudgetScreen() {
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between">
-        <AppText variant="title">Budget</AppText>
-        <View className="flex-row items-center gap-2">
-          <Link href="/budget/settings" asChild>
-            <Button
-              title="Indstillinger"
-              variant="secondary"
-              className="h-10 px-4"
-            />
-          </Link>
-          <Link href="/budget/new" asChild>
-            <Button title="Tilføj" className="h-10 px-4" />
-          </Link>
-        </View>
-      </View>
+      <ScreenHeader title="Budget" addHref="/budget/new">
+        <Link href="/budget/settings" asChild>
+          <Button title="Indstillinger" variant="secondary" className="h-10 px-4" />
+        </Link>
+      </ScreenHeader>
 
       <OfflineNotice fromCache={fromCache} />
 

@@ -31,7 +31,7 @@ export function CreateInspectionScreen() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
-  const items = useInspectionStore((s) => s.items);
+  const items = useInspectionStore.useVisibleItems();
   // Forslag = tidligere GEMTE tekster + det du allerede har skrevet i DENNE omgang. Udledt
   // under render fra den stabile items-reference (ny array fra selector = uendelig loop).
   const roomSuggestions = uniqueNonEmpty([...items.map((i) => i.room ?? ''), ...rows.map((r) => r.room)]);

@@ -1,47 +1,19 @@
-import { nowISO } from '@/lib/datetime';
-import { auth, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
-import { toastAfter } from '@/lib/toast/notify';
+import { createUserCollectionRepo } from '@/lib/db/user-collection-repo';
 import type { Home, HomeInput } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
+const repo = createUserCollectionRepo<Home, HomeInput>({
+  collection: 'homes',
+  orderBy: { field: 'createdAt', direction: 'desc' },
+  createdToast: 'Bolig oprettet',
+});
 
-const collPath = () => `users/${requireUid()}/homes`;
-const docPath = (id: string) => `${collPath()}/${id}`;
-
-export function subscribeHomes(
-  onChange: (snap: CollectionSnapshot<Home>) => void,
-  onError?: (e: Error) => void
-): Unsubscribe {
-  return db.subscribeCollection<Home>(
-    collPath(),
-    { orderByField: 'createdAt', orderDirection: 'desc' },
-    onChange,
-    onError
-  );
-}
-
-export function createHome(input: HomeInput): Promise<string> {
-  const now = nowISO();
-  return toastAfter(
-    db.addDoc<Home>(collPath(), { ...input, createdAt: now, updatedAt: now }),
-    'Bolig oprettet'
-  );
-}
-
-export function updateHome(id: string, input: HomeInput): Promise<void> {
-  return toastAfter(db.updateDoc(docPath(id), { ...input, updatedAt: nowISO() }), 'Gemt');
-}
+export const subscribeHomes = repo.subscribe;
+export const createHome = repo.create;
+export const updateHome = repo.update;
 
 /** Gemmer fri ekstra-info til indflytningssyn-PDF'en på boligen (rører ikke øvrige felter). */
-export function updateHomeReportInfo(id: string, reportInfo: string): Promise<void> {
-  return db.updateDoc(docPath(id), { reportInfo, updatedAt: nowISO() });
-}
+export const updateHomeReportInfo = (id: string, reportInfo: string) =>
+  repo.patch(id, { reportInfo }, null);
 
-/** Sletning toaster ikke her — håndteres af performWithUndo (fortryd). */
-export function deleteHome(id: string): Promise<void> {
-  return db.deleteDoc(docPath(id));
-}
+/** Sletning toaster ikke her — håndteres af confirmDelete (fortryd). */
+export const deleteHome = repo.remove;

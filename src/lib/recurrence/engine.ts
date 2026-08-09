@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { DateTime } from 'luxon';
 
 import { APP_TIMEZONE } from '@/lib/datetime';
-import { firstBankDayOfMonth, lastBankDayOfMonth, nextBankDay } from './danish-holidays';
+import { firstBankDayOfMonth, lastBankDayOfMonth } from './danish-holidays';
 import type { Recurrence } from './types';
 
 // Cache pr. (år, måned) — samme måned bygges mange gange under ét forecast; zoned luxon-
@@ -101,16 +101,6 @@ function nominalOccurrenceDay(rule: Recurrence, year: number, month: number): Da
 }
 
 /**
- * Forekomstens FAKTISKE (bank-justerede) dato — kun til VISNING. En fast dag på en lukkedag
- * rykkes til NÆSTE bankdag (førstkommende hverdag); 'lastBank' er allerede sidste bankdag,
- * så nextBankDay er da et no-op. Beregningerne bruger den nominelle dato, ikke denne.
- */
-function occurrenceDayInMonth(rule: Recurrence, year: number, month: number): DateTime | null {
-  const nominal = nominalOccurrenceDay(rule, year, month);
-  return nominal ? nextBankDay(nominal) : null;
-}
-
-/**
  * Falder reglen i den givne måned? Start-/slut-grænsen tjekkes mod forekomstens NOMINELLE
  * dato (den tilsigtede dag), så måneds-tilhør er uafhængig af bankdag-justering: fx en årlig
  * post 1. jan. hører til JANUAR, selvom betalingen (nytårsdag lukket) reelt sker 4. jan.
@@ -133,13 +123,6 @@ export function occursInMonth(rule: Recurrence, year: number, month: number): bo
     if (monthStart(year, month) > end) return false;
   }
   return true;
-}
-
-/** Den konkrete (bank-justerede) dato reglen falder på i måneden (ÅÅÅÅ-MM-DD), eller null. */
-export function occurrenceDate(rule: Recurrence, year: number, month: number): string | null {
-  if (!occursInMonth(rule, year, month)) return null;
-  const occ = occurrenceDayInMonth(rule, year, month);
-  return occ ? occ.toFormat('yyyy-MM-dd') : null;
 }
 
 /** Forekomster pr. år (engang = 0 → indgår ikke i månedsgennemsnit). 12 ÷ periode-i-måneder. */

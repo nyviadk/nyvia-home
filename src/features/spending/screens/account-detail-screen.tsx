@@ -6,20 +6,23 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MoneyText } from "@/components/ui/money-text";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
-import { formatMonthCopenhagen } from "@/lib/datetime";
+import { formatMonthCopenhagen, ym } from "@/lib/datetime";
 import type { WithId } from "@/lib/firebase";
 import { View } from "@/tw";
 import { MonthAccordion } from "../components/month-accordion";
 import { TransactionRow } from "../components/transaction-row";
 import { useSpendingSettingsStore } from "../data/spending-settings-store";
-import { useTransactionsStore } from "../data/transactions-store";
-import { displayAccountName, monthlyTotals, ym } from "../spending.utils";
+import { useVisibleTransactions } from "../data/pending-deletes";
+import { displayAccountName, makeClassifier, monthlyTotals } from "../spending.utils";
 import type { BankTransaction } from "../types";
 
 export function AccountDetailScreen() {
   const { account } = useLocalSearchParams<{ account: string }>();
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const transactions = useVisibleTransactions();
   const accounts = useSpendingSettingsStore((s) => s.accounts);
+  const rules = useSpendingSettingsStore((s) => s.scrubRules);
+  // Bygges ÉN gang for hele listen, ikke pr. række.
+  const classify = makeClassifier(accounts);
 
   // Alt udledt memoiseret: filtrér kontoens poster, gruppér pr. måned ÉN gang (byMonth),
   // og udregn gennemsnit/højeste måned. Køres kun når transaktioner/konto/konti ændres.
@@ -67,7 +70,7 @@ export function AccountDetailScreen() {
               ore={highest.ore}
               hint={
                 highest.month
-                  ? capitalize(formatMonthCopenhagen(`${highest.month}-01`))
+                  ? formatMonthCopenhagen(`${highest.month}-01`)
                   : undefined
               }
             />
@@ -78,11 +81,11 @@ export function AccountDetailScreen() {
             return (
               <MonthAccordion
                 key={month}
-                title={capitalize(formatMonthCopenhagen(`${month}-01`))}
+                title={formatMonthCopenhagen(`${month}-01`)}
                 totalOre={t.expenseOre}
               >
                 {(byMonth.get(month) ?? []).map((tx) => (
-                  <TransactionRow key={tx.id} transaction={tx} />
+                  <TransactionRow key={tx.id} transaction={tx} kind={classify(tx)} rules={rules} />
                 ))}
               </MonthAccordion>
             );
@@ -111,8 +114,4 @@ function Stat({
       <MoneyText ore={ore} whole variant="label" className="text-danger" />
     </View>
   );
-}
-
-function capitalize(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }

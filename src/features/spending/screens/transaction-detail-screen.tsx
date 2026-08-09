@@ -7,14 +7,13 @@ import { MoneyText } from '@/components/ui/money-text';
 import { Screen } from '@/components/ui/screen';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
 import { formatDateCopenhagen, formatDateTimeCopenhagen } from '@/lib/datetime';
-import { toastAfter } from '@/lib/toast/notify';
 import { Pressable, View } from '@/tw';
 import { KindBadge } from '../components/kind-badge';
 import { deleteTransaction, setTransactionKindOverride } from '../data/transactions.repository';
 import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { useTransactionsStore } from '../data/transactions-store';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
+import { pendingTransactionDeletes, useVisibleTransactions } from '../data/pending-deletes';
 import { displayAccountName, makeClassifier, scrubFields } from '../spending.utils';
 import type { TransactionKind } from '../types';
 
@@ -28,7 +27,7 @@ const KIND_CHOICES: { value: KindChoice; label: string }[] = [
 
 export function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const transactions = useVisibleTransactions();
   const accounts = useSpendingSettingsStore((s) => s.accounts);
   const rules = useSpendingSettingsStore((s) => s.scrubRules);
 
@@ -47,12 +46,18 @@ export function TransactionDetailScreen() {
   const effective = classify(t);
   const choice: KindChoice = t.kindOverride ?? 'auto';
 
-  async function onDelete() {
+  function onDelete() {
     if (!t) return;
-    const ok = await confirmAction('Slet transaktion', 'Slet denne postering?', 'Slet');
-    if (!ok) return;
-    await toastAfter(deleteTransaction(t.id), 'Transaktion slettet');
-    router.back();
+    void confirmDelete({
+      title: 'Slet transaktion',
+      name: scrubbed.text || scrubbed.counterparty || 'Postering',
+      message: 'Slet denne postering?',
+      toast: 'Transaktion slettet',
+      markPending: () => pendingTransactionDeletes.mark(t.id),
+      unmarkPending: () => pendingTransactionDeletes.unmark(t.id),
+      remove: () => deleteTransaction(t.id),
+      after: router.back,
+    });
   }
 
   return (

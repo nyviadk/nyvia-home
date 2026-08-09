@@ -6,6 +6,7 @@ import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { pickImages } from '@/lib/capture/pick-images';
@@ -29,17 +30,13 @@ function uniqueNonEmpty(values: string[]): string[] {
 
 export function EditInspectionScreen() {
   const { itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
-  const items = useInspectionStore((s) => s.items);
+  const items = useInspectionStore.useVisibleItems();
   const item = items.find((i) => i.id === itemId);
   const roomSuggestions = uniqueNonEmpty(items.map((i) => i.room ?? ''));
   const titleSuggestions = uniqueNonEmpty(items.map((i) => i.title));
 
   if (!item) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
+    return <LoadingScreen />;
   }
   // key={item.id} → formularens state initialiseres fra posten uden useEffect.
   return (

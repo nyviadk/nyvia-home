@@ -8,6 +8,9 @@ import { AppText } from '@/components/ui/text';
 import { confirmAction } from '@/lib/confirm';
 import type { WithId } from '@/lib/firebase';
 import { formatDKKWhole } from '@/lib/money';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
+import { writeWithUndo } from '@/lib/undo/perform-with-undo';
+import { pendingContributionDeletes } from '../data/pending-deletes';
 import { Pressable, View } from '@/tw';
 import { CommentThread } from '../components/comment-thread';
 import { GiftPrice } from '../components/gift-price';
@@ -50,7 +53,6 @@ export function GiftScreen({ ownerUid, wishId }: { ownerUid: string; wishId: str
   const list = wish.reservations ?? [];
   const contributions = pot.filter((c) => c.wishId === wish.id);
   const pledged = sumContributions(contributions);
-  const goal = typeof wish.priceOre === 'number' ? wish.priceOre : 0;
   const giftComments = comments.filter((c) => c.wishId === wish.id);
   /**
    * Er alt taget, er tilskuddet ikke længere en åben mulighed — så alle involverede nævnes bare
@@ -71,18 +73,27 @@ export function GiftScreen({ ownerUid, wishId }: { ownerUid: string; wishId: str
       'Fjern',
     );
     if (!ok) return;
-    await setReservations(ownerUid, wish.id, list.filter((_, i) => i !== index), 'Fjernet');
+    // Reservationer er ét array-felt på ønsket: fortryd = skriv den gamle liste tilbage.
+    writeWithUndo({
+      message: 'Reservering fjernet',
+      write: () =>
+        setReservations(ownerUid, wish.id, list.filter((_, i) => i !== index), null),
+      restore: () => setReservations(ownerUid, wish.id, list, null),
+    });
   };
 
   /** Slet beløbet helt. Kom pengene fra puljen, gør advarslen opmærksom på "Ryk til puljen". */
-  const onRemoveContribution = async (c: WithId<GiftContribution>) => {
-    const ok = await confirmAction(
-      'Fjern beløb',
-      'Beløbet slettes helt.',
-      'Fjern',
-    );
-    if (ok) await deleteContribution(ownerUid, c.id);
-  };
+  const onRemoveContribution = (c: WithId<GiftContribution>) =>
+    void confirmDelete({
+      title: 'Fjern beløb',
+      name: formatDKKWhole(c.amountOre),
+      message: 'Beløbet slettes helt.',
+      confirmLabel: 'Fjern',
+      toast: 'Beløb fjernet',
+      markPending: () => pendingContributionDeletes.mark(c.id),
+      unmarkPending: () => pendingContributionDeletes.unmark(c.id),
+      remove: () => deleteContribution(ownerUid, c.id),
+    });
 
   return (
     <Screen className="max-w-200 gap-0 p-6">

@@ -9,7 +9,7 @@ import type { EviField } from "../types";
  * Credentials (password, access tokens, webhook secret) er `sensitive` → krypteres klientside,
  * så de kommer i Evi i stedet for LastPass. Alt kan omdøbes/flyttes/slettes i editoren bagefter.
  */
-export const NOTION_SEED_FIELDS: EviField[] = [
+const NOTION_SEED_FIELDS: EviField[] = [
   // ── Kunde ──────────────────────────────────────────────────────────────────
   {
     id: "mail",

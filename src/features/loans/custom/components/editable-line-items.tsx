@@ -8,15 +8,16 @@ import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { genId } from '@/lib/id';
-import { oreToInput } from '@/lib/money';
+import { absToInput } from '@/lib/money';
 import { Pressable, Switch, View } from '@/tw';
 import { updateCustomLineItems } from '../../data/loans.repository';
 import { lineItemTotalOre, principalOre } from '../calc';
-import { kindOf, toSignedOre } from '../form';
+import { type EntryKind, kindOf, toSignedOre } from '../form';
 import type { CustomLoan, LoanLineItem } from '../types';
+import { KindBox } from './kind-box';
 import { type ItemsForm, LineItemEditRow } from './line-item-edit-row';
 
-const absStr = (ore: number) => oreToInput(Math.abs(ore));
+
 
 export function EditableLineItems({ loan }: { loan: WithId<CustomLoan> }) {
   const [editing, setEditing] = useState(false);
@@ -123,12 +124,12 @@ function EditForm({ loan, onDone }: { loan: WithId<CustomLoan>; onDone: () => vo
       items: loan.lineItems.map((i) => ({
         id: i.id,
         label: i.label,
-        amount: absStr(i.amount),
+        amount: absToInput(i.amount),
         kind: kindOf(i.amount),
         children: (i.children ?? []).map((c) => ({
           id: c.id,
           label: c.label,
-          amount: absStr(c.amount),
+          amount: absToInput(c.amount),
           kind: kindOf(c.amount),
         })),
       })),
@@ -159,35 +160,28 @@ function EditForm({ loan, onDone }: { loan: WithId<CustomLoan>; onDone: () => vo
     onDone();
   });
 
-  const rows = fields.map((field, index) => ({ field, index }));
-  const expenseRows = rows.filter((r) => r.field.kind === 'expense');
-  const incomeRows = rows.filter((r) => r.field.kind === 'income');
+  const box = (kind: EntryKind, title: string, addLabel: string) => (
+    <KindBox
+      title={title}
+      addLabel={addLabel}
+      onAdd={() => append({ id: '', label: '', amount: '', kind, children: [] })}>
+      {fields.map((field, index) =>
+        field.kind !== kind ? null : (
+          <LineItemEditRow
+            key={field.id}
+            control={control}
+            index={index}
+            onRemove={() => remove(index)}
+          />
+        )
+      )}
+    </KindBox>
+  );
 
   return (
     <View className="gap-3">
-      <View className="gap-2 rounded-xl border border-border p-3">
-        <AppText variant="label">Udgifter</AppText>
-        {expenseRows.map(({ field, index }) => (
-          <LineItemEditRow key={field.id} control={control} index={index} onRemove={() => remove(index)} />
-        ))}
-        <Button
-          title="Tilføj udgift"
-          variant="secondary"
-          onPress={() => append({ id: '', label: '', amount: '', kind: 'expense', children: [] })}
-        />
-      </View>
-
-      <View className="gap-2 rounded-xl border border-border p-3">
-        <AppText variant="label">Indtægter</AppText>
-        {incomeRows.map(({ field, index }) => (
-          <LineItemEditRow key={field.id} control={control} index={index} onRemove={() => remove(index)} />
-        ))}
-        <Button
-          title="Tilføj indtægt"
-          variant="secondary"
-          onPress={() => append({ id: '', label: '', amount: '', kind: 'income', children: [] })}
-        />
-      </View>
+      {box('expense', 'Udgifter', 'Tilføj udgift')}
+      {box('income', 'Indtægter', 'Tilføj indtægt')}
 
       <View className="flex-row gap-3">
         <View className="flex-1">

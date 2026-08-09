@@ -4,7 +4,7 @@ import type { UvPlace, UvSnapshot } from '../types';
 const BASE = 'https://api.open-meteo.com/v1/forecast';
 
 /** Hvor mange dage frem vi henter (Open-Meteo tillader 0-16). */
-export const FORECAST_DAYS = 4;
+const FORECAST_DAYS = 4;
 
 interface OpenMeteoResponse {
   current?: { time?: number; interval?: number; uv_index_clear_sky?: number };

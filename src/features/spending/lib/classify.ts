@@ -14,7 +14,7 @@ export type Classifiable = {
 };
 
 /** Modkonto-nummeret (den side der ikke er ens egen export-konto), eller '' hvis ukendt. */
-export function otherAccount(r: Classifiable): string {
+function otherAccount(r: Classifiable): string {
   if (r.senderAccount && r.senderAccount !== r.account) return r.senderAccount;
   if (r.receiverAccount && r.receiverAccount !== r.account) return r.receiverAccount;
   return '';

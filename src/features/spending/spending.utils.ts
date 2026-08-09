@@ -1,3 +1,4 @@
+import { ym } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { type Classifiable, classifyKind } from './lib/classify';
 import { applyScrub } from './lib/scrub';
@@ -33,11 +34,6 @@ export function scrubFields(
     payer: applyScrub(t.payer, rules, 'payer'),
     counterparty: applyScrub(t.counterparty, rules, 'counterparty'),
   };
-}
-
-/** ÅÅÅÅ-MM for en ISO-dato. */
-export function ym(date: string): string {
-  return date.slice(0, 7);
 }
 
 /** Visningsnavn for en konto (brugervalgt navn, ellers det fulde kontonummer). */

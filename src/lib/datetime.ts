@@ -12,19 +12,9 @@ export function nowISO(): string {
   return DateTime.now().toISO()!;
 }
 
-/** Konvertér et JS Date til ISO 8601. */
-export function toISO(date: Date): string {
-  return DateTime.fromJSDate(date).toISO()!;
-}
-
 /** Parse en ISO-streng til luxon DateTime i Copenhagen-tid. */
-export function parseISO(iso: string): DateTime {
+function parseISO(iso: string): DateTime {
   return DateTime.fromISO(iso, { zone: APP_TIMEZONE });
-}
-
-/** Parse en ISO-streng til et JS Date (til date-pickers o.l.). */
-export function isoToDate(iso: string): Date {
-  return DateTime.fromISO(iso).toJSDate();
 }
 
 /** Formatér en ISO-dato i Copenhagen-tid, fx "25. jun. 2026". */
@@ -37,9 +27,18 @@ export function formatDateTimeCopenhagen(iso: string): string {
   return parseISO(iso).setLocale('da').toFormat('d. MMM yyyy HH:mm');
 }
 
-/** Kun måned+år, fx "juni 2026" (til budget-/lønseddel-overblik). */
+/**
+ * Kun måned+år med stort begyndelsesbogstav, fx "Juni 2026". Luxon giver dansk måned i
+ * små bogstaver, og hvert kaldested skrev før sin egen `capitalize` (fire kopier).
+ */
 export function formatMonthCopenhagen(iso: string): string {
-  return parseISO(iso).setLocale('da').toFormat('LLLL yyyy');
+  const s = parseISO(iso).setLocale('da').toFormat('LLLL yyyy');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Måneds-nøglen (ÅÅÅÅ-MM) for en ISO-dato. Erstatter det gentagne `.slice(0, 7)`. */
+export function ym(iso: string): string {
+  return iso.slice(0, 7);
 }
 
 /** Dagens dato i Copenhagen som ÅÅÅÅ-MM-DD (til dato-tekstfelter). */

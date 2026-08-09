@@ -6,7 +6,6 @@ import { useSubscriptionsStore } from '@/features/subscriptions/data/subscriptio
 import { todayISODate } from '@/lib/datetime';
 import { useBudgetStore } from '../data/budget-store';
 import { useBudgetSettingsStore } from '../data/budget-settings-store';
-import { usePendingBudgetDeletes } from '../data/pending-deletes';
 import { forecastAnchorISO } from '../forecast';
 import { budgetOverview, type BudgetOverview } from '../overview';
 import { effectiveSavingsPercent } from '../pricing';
@@ -19,16 +18,14 @@ const toRule = (e: { amount: number; recurrence: BudgetEntry['recurrence'] }) =>
 
 /** Udleder det gennemsnitlige månedlige overblik fra budget, abonnementer og lån (under render). */
 export function useBudgetOverview(): BudgetOverview {
-  const entries = useBudgetStore((s) => s.entries);
-  const pending = usePendingBudgetDeletes((s) => s.ids);
-  const subscriptions = useSubscriptionsStore((s) => s.subscriptions);
-  const loans = useLoansStore((s) => s.loans);
+  const entries = useBudgetStore.useVisibleItems();
+  const subscriptions = useSubscriptionsStore.useVisibleItems();
+  const loans = useLoansStore.useVisibleItems();
   const savingsPercent = useBudgetSettingsStore((s) => s.savingsPercent);
   const savingsPercentChanges = useBudgetSettingsStore((s) => s.savingsPercentChanges);
   const startDate = useBudgetSettingsStore((s) => s.startDate);
 
   return useMemo<BudgetOverview>(() => {
-    const visible = entries.filter((e) => !pending.has(e.id));
     // Overblikket viser "nu" → brug den gældende procent for indeværende måned.
     const currentPercent = effectiveSavingsPercent(
       savingsPercent,
@@ -37,13 +34,13 @@ export function useBudgetOverview(): BudgetOverview {
     );
 
     return budgetOverview({
-      incomeRules: visible.filter((e) => e.type === 'income').map(toRule),
-      expenseRules: visible.filter((e) => e.type === 'expense').map(toRule),
+      incomeRules: entries.filter((e) => e.type === 'income').map(toRule),
+      expenseRules: entries.filter((e) => e.type === 'expense').map(toRule),
       subscriptionRules: subscriptions.filter((s) => s.active).map(toRule),
       loansMonthlyOre: totalCurrentMonthlyPayment(loans),
       savingsPercent: currentPercent,
       anchorISO: forecastAnchorISO(startDate),
       count: 12,
     });
-  }, [entries, pending, subscriptions, loans, savingsPercent, savingsPercentChanges, startDate]);
+  }, [entries, subscriptions, loans, savingsPercent, savingsPercentChanges, startDate]);
 }

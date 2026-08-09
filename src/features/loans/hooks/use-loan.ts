@@ -4,7 +4,6 @@ import type { AnyLoan } from '../types';
 
 /** Ét lån udledt fra loans-store (ingen separat listener). */
 export function useLoan(id: string): { loan: WithId<AnyLoan> | undefined; loading: boolean } {
-  const loan = useLoansStore((s) => s.loans.find((l) => l.id === id));
-  const loading = useLoansStore((s) => s.loading);
-  return { loan, loading };
+  const { item, loading } = useLoansStore.useItem(id);
+  return { loan: item, loading };
 }

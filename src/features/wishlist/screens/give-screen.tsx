@@ -104,7 +104,7 @@ export function GiveScreen({ ownerUid, wishId }: { ownerUid: string; wishId: str
 
       <View className="h-10" />
 
-      <NameField value={name} onChangeText={setName} label="Hvem lægger pengene?" required />
+      <NameField value={name} onChangeText={setName} label="Hvem lægger pengene?" />
 
       <View className="h-12" />
 

@@ -6,9 +6,8 @@ import { cn } from '@/lib/cn';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import type { Cadence } from '@/lib/recurrence/types';
 import { normalizeDateInput, type RecurrenceForm } from '@/lib/recurrence/recurrence-form';
+import { ISO_DAY_OR_MONTH } from '@/lib/validation/fields';
 import { Pressable, Text, View } from '@/tw';
-
-const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?$/;
 
 const CADENCE_OPTIONS = [
   { value: 'monthly' as const, label: 'Md' },
@@ -90,9 +89,9 @@ export function RecurrencePicker({
   const useDayStart = value.cadence !== 'monthly' || value.monthlyDayKind === 'day';
   const isOnce = value.cadence === 'once';
 
-  const normStart = ISO_DATE.test(value.startDate) ? normalizeDateInput(value.startDate) : value.startDate;
+  const normStart = ISO_DAY_OR_MONTH.test(value.startDate) ? normalizeDateInput(value.startDate) : value.startDate;
   const startError =
-    minDate && ISO_DATE.test(value.startDate) && normStart < minDate
+    minDate && ISO_DAY_OR_MONTH.test(value.startDate) && normStart < minDate
       ? `Kan ikke være før budgettets start (${formatDateCopenhagen(minDate)})`
       : undefined;
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Modal } from 'react-native';
 
+import { ModalSheet } from '@/components/ui/modal-sheet';
 import { AppText } from '@/components/ui/text';
 import { Pressable, ScrollView, Text, View } from '@/tw';
 
@@ -30,20 +30,9 @@ export function ForecastInfoButton() {
         <Text className="text-xs font-bold text-fg-muted">i</Text>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
-        <Pressable
-          onPress={close}
-          style={{ backgroundColor: 'rgba(40, 40, 38, 0.35)', cursor: 'auto' }}
-          className="flex-1 items-center justify-center p-6">
-          <Pressable
-            onPress={() => {}}
-            style={{
-              boxShadow: '0 8px 24px rgba(40, 40, 38, 0.18)',
-              borderCurve: 'continuous',
-              cursor: 'auto',
-            }}
-            className="max-h-[85%] w-full max-w-96 rounded-2xl border border-border bg-card">
-            <ScrollView contentContainerClassName="gap-3 p-5" showsVerticalScrollIndicator={false}>
+      {/* p-0/gap-0: her styrer ScrollViews contentContainer afstanden, ikke selve arket. */}
+      <ModalSheet visible={open} onClose={close} className="max-h-[85%] max-w-96 gap-0 p-0">
+        <ScrollView contentContainerClassName="gap-3 p-5" showsVerticalScrollIndicator={false}>
               <AppText variant="heading">Sådan læses tallene</AppText>
 
               <Section title="Realistisk">
@@ -77,10 +66,8 @@ export function ForecastInfoButton() {
                 className="mt-1 h-11 items-center justify-center rounded-xl bg-primary active:bg-primary/80">
                 <Text className="font-semibold text-on-primary">Forstået</Text>
               </Pressable>
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        </ScrollView>
+      </ModalSheet>
     </>
   );
 }

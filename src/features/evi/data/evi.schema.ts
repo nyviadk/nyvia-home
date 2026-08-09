@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { EviAnswers, EviField } from '../types';
+import type { EviField } from '../types';
 
 /**
  * Defensiv normalisering af skabelonen fra Firestore. Skabelonen udvikler sig over tid
@@ -22,7 +22,10 @@ const fieldTypeSchema = z.enum([
   'sensitive',
 ]);
 
-const fieldSchema = z.object({
+// Annoteret med EviField, så skemaet og domænetypen ikke kan drive fra hinanden i tavshed:
+// tilføjes et påkrævet felt i typen uden at skemaet følger med, fejler dette ved compile.
+// Typen (og dens dokumentation) bliver i types.ts — skemaet er kun input-validering.
+const fieldSchema: z.ZodType<EviField> = z.object({
   id: z.string().min(1),
   label: z.string(),
   type: fieldTypeSchema,
@@ -47,10 +50,4 @@ export function parseTemplateFields(
     if (parsed.success) out.push(parsed.data);
   }
   return out;
-}
-
-/** Sikr at `answers` altid er et objekt (aldrig undefined/array). */
-export function normalizeAnswers(raw: unknown): EviAnswers {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return raw as EviAnswers;
 }

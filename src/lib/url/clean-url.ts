@@ -219,6 +219,3 @@ export function cleanUrlAndGetTracking(rawUrl: string): {
     return { cleanUrl: rawUrl, removedParams: '' };
   }
 }
-
-/** Kortform når man kun skal bruge den rene URL. */
-export const cleanUrl = (rawUrl: string): string => cleanUrlAndGetTracking(rawUrl).cleanUrl;

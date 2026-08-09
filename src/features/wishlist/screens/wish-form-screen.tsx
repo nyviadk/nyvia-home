@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
-import { confirmAction } from '@/lib/confirm';
-import { Pressable, View } from '@/tw';
+import { confirmDelete } from '@/lib/undo/confirm-delete';
+import { Pressable } from '@/tw';
 import { WishForm } from '../components/wish-form';
 import { createWish, deleteWish, updateWish } from '../data/wishlist.repository';
 import { useWishlistStore } from '../data/wishlist-store';
@@ -13,7 +13,8 @@ import type { WishInput } from '../types';
 /** Opret (uden id) eller redigér (med id) et ønske. */
 export function WishFormScreen({ id }: { id?: string }) {
   const router = useRouter();
-  const wish = useWishlistStore((s) => (id ? s.items.find((w) => w.id === id) : undefined));
+  // Ubetinget hook-kald: `id` er undefined i "opret"-tilstand, og useItem håndterer det selv.
+  const wish = useWishlistStore.useItem(id).item;
 
   if (id && !wish) {
     return (
@@ -29,12 +30,16 @@ export function WishFormScreen({ id }: { id?: string }) {
     router.back();
   };
 
-  const onDelete = async () => {
+  const onDelete = () => {
     if (!wish) return;
-    if (await confirmAction('Slet ønske', `Slet "${wish.title}"?`, 'Slet')) {
-      await deleteWish(wish.id);
-      router.back();
-    }
+    void confirmDelete({
+      title: 'Slet ønske',
+      name: wish.title,
+      markPending: () => useWishlistStore.pending.mark(wish.id),
+      unmarkPending: () => useWishlistStore.pending.unmark(wish.id),
+      remove: () => deleteWish(wish.id),
+      after: router.back,
+    });
   };
 
   return (

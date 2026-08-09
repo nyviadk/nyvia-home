@@ -7,15 +7,17 @@ import { type FilterChip, FilterChips } from "@/components/ui/filter-chips";
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import { confirmAction } from "@/lib/confirm";
+import { withoutPending } from "@/lib/db/pending-deletes";
 import { toastAfter } from "@/lib/toast/notify";
 import { Pressable, View } from "@/tw";
 import { QuickAddRow } from "../../components/quick-add-row";
 import { AddressChangeRow } from "../components/address-change-row";
 import { useAddressChangesStore } from "../data/address-changes-store";
+import { writeWithUndo } from "@/lib/undo/perform-with-undo";
 import {
   createAddressChange,
   createAddressChanges,
-  resetAddressChangeStatuses,
+  setAddressChangeStatuses,
 } from "../data/address-changes.repository";
 import { ADDRESS_CHANGE_PRESETS } from "../data/presets";
 import { ADDRESS_CHANGE_STATUSES, type AddressChangeStatus } from "../types";
@@ -23,7 +25,9 @@ import { ADDRESS_CHANGE_STATUSES, type AddressChangeStatus } from "../types";
 type StatusFilter = AddressChangeStatus | "all";
 
 export function AddressChangesScreen() {
-  const all = useAddressChangesStore((s) => s.items);
+  const items = useAddressChangesStore.useVisibleItems();
+  const pendingIds = useAddressChangesStore.pending.useStore((s) => s.ids);
+  const all = withoutPending(items, pendingIds);
   // Ét felt: filtrerer listen mens du skriver, og tilføjer ved tryk (fanger varianter
   // af samme navn, så man ikke kommer til at oprette dubletter).
   const [name, setName] = useState("");
@@ -103,7 +107,18 @@ export function AddressChangesScreen() {
       'Sæt alle tilbage til "ikke startet"? Listen beholdes, så den kan genbruges til næste flytning.',
       "Nulstil",
     );
-    if (ok) await resetAddressChangeStatuses(changes.map((c) => c.id));
+    if (!ok) return;
+    // Nulstillingen sker med det samme (statusprikkerne skal springe tilbage), så fortryd
+    // skriver de gamle statusser tilbage frem for at udskyde skrivningen.
+    const before = changes.map((c) => ({ id: c.id, status: c.status }));
+    writeWithUndo({
+      message: "Nulstillet",
+      write: () =>
+        setAddressChangeStatuses(
+          before.map((c) => ({ id: c.id, status: "ikke_startet" as const })),
+        ),
+      restore: () => setAddressChangeStatuses(before),
+    });
   }
 
   return (

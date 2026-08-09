@@ -1,4 +1,5 @@
-import { auth, type BatchOp, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
+import { type BatchOp, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import { nowISO } from '@/lib/datetime';
 import { genId } from '@/lib/id';
 import { toastAfter } from '@/lib/toast/notify';
@@ -11,11 +12,6 @@ import type {
   PlanioSpot,
 } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 const lessonsPath = () => `users/${requireUid()}/planioLessons`;
 const lessonPath = (id: string) => `${lessonsPath()}/${id}`;

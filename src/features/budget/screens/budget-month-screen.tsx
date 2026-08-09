@@ -70,7 +70,7 @@ function EntryRow({ row, ym }: { row: MonthEntryRow; ym: string }) {
 /** Detalje for én budgetmåned: forventet vs. faktisk pr. post (klik for at rette faktisk). */
 export function BudgetMonthScreen({ ym }: { ym: string }) {
   const rows = useMonthEntries(ym);
-  const loans = useLoansStore((s) => s.loans);
+  const loans = useLoansStore.useVisibleItems();
   const [year, month] = ym.split('-').map((n) => Number.parseInt(n, 10));
   const loanMonthly = loanPaymentForMonth(
     loans.map((l) => ({
@@ -83,7 +83,7 @@ export function BudgetMonthScreen({ ym }: { ym: string }) {
   );
 
   // Aktive abonnementer der falder i måneden (samme grundlag som forecasten).
-  const subscriptions = useSubscriptionsStore((s) => s.subscriptions);
+  const subscriptions = useSubscriptionsStore.useVisibleItems();
   const subRows = subscriptions
     .filter((s) => s.active)
     .map((s) => ({ id: s.id, name: s.name, amountOre: subscriptionChargeInMonth(s, year, month) }))

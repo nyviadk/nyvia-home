@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import type {
-  NativeSyntheticEvent,
-  TextInput as RNTextInput,
-  TextInputKeyPressEventData,
-} from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
 
+import {
+  BLUR_CLOSE_DELAY_MS,
+  DropdownList,
+  useDropdownKeyboard,
+} from '@/components/ui/dropdown-list';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/cn';
-import { Pressable, Text, View } from '@/tw';
+import { View } from '@/tw';
 import { categorySuggestions } from '../data/categories';
 import { useTimetrackerStore } from '../data/timetracker-store';
 
@@ -28,9 +28,8 @@ export function CategoryPicker({
   onSelectAdvance?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [highlight, setHighlight] = useState(0);
 
-  const entries = useTimetrackerStore((s) => s.entries);
+  const entries = useTimetrackerStore.useVisibleItems();
   const suggestions = categorySuggestions(entries, value);
   const visible = open && suggestions.length > 0;
 
@@ -40,31 +39,19 @@ export function CategoryPicker({
     onSelectAdvance?.();
   }
 
-  function onKeyPress(e: NativeSyntheticEvent<TextInputKeyPressEventData>) {
-    const key = e.nativeEvent.key;
-    if (key === 'ArrowDown') {
-      e.preventDefault?.();
-      if (!visible) {
-        setOpen(true);
-        setHighlight(0);
-      } else {
-        setHighlight((h) => Math.min(h + 1, suggestions.length - 1));
-      }
-    } else if (key === 'ArrowUp') {
-      e.preventDefault?.();
-      setHighlight((h) => Math.max(h - 1, 0));
-    } else if (key === 'Enter') {
-      if (visible) {
-        e.preventDefault?.();
-        commit(suggestions[highlight] ?? suggestions[0]);
-      }
-    } else if (key === 'Escape') {
-      setOpen(false);
-    }
-  }
+  const { highlight, setHighlight, onKeyPress } = useDropdownKeyboard({
+    options: suggestions,
+    visible,
+    onOpen: () => setOpen(true),
+    onClose: () => setOpen(false),
+    onSelect: commit,
+  });
 
   return (
-    <View className="relative" style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
+    // Dynamisk zIndex kun på web: på Android re-ordner det viewet og TextInput mister fokus.
+    <View
+      className="relative"
+      style={visible && process.env.EXPO_OS === 'web' ? { zIndex: 50 } : undefined}>
       <Input
         ref={inputRef}
         value={value}
@@ -74,30 +61,20 @@ export function CategoryPicker({
           setHighlight(0);
         }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onBlur={() => setTimeout(() => setOpen(false), BLUR_CLOSE_DELAY_MS)}
         onKeyPress={onKeyPress}
         placeholder="Funktion (fx Udvikling)"
       />
 
       {visible ? (
-        <View
-          className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-xl border border-border bg-card"
-          style={{
-            boxShadow: '0 6px 16px rgba(40, 40, 38, 0.12)',
-            borderCurve: 'continuous',
-            elevation: 8,
-          }}>
-          {suggestions.map((s, i) => (
-            <Pressable
-              key={s}
-              accessibilityRole="button"
-              onPress={() => commit(s)}
-              onHoverIn={() => setHighlight(i)}
-              className={cn('px-4 py-2.5', i === highlight && 'bg-element')}>
-              <Text className="text-base text-fg">{s}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <DropdownList
+          options={suggestions}
+          highlight={highlight}
+          onHighlight={setHighlight}
+          onSelect={commit}
+          labelOf={(s) => s}
+          keyOf={(s) => s}
+        />
       ) : null}
     </View>
   );

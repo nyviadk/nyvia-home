@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { Link } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ListGate } from '@/components/ui/list-gate';
 import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { Switch, View } from '@/tw';
 import { TimeEntryRow } from '../components/time-entry-row';
 import { TimetrackerSummary } from '../components/timetracker-summary';
-import { usePendingTimeDeletes } from '../data/pending-deletes';
 import { useTimetrackerSettingsStore } from '../data/timetracker-settings-store';
 import { useTimetrackerStore } from '../data/timetracker-store';
 import { formatDuration, rangeStartDate, type TimeRange } from '../time.utils';
@@ -49,10 +49,10 @@ export function TimetrackerScreen() {
   // Vis kun åbne (uden sluttid) — ignorerer tidsfilteret, så ingen gemmer sig.
   const [onlyOpen, setOnlyOpen] = useState(false);
 
-  const entries = useTimetrackerStore((s) => s.entries);
+  const entries = useTimetrackerStore.useVisibleItems();
   const loading = useTimetrackerStore((s) => s.loading);
   const fromCache = useTimetrackerStore((s) => s.fromCache);
-  const pendingIds = usePendingTimeDeletes((s) => s.ids);
+  const pendingIds = useTimetrackerStore.pending.useStore((s) => s.ids);
   const officialStart = useTimetrackerSettingsStore((s) => s.officialStartDate);
 
   const rangeStart = rangeStartDate(range);
@@ -73,17 +73,11 @@ export function TimetrackerScreen() {
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between">
-        <AppText variant="title">Timetracker</AppText>
-        <View className="flex-row items-center gap-2">
-          <Link href="/timetracker/settings" asChild>
-            <Button title="Startdato" variant="secondary" className="h-10 px-4" />
-          </Link>
-          <Link href="/timetracker/new" asChild>
-            <Button title="Tilføj" className="h-10 px-4" />
-          </Link>
-        </View>
-      </View>
+      <ScreenHeader title="Timetracker" addHref="/timetracker/new">
+        <Link href="/timetracker/settings" asChild>
+          <Button title="Startdato" variant="secondary" className="h-10 px-4" />
+        </Link>
+      </ScreenHeader>
 
       <OfflineNotice fromCache={fromCache} />
 
@@ -110,22 +104,19 @@ export function TimetrackerScreen() {
       ) : null}
 
       {/* Liste */}
-      {visible.length === 0 ? (
-        loading ? null : (
-          <EmptyState
-            title={onlyOpen ? 'Ingen åbne registreringer' : 'Ingen registreringer'}
-            description={
-              onlyOpen
-                ? 'Alle registreringer har en sluttid.'
-                : 'Tilføj din første tidsregistrering for at se overblikket.'
-            }
-          />
-        )
-      ) : (
-        days.map((day) => (
+      <ListGate
+        count={visible.length}
+        loading={loading}
+        empty={{
+          title: onlyOpen ? 'Ingen åbne registreringer' : 'Ingen registreringer',
+          description: onlyOpen
+            ? 'Alle registreringer har en sluttid.'
+            : 'Tilføj din første tidsregistrering for at se overblikket.',
+        }}>
+        {days.map((day) => (
           <DayGroup key={day.date} date={day.date} entries={day.entries} />
-        ))
-      )}
+        ))}
+      </ListGate>
     </Screen>
   );
 }

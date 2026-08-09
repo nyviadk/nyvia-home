@@ -2,9 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { ControlledField } from '@/components/ui/controlled-field';
 import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { MoneyInput } from '@/components/ui/money-input';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
 import { RecurrencePicker } from '@/components/recurrence-picker';
@@ -59,28 +58,14 @@ export function BudgetEntryForm({ entry, submitLabel, onSubmit }: BudgetEntryFor
         )}
       />
 
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Navn" error={errors.name?.message}>
-            <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Fx Primær løn" />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="name" label="Navn"
+        error={errors.name?.message} placeholder="Fx Primær løn" />
 
       {type === 'income' ? (
         <SalaryAmountField control={control} errors={errors} />
       ) : (
-        <Controller
-          control={control}
-          name="amount"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <FormField label="Beløb / gang (kr.)" error={errors.amount?.message}>
-              <MoneyInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="0" />
-            </FormField>
-          )}
-        />
+        <ControlledField control={control} name="amount" money label="Beløb / gang (kr.)"
+          error={errors.amount?.message} placeholder="0" />
       )}
 
       {/* zIndex så kategori-dropdown'en lægger sig over felterne nedenunder. */}
@@ -122,23 +107,8 @@ export function BudgetEntryForm({ entry, submitLabel, onSubmit }: BudgetEntryFor
         />
       ) : null}
 
-      <Controller
-        control={control}
-        name="note"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Note (valgfri)">
-            <Input
-              value={value ?? ''}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Fx reel forbrug, vilkår, kontekst…"
-              multiline
-              className="h-auto min-h-24 py-3"
-              textAlignVertical="top"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="note" label="Note (valgfri)" multiline
+        placeholder="Fx reel forbrug, vilkår, kontekst…" />
 
       <Button title={submitLabel} onPress={submit} loading={isSubmitting} />
     </View>

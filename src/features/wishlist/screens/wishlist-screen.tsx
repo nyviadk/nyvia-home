@@ -1,14 +1,15 @@
 import { Link } from 'expo-router';
 
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ListGate } from '@/components/ui/list-gate';
 import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { AppText } from '@/components/ui/text';
 import { SITE_URL } from '@/constants/site';
 import { confirmAction } from '@/lib/confirm';
 import { auth } from '@/lib/firebase';
 import { notify, toastAfter } from '@/lib/toast/notify';
+import { withoutPending } from '@/lib/db/pending-deletes';
 import { useLiveCollection } from '@/lib/db/use-live-query';
 import { Pressable, View } from '@/tw';
 
@@ -22,7 +23,11 @@ import { sortWishes } from '../types';
 
 /** Ejer-oversigt. Reservationer vises ALDRIG her. Favoritter ligger øverst. */
 export function WishlistScreen() {
-  const items = useWishlistStore((s) => s.items);
+  // Skjul ønsker der ligger i fortryd-vinduet. Ejerens liste og gæstelisten har HVER SIN
+  // datakilde (denne store vs. useLiveCollection i usePublicWishlist), så filteret skal
+  // sættes begge steder — ellers bliver et slettet ønske stående her mens toasten kører.
+  const pendingIds = useWishlistStore.pending.useStore((s) => s.ids);
+  const items = withoutPending(useWishlistStore.useVisibleItems(), pendingIds);
   const loading = useWishlistStore((s) => s.loading);
   const fromCache = useWishlistStore((s) => s.fromCache);
   // Kun id'erne bruges — "nulstil" skal kunne rydde gæsternes data UDEN at ejeren ser indholdet.
@@ -69,48 +74,39 @@ export function WishlistScreen() {
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between gap-3">
-        <AppText variant="title">Ønskeliste</AppText>
-        <View className="flex-row items-center gap-4">
-          <Link href="/onskeliste/settings" asChild>
-            <Pressable accessibilityRole="button" hitSlop={8}>
-              <AppText className="text-sm font-semibold text-primary">Indstillinger</AppText>
-            </Pressable>
-          </Link>
-          <Link href="/onskeliste/new" asChild>
-            <Button title="Tilføj" className="h-10 px-4" />
-          </Link>
-        </View>
-      </View>
+      <ScreenHeader title="Ønskeliste" addHref="/onskeliste/new">
+        <Link href="/onskeliste/settings" asChild>
+          <Pressable accessibilityRole="button" hitSlop={8} className="justify-center pr-2">
+            <AppText className="text-sm font-semibold text-primary">Indstillinger</AppText>
+          </Pressable>
+        </Link>
+      </ScreenHeader>
 
       <OfflineNotice fromCache={fromCache} />
 
-      {items.length === 0 ? (
-        loading ? null : (
-          <EmptyState
-            title="Ingen ønsker endnu"
-            description="Tilføj dit første ønske — indsæt et link, eller skriv det selv."
-          />
-        )
-      ) : (
-        <>
-          <View className="gap-2">
-            {sorted.map((w) => (
-              <WishCard key={w.id} wish={w} />
-            ))}
-          </View>
-          <View className="flex-row items-center justify-center gap-6 py-2">
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={copyShareLink}>
-              <AppText className="text-sm font-semibold text-primary">🔗 Kopiér delelink</AppText>
-            </Pressable>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={onReset}>
-              <AppText variant="muted" className="text-sm">
-                ↺ Nulstil reserveringer
-              </AppText>
-            </Pressable>
-          </View>
-        </>
-      )}
+      <ListGate
+        count={items.length}
+        loading={loading}
+        empty={{
+          title: 'Ingen ønsker endnu',
+          description: 'Tilføj dit første ønske — indsæt et link, eller skriv det selv.',
+        }}>
+        <View className="gap-2">
+          {sorted.map((w) => (
+            <WishCard key={w.id} wish={w} />
+          ))}
+        </View>
+        <View className="flex-row items-center justify-center gap-6 py-2">
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={copyShareLink}>
+            <AppText className="text-sm font-semibold text-primary">🔗 Kopiér delelink</AppText>
+          </Pressable>
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={onReset}>
+            <AppText variant="muted" className="text-sm">
+              ↺ Nulstil reserveringer
+            </AppText>
+          </Pressable>
+        </View>
+      </ListGate>
     </Screen>
   );
 }

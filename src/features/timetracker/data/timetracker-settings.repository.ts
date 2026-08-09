@@ -1,13 +1,9 @@
 import { nowISO } from '@/lib/datetime';
-import { auth, db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { db, type Unsubscribe, type WithId } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import { toastAfter } from '@/lib/toast/notify';
 import type { TimetrackerSettings } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 const settingsPath = () => `users/${requireUid()}/settings/timetracker`;
 

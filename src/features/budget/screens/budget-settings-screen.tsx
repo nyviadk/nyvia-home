@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/text';
 import { todayISODate } from '@/lib/datetime';
@@ -20,11 +21,7 @@ export function BudgetSettingsScreen() {
   const loading = useBudgetSettingsStore((s) => s.loading);
 
   if (loading) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
+    return <LoadingScreen />;
   }
 
   return (

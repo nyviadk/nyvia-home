@@ -33,9 +33,11 @@ const TAB_OPTIONS: { value: PlanioTab; label: string }[] = [
  * Søgning eller fane-skift unmounter Review → scope ryddes (deler-samme-scope-semantikken).
  */
 export function PlanioScreen() {
-  const lessons = usePlanioLessonsStore((s) => s.items);
-  const raw = usePlanioRawStore((s) => s.items);
-  const falsePositives = usePlanioFalsePositivesStore((s) => s.items);
+  // Optimistisk slettede filtreres fra ÉT sted her, så alle faner (arkiv, review, søgning,
+  // plan) ser samme liste under fortryd-vinduet.
+  const lessons = usePlanioLessonsStore.useVisibleItems();
+  const raw = usePlanioRawStore.useVisibleItems();
+  const falsePositives = usePlanioFalsePositivesStore.useVisibleItems();
   const fromCache = usePlanioLessonsStore((s) => s.fromCache);
   const [tab, setTab] = useState<PlanioTab>('review');
   const [search, setSearch] = useState('');

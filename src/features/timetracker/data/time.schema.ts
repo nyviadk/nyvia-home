@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
 import { todayISODate } from '@/lib/datetime';
+import { ISO_DAY } from '@/lib/validation/fields';
 import { durationFromTimes, parseHm } from '../time.utils';
 import type { TimeEntry, TimeEntryInput } from '../types';
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const timeField = z.string().refine((s) => parseHm(s) !== null, 'Brug HH:mm');
 // Sluttid er valgfri (udfyldes evt. senere) — men hvis den er der, skal den være gyldig.
@@ -17,7 +16,7 @@ export const timeFormSchema = z
   .object({
     date: z
       .string()
-      .regex(ISO_DATE, 'Brug ÅÅÅÅ-MM-DD')
+      .regex(ISO_DAY, 'Brug ÅÅÅÅ-MM-DD')
       .refine((d) => d <= todayISODate(), 'Kan ikke være i fremtiden'),
     startTime: timeField,
     endTime: optionalTimeField,

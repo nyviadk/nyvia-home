@@ -12,13 +12,10 @@ export function NameField({
   value,
   onChangeText,
   label = 'Hvem er du?',
-  required,
 }: {
   value: string;
   onChangeText: (value: string) => void;
   label?: string;
-  /** Sat hvor anonymitet ikke giver mening — fx når man lægger penge til en gave. */
-  required?: boolean;
 }) {
   return (
     <View className="gap-3">

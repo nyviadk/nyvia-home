@@ -16,14 +16,17 @@ import { deleteImportBatch } from '../data/import-batches.repository';
 import { useImportBatchesStore } from '../data/import-batches-store';
 import { useSpendingSettingsStore } from '../data/spending-settings-store';
 import { deleteTransactionsOfBatch } from '../data/transactions.repository';
-import { useTransactionsStore } from '../data/transactions-store';
-import { displayAccountName } from '../spending.utils';
+import { useVisibleTransactions } from '../data/pending-deletes';
+import { displayAccountName, makeClassifier } from '../spending.utils';
 
 export function ImportBatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const batch = useImportBatchesStore((s) => s.batches.find((b) => b.id === id));
-  const transactions = useTransactionsStore((s) => s.transactions);
+  const batch = useImportBatchesStore.useItem(id).item;
+  const transactions = useVisibleTransactions();
   const accounts = useSpendingSettingsStore((s) => s.accounts);
+  const rules = useSpendingSettingsStore((s) => s.scrubRules);
+  // Bygges ÉN gang for hele listen, ikke pr. række.
+  const classify = makeClassifier(accounts);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const cancelRef = useRef(false);
@@ -112,7 +115,7 @@ export function ImportBatchDetailScreen() {
 
       <View className="gap-2">
         {rows.map((t) => (
-          <TransactionRow key={t.id} transaction={t} />
+          <TransactionRow key={t.id} transaction={t} kind={classify(t)} rules={rules} />
         ))}
       </View>
 

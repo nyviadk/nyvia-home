@@ -1,31 +1,17 @@
-import { auth, type CollectionSnapshot, db, type Unsubscribe } from '@/lib/firebase';
+import { createUserCollectionRepo } from '@/lib/db/user-collection-repo';
+import { db } from '@/lib/firebase';
 import type { ImportBatch } from '../types';
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
+const repo = createUserCollectionRepo<ImportBatch, ImportBatch>({
+  collection: 'importBatches',
+  orderBy: { field: 'createdAt', direction: 'desc' },
+  createdToast: null,
+});
 
-const collPath = () => `users/${requireUid()}/importBatches`;
-const docPath = (id: string) => `${collPath()}/${id}`;
+export const subscribeImportBatches = repo.subscribe;
 
-export function subscribeImportBatches(
-  onChange: (snap: CollectionSnapshot<ImportBatch>) => void,
-  onError?: (e: Error) => void
-): Unsubscribe {
-  return db.subscribeCollection<ImportBatch>(
-    collPath(),
-    { orderByField: 'createdAt', orderDirection: 'desc' },
-    onChange,
-    onError
-  );
-}
+/** Batchen bærer selv sine tidsstempler fra importen — derfor ikke repo.create. */
+export const createImportBatch = (batch: ImportBatch): Promise<string> =>
+  db.addDoc<ImportBatch>(repo.collPath(), { ...batch });
 
-export function createImportBatch(batch: ImportBatch): Promise<string> {
-  return db.addDoc<ImportBatch>(collPath(), { ...batch });
-}
-
-export function deleteImportBatch(id: string): Promise<void> {
-  return db.deleteDoc(docPath(id));
-}
+export const deleteImportBatch = repo.remove;

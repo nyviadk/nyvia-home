@@ -2,9 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { ControlledField } from '@/components/ui/controlled-field';
 import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { MoneyInput } from '@/components/ui/money-input';
 import { SelectField } from '@/components/ui/select-field';
 import { AppText } from '@/components/ui/text';
 import { RecurrencePicker } from '@/components/recurrence-picker';
@@ -44,25 +43,11 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
 
   return (
     <View className="gap-4">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Navn" error={errors.name?.message}>
-            <Input value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Fx Netflix" />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="name" label="Navn"
+        error={errors.name?.message} placeholder="Fx Netflix" />
 
-      <Controller
-        control={control}
-        name="amount"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Beløb / gang (kr.)" error={errors.amount?.message}>
-            <MoneyInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="0" />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="amount" money label="Beløb / gang (kr.)"
+        error={errors.amount?.message} placeholder="0" />
 
       {/* zIndex så kategori-dropdown'en lægger sig over felterne nedenunder. */}
       <View style={{ zIndex: 5 }}>
@@ -110,35 +95,12 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
 
         {introEnabled ? (
           <>
-            <Controller
-              control={control}
-              name="introAmount"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormField label="Introbeløb (samlet, kr.)" error={errors.introAmount?.message}>
-                  <MoneyInput
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="fx 534,82"
-                  />
-                </FormField>
-              )}
-            />
-            <Controller
-              control={control}
-              name="introMonths"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormField label="Dækker antal måneder" error={errors.introMonths?.message}>
-                  <Input
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="fx 24"
-                    keyboardType="number-pad"
-                  />
-                </FormField>
-              )}
-            />
+            <ControlledField control={control} name="introAmount" money
+              label="Introbeløb (samlet, kr.)" error={errors.introAmount?.message}
+              placeholder="fx 534,82" />
+            <ControlledField control={control} name="introMonths"
+              label="Dækker antal måneder" error={errors.introMonths?.message}
+              placeholder="fx 24" keyboardType="number-pad" />
           </>
         ) : null}
       </View>
@@ -154,23 +116,8 @@ export function SubscriptionForm({ subscription, submitLabel, onSubmit }: Subscr
         />
       </View>
 
-      <Controller
-        control={control}
-        name="note"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <FormField label="Note (valgfri)">
-            <Input
-              value={value ?? ''}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Fx vilkår, kontekst…"
-              multiline
-              className="h-auto min-h-24 py-3"
-              textAlignVertical="top"
-            />
-          </FormField>
-        )}
-      />
+      <ControlledField control={control} name="note" label="Note (valgfri)" multiline
+        placeholder="Fx vilkår, kontekst…" />
 
       <Button title={submitLabel} onPress={submit} loading={isSubmitting} />
     </View>

@@ -2,43 +2,24 @@ import { Link } from 'expo-router';
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { DeleteEntityLink } from '@/components/ui/delete-entity-link';
 import { MoneyText } from "@/components/ui/money-text";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { StatRow } from '@/components/ui/stat-row';
 import { Screen } from "@/components/ui/screen";
 import { AppText } from "@/components/ui/text";
 import { formatDateCopenhagen } from '@/lib/datetime';
+import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
-import { DeleteLoanLink } from '../components/delete-loan-link';
+import { LoanProgressBlock } from '../components/loan-progress-block';
 import { PaymentForm } from '../components/payment-form';
 import { PaymentRow } from '../components/payment-row';
-import { addPayment } from '../data/loans.repository';
-import { useLoan } from '../hooks/use-loan';
+import { useLoansStore } from '../data/loans-store';
+import { addPayment, deleteLoan } from '../data/loans.repository';
 import { loanProgress, progressPercent } from '../loans.utils';
-import { isCustomLoan } from '../types';
+import type { Loan } from '../types';
 
-export function LoanDetailScreen({ id }: { id: string }) {
-  const { loan, loading } = useLoan(id);
-
-  if (loading && !loan) {
-    return (
-      <Screen>
-        <AppText variant="muted">Indlæser…</AppText>
-      </Screen>
-    );
-  }
-
-  if (!loan) {
-    return (
-      <Screen>
-        <EmptyState title="Lånet findes ikke" description="Det er muligvis blevet slettet." />
-      </Screen>
-    );
-  }
-
-  // Custom-lån håndteres af CustomLoanDetailScreen (ruten brancher).
-  if (isCustomLoan(loan)) return null;
-
+export function LoanDetailScreen({ loan }: { loan: WithId<Loan> }) {
+  const id = loan.id;
   const progress = loanProgress(loan);
   const payments = [...(loan.payments ?? [])].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -55,27 +36,20 @@ export function LoanDetailScreen({ id }: { id: string }) {
       </View>
 
       <Card className="gap-3">
-        <View className="flex-row items-baseline justify-between">
-          <MoneyText ore={loan.currentBalance} whole variant="heading" />
-          <View className="flex-row items-baseline gap-1">
-            <AppText variant="muted">af</AppText>
-            <MoneyText ore={loan.originalAmount} whole variant="muted" />
-          </View>
-        </View>
-        <ProgressBar value={progress} />
-        <AppText variant="muted">{progressPercent(loan)}% afdraget</AppText>
+        <LoanProgressBlock
+          currentOre={loan.currentBalance}
+          originalOre={loan.originalAmount}
+          progress={progress}
+          footerLeft={`${progressPercent(loan)}% afdraget`}
+          footerRight={null}
+        />
 
-        <View className="mt-2 flex-row justify-between">
-          <AppText variant="muted">Rente</AppText>
-          <AppText variant="label">{loan.interestRate}% p.a.</AppText>
-        </View>
-        <View className="flex-row justify-between">
-          <AppText variant="muted">Ydelse / md.</AppText>
-          <MoneyText ore={loan.monthlyPayment} whole variant="label" />
-        </View>
-        <View className="flex-row justify-between">
-          <AppText variant="muted">Startdato</AppText>
-          <AppText variant="label">{formatDateCopenhagen(loan.startDate)}</AppText>
+        <View className="mt-2 gap-1">
+          <StatRow label="Rente">{`${loan.interestRate}% p.a.`}</StatRow>
+          <StatRow label="Ydelse / md.">
+            <MoneyText ore={loan.monthlyPayment} whole variant="label" />
+          </StatRow>
+          <StatRow label="Startdato">{formatDateCopenhagen(loan.startDate)}</StatRow>
         </View>
       </Card>
 
@@ -95,7 +69,13 @@ export function LoanDetailScreen({ id }: { id: string }) {
         )}
       </View>
 
-      <DeleteLoanLink id={id} name={loan.name} />
+      <DeleteEntityLink
+        id={id}
+        label="Slet lån"
+        name={loan.name}
+        pending={useLoansStore.pending}
+        remove={() => deleteLoan(id)}
+      />
     </Screen>
   );
 }

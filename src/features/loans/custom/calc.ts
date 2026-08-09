@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { DateTime } from 'luxon';
 
 import { APP_TIMEZONE } from '@/lib/datetime';
-import type { CustomLoan, ExpenseTable, LoanLineItem, RepaymentHorizon } from './types';
+import type { CustomLoan, ExpenseTable, LoanLineItem } from './types';
 
 const ZERO = new BigNumber(0);
 const ROUND = BigNumber.ROUND_HALF_UP;
@@ -28,7 +28,7 @@ export function expenseTotalOre(table: ExpenseTable): number {
 }
 
 /** Sum af alle indtastede faktiske afdrag (øre). */
-export function totalActualsOre(loan: Pick<CustomLoan, 'actuals'>): number {
+function totalActualsOre(loan: Pick<CustomLoan, 'actuals'>): number {
   return Object.values(loan.actuals).reduce((sum, v) => sum.plus(v), ZERO).toNumber();
 }
 

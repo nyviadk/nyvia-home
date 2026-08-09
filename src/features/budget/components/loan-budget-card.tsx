@@ -9,7 +9,7 @@ import { Pressable, View } from '@/tw';
 
 /** Read-only lån-overblik på budget-siden (afbetalingsplan ligger i Lån-fanen). */
 export function LoanBudgetCard() {
-  const loans = useLoansStore((s) => s.loans);
+  const loans = useLoansStore.useVisibleItems();
   if (loans.length === 0) return null;
 
   const monthly = totalMonthlyPayment(loans);

@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
-import type {
-  NativeSyntheticEvent,
-  TextInput as RNTextInput,
-  TextInputKeyPressEventData,
-} from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
 
+import {
+  BLUR_CLOSE_DELAY_MS,
+  DropdownList,
+  useDropdownKeyboard,
+} from '@/components/ui/dropdown-list';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/cn';
-import { Pressable, Text, View } from '@/tw';
+import { View } from '@/tw';
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -35,7 +35,6 @@ export function SelectField<T extends string>({
 }) {
   // query=null → ikke i redigering (vis valgt label); ellers vis/filtrér på query.
   const [query, setQuery] = useState<string | null>(null);
-  const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<RNTextInput>(null);
 
   const selected = options.find((o) => o.value === value);
@@ -47,9 +46,7 @@ export function SelectField<T extends string>({
       : options;
   const visible = editing && filtered.length > 0;
 
-  const commit = (i: number) => {
-    const o = filtered[i];
-    if (!o) return;
+  const commit = (o: SelectOption<T>) => {
     onChange(o.value);
     setQuery(null);
     // Ved valg: luk feltet helt (blur) — medmindre formularen vil føre fokus videre.
@@ -57,23 +54,13 @@ export function SelectField<T extends string>({
     else inputRef.current?.blur();
   };
 
-  function onKeyPress(e: NativeSyntheticEvent<TextInputKeyPressEventData>) {
-    const key = e.nativeEvent.key;
-    if (key === 'ArrowDown') {
-      e.preventDefault?.();
-      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
-    } else if (key === 'ArrowUp') {
-      e.preventDefault?.();
-      setHighlight((h) => Math.max(h - 1, 0));
-    } else if (key === 'Enter') {
-      if (visible) {
-        e.preventDefault?.();
-        commit(highlight);
-      }
-    } else if (key === 'Escape') {
-      setQuery(null);
-    }
-  }
+  const { highlight, setHighlight, onKeyPress } = useDropdownKeyboard({
+    options: filtered,
+    visible,
+    onOpen: () => setQuery(''),
+    onClose: () => setQuery(null),
+    onSelect: commit,
+  });
 
   return (
     // zIndex-toggle kun på web: på Android tegner elevation dropdownen øverst, og en
@@ -92,32 +79,21 @@ export function SelectField<T extends string>({
           setQuery('');
           setHighlight(Math.max(0, options.findIndex((o) => o.value === value)));
         }}
-        onBlur={() => setTimeout(() => setQuery(null), 120)}
+        onBlur={() => setTimeout(() => setQuery(null), BLUR_CLOSE_DELAY_MS)}
         onKeyPress={onKeyPress}
         autoCapitalize="none"
       />
 
       {visible ? (
-        <View
-          className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-xl border border-border bg-card"
-          style={{
-            boxShadow: '0 6px 16px rgba(40, 40, 38, 0.12)',
-            borderCurve: 'continuous',
-            elevation: 8,
-          }}>
-          {filtered.map((o, i) => (
-            <Pressable
-              key={o.value}
-              accessibilityRole="button"
-              onPress={() => commit(i)}
-              onHoverIn={() => setHighlight(i)}
-              className={cn('px-4 py-2.5', i === highlight && 'bg-element')}>
-              <Text className={cn('text-base', o.value === value ? 'text-primary' : 'text-fg')}>
-                {o.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <DropdownList
+          options={filtered}
+          highlight={highlight}
+          onHighlight={setHighlight}
+          onSelect={commit}
+          labelOf={(o) => o.label}
+          keyOf={(o) => String(o.value)}
+          emphasize={(o) => o.value === value}
+        />
       ) : null}
     </View>
   );

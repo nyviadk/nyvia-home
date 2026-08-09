@@ -1,26 +1,26 @@
 import { useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { MoneyInput } from "@/components/ui/money-input";
+import { ControlledField } from "@/components/ui/controlled-field";
 import { MoneyText } from "@/components/ui/money-text";
 import { AppText } from "@/components/ui/text";
 import type { WithId } from "@/lib/firebase";
 import { genId } from "@/lib/id";
-import { oreToInput } from "@/lib/money";
+import { absToInput } from "@/lib/money";
 import { Pressable, View } from "@/tw";
 import { updateCustomExpenseTable } from "../../data/loans.repository";
 import { expenseTotalOre } from "../calc";
 import { type EntryKind, kindOf, toSignedOre } from "../form";
 import type { CustomLoan, ExpenseRow, ExpenseTable } from "../types";
+import { KindBox } from "./kind-box";
 
 type TableKey = "newHome" | "oldHome";
 type RowForm = { label: string; amount: string; kind: EntryKind; note: string };
 type TableForm = { title: string; rows: RowForm[] };
 
-const absStr = (ore: number) => oreToInput(Math.abs(ore));
+
 
 export interface EditableExpenseTableProps {
   loan: WithId<CustomLoan>;
@@ -123,7 +123,7 @@ function EditForm({
       title: table.title,
       rows: table.rows.map((r) => ({
         label: r.label,
-        amount: absStr(r.amount),
+        amount: absToInput(r.amount),
         kind: kindOf(r.amount),
         note: r.note ?? "",
       })),
@@ -145,104 +145,50 @@ function EditForm({
     onDone();
   });
 
-  const allRows = fields.map((field, index) => ({ field, index }));
-  const expenseRows = allRows.filter((r) => r.field.kind === "expense");
-  const incomeRows = allRows.filter((r) => r.field.kind === "income");
-
-  const renderRow = ({
-    field,
-    index,
-  }: {
-    field: { id: string };
-    index: number;
-  }) => (
-    <View key={field.id} className="gap-2 rounded-xl bg-element p-2">
-      <View className="flex-row items-center gap-2">
-        <View className="flex-1">
-          <Controller
-            control={control}
-            name={`rows.${index}.label`}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Post"
-              />
-            )}
-          />
-        </View>
-        <View className="w-24">
-          <Controller
-            control={control}
-            name={`rows.${index}.amount`}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <MoneyInput
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="kr."
-              />
-            )}
-          />
-        </View>
-        <Pressable accessibilityRole="button" onPress={() => remove(index)}>
-          <AppText className="text-danger">✕</AppText>
-        </Pressable>
-      </View>
-      <Controller
-        control={control}
-        name={`rows.${index}.note`}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Input
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholder="Note (valgfri)"
-          />
-        )}
-      />
-    </View>
+  const box = (kind: EntryKind, title: string, addLabel: string) => (
+    <KindBox
+      title={title}
+      addLabel={addLabel}
+      onAdd={() => append({ label: "", amount: "", kind, note: "" })}>
+      {fields.map((field, index) =>
+        field.kind !== kind ? null : (
+          <View key={field.id} className="gap-2 rounded-xl bg-element p-2">
+            <View className="flex-row items-center gap-2">
+              <View className="flex-1">
+                <ControlledField
+                  control={control}
+                  name={`rows.${index}.label`}
+                  placeholder="Post"
+                />
+              </View>
+              <View className="w-24">
+                <ControlledField
+                  control={control}
+                  name={`rows.${index}.amount`}
+                  money
+                  placeholder="kr."
+                />
+              </View>
+              <Pressable accessibilityRole="button" onPress={() => remove(index)}>
+                <AppText className="text-danger">✕</AppText>
+              </Pressable>
+            </View>
+            <ControlledField
+              control={control}
+              name={`rows.${index}.note`}
+              placeholder="Note (valgfri)"
+            />
+          </View>
+        )
+      )}
+    </KindBox>
   );
 
   return (
     <View className="gap-3">
-      <Controller
-        control={control}
-        name="title"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Input
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholder="Tabel-titel"
-          />
-        )}
-      />
-
-      <View className="gap-2 rounded-xl border border-border p-3">
-        <AppText variant="label">Udgifter</AppText>
-        {expenseRows.map(renderRow)}
-        <Button
-          title="Tilføj udgift"
-          variant="secondary"
-          onPress={() =>
-            append({ label: "", amount: "", kind: "expense", note: "" })
-          }
-        />
-      </View>
-
-      <View className="gap-2 rounded-xl border border-border p-3">
-        <AppText variant="label">Indtægter</AppText>
-        {incomeRows.map(renderRow)}
-        <Button
-          title="Tilføj indtægt"
-          variant="secondary"
-          onPress={() =>
-            append({ label: "", amount: "", kind: "income", note: "" })
-          }
-        />
-      </View>
+      <ControlledField control={control} name="title" placeholder="Tabel-titel" />
+      {box("expense", "Udgifter", "Tilføj udgift")}
+      {box("income", "Indtægter", "Tilføj indtægt")}
 
       <View className="flex-row gap-3">
         <View className="flex-1">

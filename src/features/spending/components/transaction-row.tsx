@@ -7,17 +7,27 @@ import { formatDateCopenhagen } from '@/lib/datetime';
 import type { WithId } from '@/lib/firebase';
 import { cn } from '@/lib/cn';
 import { Pressable, View } from '@/tw';
-import { useSpendingSettingsStore } from '../data/spending-settings-store';
-import { makeClassifier, scrubFields } from '../spending.utils';
-import type { BankTransaction } from '../types';
+import { scrubFields } from '../spending.utils';
+import type { BankTransaction, ScrubRule, TransactionKind } from '../types';
 import { KindBadge } from './kind-badge';
 
-/** Én importeret transaktion — klik for at se al CSV-data (rå + renset). */
-export function TransactionRow({ transaction }: { transaction: WithId<BankTransaction> }) {
-  const rules = useSpendingSettingsStore((s) => s.scrubRules);
-  const accounts = useSpendingSettingsStore((s) => s.accounts);
+/**
+ * Én importeret transaktion — klik for at se al CSV-data (rå + renset).
+ *
+ * `kind` og `rules` kommer UDEFRA med vilje: rækken lå i lister med hundredvis af poster og
+ * abonnerede før på settings-storen to gange pr. række OG byggede en ny klassifikations-
+ * funktion pr. render. Forælderen bygger nu classifieren én gang. Samme form som `ReviewRow`.
+ */
+export function TransactionRow({
+  transaction,
+  kind,
+  rules,
+}: {
+  transaction: WithId<BankTransaction>;
+  kind: TransactionKind;
+  rules: readonly ScrubRule[];
+}) {
   const { text, payer, counterparty } = scrubFields(transaction, rules);
-  const kind = makeClassifier(accounts)(transaction);
   const negative = transaction.amountOre < 0;
   return (
     <Link href={{ pathname: '/spending/transaction/[id]', params: { id: transaction.id } }} asChild>

@@ -36,7 +36,7 @@ const EXPENSE_CATEGORIES = [
   "Diverse",
 ];
 
-export function presetCategories(type: BudgetEntryType): string[] {
+function presetCategories(type: BudgetEntryType): string[] {
   return type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 }
 

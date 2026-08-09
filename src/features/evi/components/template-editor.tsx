@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { AppText } from '@/components/ui/text';
+import { useFlushOnUnmount } from '@/hooks/use-flush-on-unmount';
 import { genId } from '@/lib/id';
 import { notify } from '@/lib/toast/notify';
 import { Pressable, Text, View } from '@/tw';
@@ -27,15 +28,14 @@ export function TemplateEditor({ initialFields }: { initialFields: EviField[] })
     }
     void saveEviTemplate(pending.current);
   };
-  const flushRef = useRef(flush);
-  flushRef.current = flush;
-  useEffect(() => () => flushRef.current(), []);
+  useFlushOnUnmount(flush);
 
   const apply = (next: EviField[]) => {
     pending.current = next;
     setFields(next);
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => flushRef.current(), 500);
+    // `flush` læser kun refs, så en hvilken som helst instans opfører sig ens — ingen ref-dans.
+    timer.current = setTimeout(flush, 500);
   };
 
   const updateField = (id: string, next: EviField) =>

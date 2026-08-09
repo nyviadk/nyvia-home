@@ -11,7 +11,7 @@ const LINE = { width: 22, height: 2, borderRadius: 1, backgroundColor: FG } as c
  * index-skærm, så den sidder i samme header som tilbage-knappen på undersider —
  * statisk pr. skærm (ingen dynamisk toggling → glatte native-overgange).
  */
-export function DrawerMenuButton() {
+function DrawerMenuButton() {
   const navigation = useNavigation();
   return (
     <Pressable

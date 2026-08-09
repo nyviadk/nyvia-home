@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { genId } from '@/lib/id';
 
-export interface Toast {
+interface Toast {
   id: string;
   message: string;
   actionLabel?: string;
@@ -13,6 +13,13 @@ export interface Toast {
 interface ToastState {
   toasts: Toast[];
 }
+
+/**
+ * Fortryd-vinduet: hvor længe toasten står, OG hvor længe DB-skrivningen udskydes.
+ * De to SKAL være samme tal — forsvinder toasten før skrivningen sker, står brugeren
+ * med en handling der ikke længere kan fortrydes uden at det fremgår nogen steder.
+ */
+export const UNDO_DURATION_MS = 7000;
 
 export const useToastStore = create<ToastState>(() => ({ toasts: [] }));
 
@@ -25,7 +32,7 @@ export function showToast(opts: {
   durationMs?: number;
 }): string {
   const id = genId();
-  const durationMs = opts.durationMs ?? 7000;
+  const durationMs = opts.durationMs ?? UNDO_DURATION_MS;
   useToastStore.setState((s) => ({
     toasts: [...s.toasts, { id, message: opts.message, actionLabel: opts.actionLabel, onAction: opts.onAction, durationMs }],
   }));

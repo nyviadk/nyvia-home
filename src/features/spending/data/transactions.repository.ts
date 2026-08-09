@@ -1,12 +1,12 @@
 import { nowISO } from '@/lib/datetime';
 import {
-  auth,
   type BatchOp,
   type CollectionSnapshot,
   db,
   type Unsubscribe,
   type WithId,
 } from '@/lib/firebase';
+import { requireUid } from '@/lib/firebase/require-uid';
 import type { ReviewRow } from '../lib/build-import';
 import type { BankTransaction, TransactionKind } from '../types';
 
@@ -23,11 +23,6 @@ export interface BulkOptions {
 // hurtigere end ét kald pr. dokument.
 const BULK_CHUNK = 100;
 
-function requireUid(): string {
-  const uid = auth.getCurrentUser()?.uid;
-  if (!uid) throw new Error('Ingen aktiv bruger');
-  return uid;
-}
 
 const collPath = () => `users/${requireUid()}/transactions`;
 const docPath = (id: string) => `${collPath()}/${id}`;

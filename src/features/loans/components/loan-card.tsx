@@ -2,10 +2,10 @@ import { Link } from 'expo-router';
 
 import { Card } from "@/components/ui/card";
 import { MoneyText } from "@/components/ui/money-text";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { AppText } from "@/components/ui/text";
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
+import { LoanProgressBlock } from './loan-progress-block';
 import { loanProgress, progressPercent } from '../loans.utils';
 import type { Loan } from '../types';
 
@@ -25,20 +25,13 @@ export function LoanCard({ loan }: { loan: WithId<Loan> }) {
             <AppText variant="muted">{loan.interestRate}%</AppText>
           </View>
 
-          <View className="gap-1.5">
-            <View className="flex-row items-baseline justify-between">
-              <MoneyText ore={loan.currentBalance} whole variant="heading" />
-              <View className="flex-row items-baseline gap-1">
-                <AppText variant="muted">af</AppText>
-                <MoneyText ore={loan.originalAmount} whole variant="muted" />
-              </View>
-            </View>
-            <ProgressBar value={progress} />
-            <View className="flex-row justify-between">
-              <AppText variant="muted">{pct}% afdraget</AppText>
-              <MoneyText ore={loan.monthlyPayment} whole variant="muted" />
-            </View>
-          </View>
+          <LoanProgressBlock
+            currentOre={loan.currentBalance}
+            originalOre={loan.originalAmount}
+            progress={progress}
+            footerLeft={`${pct}% afdraget`}
+            footerRight={<MoneyText ore={loan.monthlyPayment} whole variant="muted" />}
+          />
         </Card>
       </Pressable>
     </Link>

@@ -5,25 +5,26 @@ import { AppText } from '@/components/ui/text';
 import { formatDateCopenhagen } from '@/lib/datetime';
 import { cn } from '@/lib/cn';
 import { Switch, View } from '@/tw';
-import { useSpendingSettingsStore } from '../data/spending-settings-store';
 import type { ReviewRow as ReviewRowData } from '../lib/build-import';
 import { scrubFields } from '../spending.utils';
-import { TRANSACTION_KINDS, type TransactionKind } from '../types';
+import { TRANSACTION_KINDS, type ScrubRule, type TransactionKind } from '../types';
 
 /** Én redigerbar række i import-review: klassifikation + medtag-til/fra. */
 export function ReviewRow({
   row,
   kind,
+  rules,
   onToggleInclude,
   onChangeKind,
 }: {
   row: ReviewRowData;
   /** Live-beregnet klassifikation (manuel overstyring vinder). */
   kind: TransactionKind;
+  /** Kommer udefra: import-listen er lang, og én store-abonnent pr. række er spild. */
+  rules: readonly ScrubRule[];
   onToggleInclude: (id: string, include: boolean) => void;
   onChangeKind: (id: string, kind: TransactionKind) => void;
 }) {
-  const rules = useSpendingSettingsStore((s) => s.scrubRules);
   const { text, payer, counterparty } = scrubFields(row, rules);
   return (
     <Card className={cn('gap-2', !row.include && 'opacity-50')}>

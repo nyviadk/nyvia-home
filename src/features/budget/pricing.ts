@@ -2,8 +2,11 @@ import BigNumber from 'bignumber.js';
 
 import type { ActualLine, PriceChange, SavingsPercentChange } from './types';
 
-/** ÅÅÅÅ-MM for en forekomst (budgetmåned). */
-export function ym(year: number, month: number): string {
+/**
+ * ÅÅÅÅ-MM ud fra år + måned-tal. Hedder ikke `ym` som den i `@/lib/datetime`: den tager en
+ * ISO-dato, denne tager to tal. Samme navn til to forskellige signaturer var forvirrende.
+ */
+export function ymFromParts(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
