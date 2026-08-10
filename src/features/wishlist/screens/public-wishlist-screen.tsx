@@ -40,7 +40,7 @@ function SectionHead({ title, sub }: { title: string; sub?: string }) {
  */
 export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
   const router = useRouter();
-  const { wishes, extras, pot, comments, settings, loading, failed, isOwner } =
+  const { wishes, extras, pot, comments, settings, loading, failed, isOwner, hideGuestInfo } =
     usePublicWishlist(ownerUid);
   const go = (
     pathname: '/w/[uid]/gift' | '/w/[uid]/extra',
@@ -111,7 +111,7 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
           renderItem={(w) => (
             <PublicWishCard
               wish={w}
-              isOwner={isOwner}
+              hideGuestInfo={hideGuestInfo}
               contributions={pot.filter((c) => c.wishId === w.id)}
               commentCount={comments.filter((c) => c.wishId === w.id).length}
               onOpen={() => go('/w/[uid]/gift', { wishId: w.id })}
@@ -120,7 +120,7 @@ export function PublicWishlistScreen({ ownerUid }: { ownerUid: string }) {
         />
       )}
 
-      {isOwner || stillLoading ? null : (
+      {hideGuestInfo || stillLoading ? null : (
         <>
           {/* Købt uden for listen */}
           <View className="h-16" />

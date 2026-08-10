@@ -36,7 +36,7 @@ function SectionHead({ children }: { children: string }) {
  */
 export function GiftScreen({ ownerUid, wishId }: { ownerUid: string; wishId: string }) {
   const router = useRouter();
-  const { wishes, pot, comments, loading, isOwner } = usePublicWishlist(ownerUid);
+  const { wishes, pot, comments, loading, hideGuestInfo } = usePublicWishlist(ownerUid);
   const wish = wishes.find((w) => w.id === wishId);
 
   if (!wish) {
@@ -138,7 +138,7 @@ export function GiftScreen({ ownerUid, wishId }: { ownerUid: string; wishId: str
         ) : null}
       </View>
 
-      {isOwner ? null : (
+      {hideGuestInfo ? null : (
         <>
           {left > 0 ? (
             <>

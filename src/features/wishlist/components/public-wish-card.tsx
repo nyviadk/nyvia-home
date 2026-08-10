@@ -23,13 +23,18 @@ import {
  */
 export function PublicWishCard({
   wish,
-  isOwner,
+  hideGuestInfo,
   contributions,
   commentCount,
   onOpen,
 }: {
   wish: WithId<Wish>;
-  isOwner: boolean;
+  /**
+   * Skjul alt gæsterne har foretaget sig — reservationer, tilskud, kommentartal. Sand både
+   * når seeren ER ejeren, og så længe vi ikke ved hvem der kigger. Hed før `isOwner`, men
+   * navnet fik det til at ligne et spørgsmål om identitet frem for om diskretion.
+   */
+  hideGuestInfo: boolean;
   contributions: WithId<GiftContribution>[];
   commentCount: number;
   onOpen: () => void;
@@ -37,7 +42,7 @@ export function PublicWishCard({
   const total = wish.quantity || 1;
   const left = remainingCount(wish);
   const taken = reservedCount(wish);
-  const fullyTaken = !isOwner && left === 0;
+  const fullyTaken = !hideGuestInfo && left === 0;
   const price = priceLine(wish);
   const pledged = sumContributions(contributions);
   const goal = typeof wish.priceOre === 'number' ? wish.priceOre : 0;
@@ -77,7 +82,7 @@ export function PublicWishCard({
 
         <View className="flex-1" />
 
-        {isOwner ? null : (
+        {hideGuestInfo ? null : (
           <View className="gap-1.5 pt-2">
             {/* Er alt taget, nævnes tilskudsgiverne på selve reservationen — ikke som et løst tal. */}
             {pledged > 0 && !fullyTaken ? (

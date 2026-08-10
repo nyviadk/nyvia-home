@@ -53,18 +53,31 @@ export function useLiveCollection<T>(
   key: string | null,
   subscribe: Subscribe<CollectionSnapshot<T>>,
 ): LiveState<T> {
-  const [state, setState] = useState<LiveState<T>>(() => {
-    const cached = key ? (snapshotCache.get(key) as WithId<T>[] | undefined) : undefined;
-    return { items: cached ?? [], loading: !cached, failed: false };
-  });
+  const fromCache = (k: string | null): LiveState<T> => {
+    const cached = k ? (snapshotCache.get(k) as WithId<T>[] | undefined) : undefined;
+    return { items: cached ?? [], loading: !!k && !cached, failed: false };
+  };
+
+  const [state, setState] = useState<LiveState<T>>(() => fromCache(key));
+  const [seenKey, setSeenKey] = useState(key);
   const latest = useRef(subscribe);
   latest.current = subscribe;
 
+  /**
+   * Nøglen kan skifte i en levende komponent — typisk fra `null` til en rigtig sti, når et
+   * abonnement først må starte (den delte ønskeliste venter på at vide hvem der kigger).
+   * Nulstillingen sker UNDER render, ikke i en effect: en effect maler først det forrige
+   * resultat, og cachen ville slet ikke blive brugt, fordi `useState`-initialiseringen kun
+   * kører ved montering. Så ville hvert nøgleskift give præcis det tomme blink cachen findes
+   * for at undgå.
+   */
+  if (key !== seenKey) {
+    setSeenKey(key);
+    setState(fromCache(key));
+  }
+
   useEffect(() => {
-    if (!key) {
-      setState({ items: [], loading: false, failed: false });
-      return;
-    }
+    if (!key) return;
     return latest.current(
       (snap) => {
         snapshotCache.set(key, snap.docs);
@@ -82,18 +95,24 @@ export function useLiveDoc<T>(
   key: string | null,
   subscribe: Subscribe<T | null>,
 ): { data: T | null; loading: boolean } {
-  const [state, setState] = useState<{ data: T | null; loading: boolean }>(() => {
-    const cached = key ? (docCache.get(key) as T | undefined) : undefined;
-    return { data: cached ?? null, loading: cached === undefined };
-  });
+  const fromCache = (k: string | null) => {
+    const cached = k ? (docCache.get(k) as T | undefined) : undefined;
+    return { data: cached ?? null, loading: !!k && cached === undefined };
+  };
+
+  const [state, setState] = useState<{ data: T | null; loading: boolean }>(() => fromCache(key));
+  const [seenKey, setSeenKey] = useState(key);
   const latest = useRef(subscribe);
   latest.current = subscribe;
 
+  // Samme nøgleskift-håndtering som ovenfor.
+  if (key !== seenKey) {
+    setSeenKey(key);
+    setState(fromCache(key));
+  }
+
   useEffect(() => {
-    if (!key) {
-      setState({ data: null, loading: false });
-      return;
-    }
+    if (!key) return;
     return latest.current(
       (data) => {
         docCache.set(key, data);

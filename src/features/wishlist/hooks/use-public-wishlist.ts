@@ -1,6 +1,6 @@
+import { useAuthStore } from '@/lib/auth/auth-store';
 import { withoutPending } from '@/lib/db/pending-deletes';
 import { useLiveCollection, useLiveDoc } from '@/lib/db/use-live-query';
-import { auth } from '@/lib/firebase';
 import {
   pendingCommentDeletes,
   pendingContributionDeletes,
@@ -40,8 +40,23 @@ import {
 const cacheKey = (name: string, uid: string | null) => (uid ? `wishlist:${name}:${uid}` : null);
 
 export function usePublicWishlist(ownerUid: string) {
-  const isOwner = auth.getCurrentUser()?.uid === ownerUid;
-  const guestKey = ownerUid && !isOwner ? ownerUid : null;
+  const viewer = useAuthStore((s) => s.user);
+  const authKnown = useAuthStore((s) => !s.initializing);
+
+  /**
+   * To forskellige spørgsmål, fordi ét frame er nok til at spolere overraskelsen:
+   *
+   * `isOwner` = "vi VED at det er ejeren" og bruges til at sige det højt på skærmen.
+   * `hideGuestInfo` = "vi ved ikke at det IKKE er ejeren" og styrer alt det hemmelige. Den er
+   * sand indtil auth er afgjort, så gæsternes reservationer aldrig kan nå at blive malet.
+   *
+   * Begge blev før udledt af `auth.getCurrentUser()` læst direkte under render — ikke
+   * reaktivt, og typisk null i første render, fordi Firebase gendanner sessionen asynkront.
+   * Ejeren så derfor sine egne gæsters reservationer blinke forbi ved kold indlæsning.
+   */
+  const isOwner = authKnown && viewer?.uid === ownerUid;
+  const hideGuestInfo = !authKnown || isOwner;
+  const guestKey = ownerUid && !hideGuestInfo ? ownerUid : null;
 
   const wishesQuery = useLiveCollection<Wish>(
     cacheKey('wishes', ownerUid || null),
@@ -83,5 +98,6 @@ export function usePublicWishlist(ownerUid: string) {
     loading: wishesQuery.loading,
     failed: wishesQuery.failed,
     isOwner,
+    hideGuestInfo,
   };
 }
