@@ -34,6 +34,22 @@ function directionFor(
 }
 
 /**
+ * Er svaret rigtigt?
+ *
+ * Store/små bogstaver og dobbelte mellemrum ignoreres — det er tastefejl, ikke sprogfejl, og
+ * en test der siger "forkert" til *Mañana* lærer dig kun at holde øje med shift-tasten.
+ *
+ * Accenter og tegn normaliseres derimod IKKE: *manana* er et andet ord end *mañana*, og
+ * *si* betyder noget andet end *sí*. Netop dét er værd at blive rettet i.
+ *
+ * `toLowerCase` og ikke `toLocaleLowerCase`: sidstnævnte følger enhedens sprog, og på en
+ * tyrkisk telefon bliver "I" til "ı" — så ville et rigtigt svar pludselig tælle som forkert.
+ */
+const normalize = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase();
+
+const matches = (answer: string, facit: string) => normalize(answer) === normalize(facit);
+
+/**
  * Ét kort i testen. Monteres med `key={entry.id}`, så svarfelt og facit-tilstand nulstilles
  * automatisk ved skift til næste kort — ingen effect til at rydde op.
  *
@@ -67,8 +83,7 @@ export function QuizCard({
   const promptIsSpanish = hasSpanishSide && dir === 'es-da';
   const facitIsSpanish = hasSpanishSide && dir === 'da-es';
 
-  // Eksakt match; kun mellemrum i enderne trimmes væk.
-  const correct = answer.trim() === facit.trim();
+  const correct = matches(answer, facit);
   const answered = answer.trim().length > 0;
 
   const reveal = () => setRevealed(true);
