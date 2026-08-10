@@ -1,5 +1,6 @@
 import { AppText } from '@/components/ui/text';
-import { notify, toastAfter } from '@/lib/toast/notify';
+import { copyText } from '@/lib/clipboard/copy-text';
+import { notify } from '@/lib/toast/notify';
 import { Pressable } from '@/tw';
 import { decryptValue } from '../crypto/vault-store';
 import type { ReuseValue } from '../reuse';
@@ -7,22 +8,21 @@ import { requestVaultAccess } from './vault-gate';
 
 const isWeb = process.env.EXPO_OS === 'web';
 
-function copyText(text: string) {
-  if (isWeb && typeof navigator !== 'undefined' && navigator.clipboard) {
-    void toastAfter(navigator.clipboard.writeText(text), 'Kopieret');
-  }
-}
+/** Gaten er om EVI er web-only (boksen kan kun låses op der), ikke om udklipsholderen. */
+const copy = (text: string) => {
+  if (isWeb) void copyText(text);
+};
 
 /** Kopiér-frem chip: kopierer en tidligere indtastet værdi (web). Følsomme kilder dekrypteres. */
 export function ReuseChip({ reuse }: { reuse: ReuseValue }) {
   const onPress = async () => {
     if (reuse.kind === 'text') {
-      copyText(reuse.value);
+      copy(reuse.value);
       return;
     }
     if (!(await requestVaultAccess())) return;
     try {
-      copyText(await decryptValue(reuse.cipher));
+      copy(await decryptValue(reuse.cipher));
     } catch {
       notify('Kunne ikke dekryptere');
     }

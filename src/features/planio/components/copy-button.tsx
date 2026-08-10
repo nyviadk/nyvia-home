@@ -1,5 +1,5 @@
+import { copyText } from '@/lib/clipboard/copy-text';
 import { cn } from '@/lib/cn';
-import { toastAfter } from '@/lib/toast/notify';
 import { Pressable, Text } from '@/tw';
 
 /**
@@ -16,10 +16,7 @@ export function CopyButton({
   disabled?: boolean;
 }) {
   const copy = () => {
-    if (disabled) return;
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      void toastAfter(navigator.clipboard.writeText(text), 'Kopieret');
-    }
+    if (!disabled) void copyText(text);
   };
   return (
     <Pressable

@@ -2,7 +2,8 @@ import { useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { AppText } from '@/components/ui/text';
-import { notify, toastAfter } from '@/lib/toast/notify';
+import { copyText } from '@/lib/clipboard/copy-text';
+import { notify } from '@/lib/toast/notify';
 import { Pressable, Text, View } from '@/tw';
 import { decryptValue, encryptValue } from '../crypto/vault-store';
 import type { EviAnswerValue, EviCipher } from '../types';
@@ -70,10 +71,7 @@ export function SensitiveField({
     if (!value) return;
     if (!(await requestVaultAccess())) return;
     try {
-      const plain = await decryptValue(value);
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await toastAfter(navigator.clipboard.writeText(plain), 'Kopieret');
-      }
+      await copyText(await decryptValue(value));
     } catch {
       notify('Kunne ikke dekryptere');
     }

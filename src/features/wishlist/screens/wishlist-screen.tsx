@@ -6,9 +6,9 @@ import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { AppText } from '@/components/ui/text';
 import { SITE_URL } from '@/constants/site';
+import { copyText } from '@/lib/clipboard/copy-text';
 import { confirmAction } from '@/lib/confirm';
 import { auth } from '@/lib/firebase';
-import { notify, toastAfter } from '@/lib/toast/notify';
 import { withoutPending } from '@/lib/db/pending-deletes';
 import { useLiveCollection } from '@/lib/db/use-live-query';
 import { Pressable, View } from '@/tw';
@@ -50,16 +50,11 @@ export function WishlistScreen() {
   // Favoritter øverst, derefter pris lav→høj.
   const sorted = sortWishes(items);
 
-  /** Kopiér delelinket (web) — gæster åbner det uden login. */
+  /** Kopiér delelinket — gæster åbner det uden login. */
   const copyShareLink = () => {
     const uid = auth.getCurrentUser()?.uid;
     if (!uid) return;
-    const link = `${SITE_URL}/w/${uid}`;
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      void toastAfter(navigator.clipboard.writeText(link), 'Delelink kopieret');
-    } else {
-      notify(link);
-    }
+    void copyText(`${SITE_URL}/w/${uid}`, 'Delelink kopieret');
   };
 
   const onReset = async () => {
