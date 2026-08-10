@@ -14,6 +14,16 @@ interface QuizState {
   kind: KindFilter;
   /** Resterende kort i den igangværende runde (blandet rækkefølge). Tom = ingen runde. */
   queue: string[];
+  /**
+   * Rundens frø. Ved 'blandet' udledes hvert korts retning af `hash(id + seed)`.
+   *
+   * Retningen kan ikke slås op på id'et alene: så ville det samme ord ligge fast som
+   * dansk→spansk i al fremtid, og "blandet" ville bare være en éngangsfordeling. Den kan
+   * heller ikke være `Math.random()` under render, for så skiftede spørgsmålet side hver
+   * gang man tastede et bogstav. Frøet er svaret på begge dele — nyt pr. runde, konstant
+   * inde i runden.
+   */
+  seed: number;
   roundTotal: number;
   correct: number;
   wrong: number;
@@ -34,6 +44,7 @@ export const useQuizStore = create<QuizState>()(
       direction: 'mixed' as QuizDirection,
       kind: 'alle' as KindFilter,
       queue: [] as string[],
+      seed: 0,
       roundTotal: 0,
       correct: 0,
       wrong: 0,
@@ -43,6 +54,9 @@ export const useQuizStore = create<QuizState>()(
       'direction',
       'kind',
       'queue',
+      // Frøet persisteres sammen med køen: genoptager man en runde efter en genstart, skal
+      // kortene vende som da man forlod dem.
+      'seed',
       'roundTotal',
       'correct',
       'wrong',
@@ -67,7 +81,16 @@ function shuffled<T>(input: readonly T[]): T[] {
 /** Start en ny runde over de givne kort. */
 export function startRound(ids: readonly string[]): void {
   const queue = shuffled(ids);
-  useQuizStore.setState({ queue, roundTotal: queue.length, correct: 0, wrong: 0 });
+  useQuizStore.setState({
+    queue,
+    // Trækkes her — i en hændelse, ikke under render — så retningerne fordeles på ny hver
+    // eneste runde. `|| 1`: et frø på 0 ville lade hash(id + seed) falde tilbage til det
+    // rene id-hash, altså præcis den faste fordeling frøet findes for at bryde.
+    seed: Math.floor(Math.random() * 1_000_000) || 1,
+    roundTotal: queue.length,
+    correct: 0,
+    wrong: 0,
+  });
 }
 
 /**

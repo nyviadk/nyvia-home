@@ -9,17 +9,28 @@ import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { stableHashHex } from '@/lib/hash';
 import { View } from '@/tw';
+import { useQuizStore } from '../data/quiz-store';
 import { isSpanishText, type QuizDirection, type SpanishEntry } from '../types';
 import { SpeakableText } from './speakable-text';
 import { SpeakButton } from './speak-button';
 
 /**
- * Retningen for ét kort. Ved 'mixed' udledes den af kortets id (stabil hash) og IKKE af
- * Math.random: ellers ville spørgsmålet skifte side ved hver re-render, fx når man taster.
+ * Retningen for ét kort ved 'blandet'.
+ *
+ * Hverken `Math.random()` eller et rent id-hash duer. Random under render ville vende kortet
+ * hver gang man tastede et bogstav; et hash af id'et alene er stabilt for EVIGT, så hvert ord
+ * lå fast i én retning runde efter runde — blandingen skete kun én gang, første gang ordet
+ * blev oprettet. Rundens frø blandes derfor ind: konstant inde i runden, ny næste gang.
  */
-function directionFor(entry: WithId<SpanishEntry>, direction: QuizDirection): 'da-es' | 'es-da' {
+function directionFor(
+  entry: WithId<SpanishEntry>,
+  direction: QuizDirection,
+  seed: number
+): 'da-es' | 'es-da' {
   if (direction !== 'mixed') return direction;
-  return Number.parseInt(stableHashHex(entry.id).slice(0, 2), 16) % 2 === 0 ? 'da-es' : 'es-da';
+  return Number.parseInt(stableHashHex(`${entry.id}:${seed}`).slice(0, 2), 16) % 2 === 0
+    ? 'da-es'
+    : 'es-da';
 }
 
 /**
@@ -42,8 +53,9 @@ export function QuizCard({
   const [answer, setAnswer] = useState('');
   const [revealed, setRevealed] = useState(false);
 
+  const seed = useQuizStore((s) => s.seed);
   const isRule = entry.kind === 'regel';
-  const dir = directionFor(entry, direction);
+  const dir = directionFor(entry, direction, seed);
   const prompt = isRule || dir === 'da-es' ? entry.da : entry.es;
   const facit = isRule || dir === 'da-es' ? entry.es : entry.da;
   /**
