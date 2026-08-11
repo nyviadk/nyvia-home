@@ -33,6 +33,7 @@ export function QuizScreen() {
   const direction = useQuizStore((s) => s.direction);
   const kind = useQuizStore((s) => s.kind);
   const roundTotal = useQuizStore((s) => s.roundTotal);
+  const retry = useQuizStore((s) => s.retry);
   const correct = useQuizStore((s) => s.correct);
   const wrong = useQuizStore((s) => s.wrong);
 
@@ -47,7 +48,10 @@ export function QuizScreen() {
   const done = roundTotal > 0 && remaining.length === 0;
 
   if (current) {
+    // Et forkert kort bliver liggende i køen, så fremdriften står stille indtil man kan det.
+    // Det er meningen — men uden en forklaring ligner det at tælleren har hængt sig.
     const answered = roundTotal - remaining.length;
+    const waiting = retry.filter((id) => byId.has(id)).length;
     return (
       <Screen>
         <View className="gap-2">
@@ -58,6 +62,11 @@ export function QuizScreen() {
             </AppText>
           </View>
           <ProgressBar value={roundTotal ? answered / roundTotal : 0} />
+          {waiting > 0 ? (
+            <AppText variant="muted" className="text-xs">
+              {waiting} kort kommer igen — de forkerte gentages til du kan dem.
+            </AppText>
+          ) : null}
         </View>
 
         {/* key: nulstiller svarfelt + facit-tilstand ved skift til næste kort. */}
@@ -88,11 +97,13 @@ export function QuizScreen() {
         <AppText variant="title">Runde færdig</AppText>
         <Card className="gap-2">
           <StatRow label="Kort i runden">{String(roundTotal)}</StatRow>
-          <StatRow label="Rigtige">{String(correct)}</StatRow>
-          <StatRow label="Forkerte">{String(wrong)}</StatRow>
+          <StatRow label="Rigtige i første forsøg">{String(correct)}</StatRow>
+          <StatRow label="Havde fejl">{String(wrong)}</StatRow>
         </Card>
         <AppText variant="muted">
-          Alle kort i udvalget har været vist én gang. Næste runde blander på ny.
+          Alle kort er svaret rigtigt — de forkerte kom igen undervejs, indtil de sad. Tallene
+          tæller første forsøg, så et kort du kæmpede med står som fejl. Næste runde blander
+          på ny og fordeler retningerne igen.
         </AppText>
         <Button title="Ny runde" onPress={() => startRound(pool.map((e) => e.id))} />
         <Button
@@ -119,7 +130,8 @@ export function QuizScreen() {
           onChange={setDirection}
         />
         <AppText variant="muted">
-          Blandet vælger retning pr. kort — det samme kort får dog altid samme retning.
+          Blandet vælger retning pr. kort. Retningen ligger fast hele runden igennem — også
+          når et forkert kort kommer igen — men fordeles på ny næste runde.
         </AppText>
       </View>
 

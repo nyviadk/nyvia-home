@@ -8,7 +8,8 @@ import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { stableHashHex } from '@/lib/hash';
-import { View } from '@/tw';
+import { Text, View } from '@/tw';
+import { diffAnswer, type DiffPart } from '../answer-diff';
 import { useQuizStore } from '../data/quiz-store';
 import { isSpanishText, type QuizDirection, type SpanishEntry } from '../types';
 import { SpeakableText } from './speakable-text';
@@ -65,6 +66,23 @@ const matches = (answer: string, facit: string) => {
 };
 
 /**
+ * Tekst hvor forskellene er farvet. Delene er indlejrede `<Text>` og ikke separate blokke,
+ * så ordene stadig ombrydes som én sammenhængende sætning — et `flex-row`-layout ville
+ * bryde linjen mellem hver eneste farvede stump.
+ */
+function DiffText({ parts, className }: { parts: DiffPart[]; className: string }) {
+  return (
+    <AppText className="text-xl leading-snug text-fg">
+      {parts.map((part, i) => (
+        <Text key={i} className={part.changed ? cn('font-bold', className) : undefined}>
+          {part.text}
+        </Text>
+      ))}
+    </AppText>
+  );
+}
+
+/**
  * Ét kort i testen. Monteres med `key={entry.id}`, så svarfelt og facit-tilstand nulstilles
  * automatisk ved skift til næste kort — ingen effect til at rydde op.
  *
@@ -100,6 +118,12 @@ export function QuizCard({
 
   const correct = matches(answer, facit);
   const answered = answer.trim().length > 0;
+
+  /**
+   * Kun ved et forkert, faktisk afgivet svar. Trykker man "Ved ikke", er der intet at
+   * sammenligne — så ville hele facit stå markeret, hvilket ikke fortæller noget.
+   */
+  const diff = answered && !correct ? diffAnswer(answer.trim(), facit) : null;
 
   const reveal = () => setRevealed(true);
   const next = () => onNext(isRule ? undefined : correct ? 'correct' : 'wrong');
@@ -146,13 +170,28 @@ export function QuizCard({
             </AppText>
           )}
 
+          {diff ? (
+            <View className="gap-1.5 rounded-xl bg-element p-3">
+              <AppText variant="muted" className="text-xs uppercase">
+                Dit svar
+              </AppText>
+              <DiffText parts={diff.answer} className="text-danger" />
+            </View>
+          ) : null}
+
           <View className="gap-1.5 rounded-xl bg-element p-3">
             <AppText variant="muted" className="text-xs uppercase">
               {isRule ? 'Forklaring' : 'Rigtigt svar'}
             </AppText>
-            {/* Regel-forklaringen er dansk, men ordene er trykbare, så de spanske
+            {/* Ved en fejl vinder markeringen over ord-for-ord-oplæsningen: man kan ikke
+                både farve enkelte TEGN og gøre hvert ORD trykbart i samme tekst, og det
+                man mangler at se lige dér er hvad der skulle have stået. Højttaler-knappen
+                nedenfor læser stadig hele facit op.
+                Regel-forklaringen er dansk, men ordene er trykbare, så de spanske
                 eksempler i teksten kan høres enkeltvis. */}
-            {facitIsSpanish || isRule ? (
+            {diff ? (
+              <DiffText parts={diff.facit} className="text-success" />
+            ) : facitIsSpanish || isRule ? (
               <SpeakableText text={facit} className="text-xl leading-snug text-fg" />
             ) : (
               <AppText className="text-xl leading-snug text-fg">{facit}</AppText>
@@ -160,11 +199,13 @@ export function QuizCard({
             <View className="flex-row items-center gap-2">
               {facitIsSpanish ? <SpeakButton text={facit} label="🔊 Hør hele" /> : null}
               <AppText variant="muted" className="text-xs">
-                {facitIsSpanish
-                  ? 'eller tryk på et enkelt ord'
-                  : isRule
-                    ? 'Tryk på et spansk ord for at høre det'
-                    : ''}
+                {diff
+                  ? 'Rødt = det du skrev galt · Grønt = det du manglede'
+                  : facitIsSpanish
+                    ? 'eller tryk på et enkelt ord'
+                    : isRule
+                      ? 'Tryk på et spansk ord for at høre det'
+                      : ''}
               </AppText>
             </View>
           </View>
