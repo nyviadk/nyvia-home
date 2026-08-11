@@ -30,6 +30,18 @@ import { SpeakButton } from './speak-button';
 
 const imageUrl = (img: EditableImage) => ('url' in img ? img.url : img.uri);
 
+/**
+ * Valget mellem de tre typer handler ikke om grammatik, men om hvordan du vil testes — og
+ * det er ikke til at gætte ud fra etiketterne alene. Derfor står konsekvensen skrevet under
+ * knapperne, i stedet for at man skal starte en runde for at opdage forskellen.
+ */
+const KIND_HINT: Record<SpanishKind, string> = {
+  ord: 'Ét ord med ét facit. Du skriver svaret og får rigtigt/forkert.',
+  saetning: 'En hel vending med ét facit. Du skriver svaret og får rigtigt/forkert.',
+  regel:
+    'Noget uden ét svar man kan taste. Du får overskriften, svarer i hovedet og trykker "Vis forklaring". Tæller ikke i resultatet.',
+};
+
 export function EntryForm({
   entry,
   submitLabel,
@@ -78,7 +90,12 @@ export function EntryForm({
         name="kind"
         render={({ field: { onChange, value } }) => (
           <FormField label="Type">
-            <Segmented<SpanishKind> value={value} options={SPANISH_KINDS} onChange={onChange} />
+            <View className="gap-2">
+              <Segmented<SpanishKind> value={value} options={SPANISH_KINDS} onChange={onChange} />
+              <AppText variant="muted" className="text-xs">
+                {KIND_HINT[value]}
+              </AppText>
+            </View>
           </FormField>
         )}
       />

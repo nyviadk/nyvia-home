@@ -47,7 +47,22 @@ function directionFor(
  */
 const normalize = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase();
 
-const matches = (answer: string, facit: string) => normalize(answer) === normalize(facit);
+/**
+ * Parenteser i facit betyder "valgfrit". `(Yo) Quiero` godkender *quiero*, *yo quiero* og
+ * *(yo) quiero* — spansk udelader som regel pronominet, så begge dele ER rigtige, og
+ * parentesen er den naturlige måde at notere det på. Uden det her ville netop den notation
+ * gøre det umuligt at svare rigtigt.
+ */
+const acceptedForms = (facit: string) => [
+  facit, // skrevet af med parenteser og det hele
+  facit.replace(/\([^)]*\)/g, ' '), // uden det valgfrie
+  facit.replace(/[()]/g, ' '), // med det valgfrie, men uden parenteserne
+];
+
+const matches = (answer: string, facit: string) => {
+  const given = normalize(answer);
+  return acceptedForms(facit).some((form) => normalize(form) === given);
+};
 
 /**
  * Ét kort i testen. Monteres med `key={entry.id}`, så svarfelt og facit-tilstand nulstilles
