@@ -34,6 +34,7 @@ export function QuizScreen() {
   const kind = useQuizStore((s) => s.kind);
   const roundTotal = useQuizStore((s) => s.roundTotal);
   const retry = useQuizStore((s) => s.retry);
+  const step = useQuizStore((s) => s.step);
   const correct = useQuizStore((s) => s.correct);
   const wrong = useQuizStore((s) => s.wrong);
 
@@ -69,9 +70,11 @@ export function QuizScreen() {
           ) : null}
         </View>
 
-        {/* key: nulstiller svarfelt + facit-tilstand ved skift til næste kort. */}
+        {/* key: nulstiller svarfelt, hint og facit-tilstand for hvert nyt forsøg. `step` og
+            ikke bare id'et — en genganger der er sidste kort tilbage har samme id to gange
+            i træk, og så ville React genbruge komponenten med det gamle svar i feltet. */}
         <QuizCard
-          key={current.id}
+          key={`${current.id}:${step}`}
           entry={current}
           direction={direction}
           onNext={(result) => advance(current.id, result)}

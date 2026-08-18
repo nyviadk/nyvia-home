@@ -31,6 +31,14 @@ interface QuizState {
    * og at kunne vise hvor mange der venter — ellers ville runden se ud til at gå i stå.
    */
   retry: string[];
+  /**
+   * Tæller ét op for hvert kort man går videre fra. Bruges alene som `key` på kortet.
+   *
+   * Uden den kunne et kort ikke komme igen umiddelbart efter sig selv: er en genganger det
+   * sidste tilbage i køen, er `current.id` den samme før og efter, React genbruger
+   * komponenten, og svarfelt, hint og facit-tilstand ville stå tilbage fra forrige forsøg.
+   */
+  step: number;
   /** Antal FORSKELLIGE kort i runden. Gengangere øger den ikke. */
   roundTotal: number;
   correct: number;
@@ -54,6 +62,7 @@ export const useQuizStore = create<QuizState>()(
       queue: [] as string[],
       seed: 0,
       retry: [] as string[],
+      step: 0,
       roundTotal: 0,
       correct: 0,
       wrong: 0,
@@ -67,6 +76,7 @@ export const useQuizStore = create<QuizState>()(
       // kortene vende som da man forlod dem.
       'seed',
       'retry',
+      'step',
       'roundTotal',
       'correct',
       'wrong',
@@ -98,6 +108,7 @@ export function startRound(ids: readonly string[]): void {
     // rene id-hash, altså præcis den faste fordeling frøet findes for at bryde.
     seed: Math.floor(Math.random() * 1_000_000) || 1,
     retry: [],
+    step: 0,
     roundTotal: queue.length,
     correct: 0,
     wrong: 0,
@@ -123,6 +134,7 @@ export function advance(id: string, result?: 'correct' | 'wrong'): void {
     if (result === 'wrong') {
       return {
         queue: [...rest, id],
+        step: s.step + 1,
         retry: isRetry ? s.retry : [...s.retry, id],
         // Kun første fejl tælles. Ellers ville ét kort man kæmpede med tre gange fylde tre
         // fejl i resultatet, og `correct + wrong` kunne overstige antallet af kort i runden.
@@ -133,6 +145,7 @@ export function advance(id: string, result?: 'correct' | 'wrong'): void {
 
     return {
       queue: rest,
+      step: s.step + 1,
       retry: isRetry ? s.retry.filter((r) => r !== id) : s.retry,
       wrong: s.wrong,
       // En genganger man endelig får rigtig tælles ikke som rigtig: den er allerede talt som
@@ -143,4 +156,4 @@ export function advance(id: string, result?: 'correct' | 'wrong'): void {
 }
 
 export const endRound = () =>
-  useQuizStore.setState({ queue: [], retry: [], roundTotal: 0 });
+  useQuizStore.setState({ queue: [], retry: [], step: 0, roundTotal: 0 });

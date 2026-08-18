@@ -6,6 +6,7 @@ import { AppText } from '@/components/ui/text';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
 import { isSpanishText, sideLabels, type SpanishEntry } from '../types';
+import { PronText } from './pron-text';
 import { SpeakableText } from './speakable-text';
 import { SpeakButton } from './speak-button';
 
@@ -57,6 +58,7 @@ export function EntryRow({ entry }: { entry: WithId<SpanishEntry> }) {
               </AppText>
             ) : null}
             <SpeakableText text={entry.es} variant="muted" />
+            {entry.pron ? <PronText pron={entry.pron} className="text-xs" /> : null}
           </View>
 
           {entry.note ? (

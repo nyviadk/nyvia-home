@@ -44,6 +44,13 @@ export function SpanishScreen() {
 
       <OfflineNotice fromCache={fromCache} />
 
+      {/* Uden for ScreenHeader: tre knapper på titel-rækken bliver for trangt på en telefon.
+          Altid synlig — også når listen er tom, for dét er netop når man vil indsætte
+          en hel liste frem for at taste den ind post for post. */}
+      <Link href="/spansk/import" asChild>
+        <Button title="📋 Indsæt hel liste" variant="ghost" className="self-start" />
+      </Link>
+
       {entries.length > 0 ? (
         <>
           <Link href="/spansk/test" asChild>

@@ -41,6 +41,14 @@ export type SpanishEntry = {
   da: string;
   /** Spansk side. For `regel` er det den (danske) forklaring — se `isSpanishText`. */
   es: string;
+  /**
+   * Udtale skrevet med danske bogstaver, fx `bwe-nos di-as`. Valgfri.
+   *
+   * Den er IKKE en erstatning for oplæsningen — den er til at kunne kigge på mens man hører,
+   * og til at kunne læse højt uden lyd på. Den bruges også som hint i testen, fordi udtalen
+   * røber lyden uden at røbe stavemåden.
+   */
+  pron?: string;
   /** Fri note — vises altid sammen med svaret. */
   note?: string;
   images?: SpanishImage[];
@@ -48,7 +56,7 @@ export type SpanishEntry = {
   updatedAt: string;
 };
 
-export type SpanishEntryInput = Pick<SpanishEntry, 'kind' | 'da' | 'es' | 'note'>;
+export type SpanishEntryInput = Pick<SpanishEntry, 'kind' | 'da' | 'es' | 'pron' | 'note'>;
 
 /**
  * Etiketterne skifter med typen. En regel har ikke en "dansk" og en "spansk" side — den har

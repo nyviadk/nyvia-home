@@ -142,6 +142,16 @@ export function EntryForm({
         ) : null}
       </View>
 
+      {/* Udtalen giver kun mening for spansk tekst — en regels forklaring er dansk. */}
+      {speakable ? (
+        <ControlledField
+          control={control}
+          name="pron"
+          label="Udtale (valgfri)"
+          placeholder="fx bwe-nos di-as"
+        />
+      ) : null}
+
       <ControlledField
         control={control}
         name="note"

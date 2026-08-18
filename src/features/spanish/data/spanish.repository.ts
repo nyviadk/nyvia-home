@@ -1,6 +1,9 @@
+import { DateTime } from 'luxon';
+
 import { nowISO } from '@/lib/datetime';
 import { createUserCollectionRepo } from '@/lib/db/user-collection-repo';
 import { db, storage, type WithId } from '@/lib/firebase';
+import { omitUndefined } from '@/lib/firebase/omit-undefined';
 import { requireUid } from '@/lib/firebase/require-uid';
 import { genId } from '@/lib/id';
 import { toastAfter } from '@/lib/toast/notify';
@@ -92,6 +95,36 @@ export async function updateSpanishEntry(
       false
     ),
     'Gemt'
+  );
+}
+
+/**
+ * Opret mange poster på én gang (indsæt-liste).
+ *
+ * Én batch frem for N enkelt-skrivninger: alt-eller-intet, og ét kald i stedet for tyve.
+ *
+ * Tidsstemplerne tælles ned med ét millisekund pr. post, så den rækkefølge man indsatte dem
+ * i overlever. Listen sorteres på `createdAt desc`; fik alle poster samme tidsstempel, ville
+ * Firestore falde tilbage på dokument-id — og dem genererer vi tilfældigt, så en indsat liste
+ * ville lande i vilkårlig orden.
+ */
+export async function createSpanishEntries(inputs: SpanishEntryInput[]): Promise<void> {
+  const base = DateTime.now();
+  await toastAfter(
+    db.commitBatch(
+      inputs.map((input, i) => {
+        const at = base.minus({ milliseconds: i }).toISO()!;
+        return {
+          type: 'set' as const,
+          path: repo.docPath(genId()),
+          // omitUndefined og ikke bare `...(pron ? …)` hos kalderen: `pron` er valgfri,
+          // og Firestore afviser hele skrivningen med "Unsupported field value" hvis blot
+          // ét felt er undefined. Det skal ikke afhænge af at hvert kaldested husker det.
+          data: omitUndefined({ ...input, createdAt: at, updatedAt: at }),
+        };
+      })
+    ),
+    `${inputs.length} poster tilføjet`
   );
 }
 

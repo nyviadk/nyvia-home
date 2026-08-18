@@ -12,6 +12,7 @@ import { Text, View } from '@/tw';
 import { diffAnswer, type DiffPart } from '../answer-diff';
 import { useQuizStore } from '../data/quiz-store';
 import { isSpanishText, type QuizDirection, type SpanishEntry } from '../types';
+import { PronText } from './pron-text';
 import { SpeakableText } from './speakable-text';
 import { SpeakButton } from './speak-button';
 
@@ -66,6 +67,23 @@ const matches = (answer: string, facit: string) => {
 };
 
 /**
+ * Bogstaver — også de spanske og danske med tegn over. Bevidst en eksplicit liste frem for
+ * `\p{L}`: Unicode-egenskaber i regex kræver ES2018-understøttelse, og det er ikke noget man
+ * skal gætte om på tværs af Hermes og browsere for så simpel en ting.
+ */
+const LETTERS = /[a-záéíóúüñäöåæø]+/gi;
+
+/**
+ * Hintet: første bogstav i hvert ord, resten prikker.
+ *
+ * Det røber antal ord, længden af hvert og forbogstaverne — nok til at hukommelsen kan få
+ * fat, men ikke nok til at man kan skrive svaret af. Tegnsætning bevares, for `¿` og
+ * accenter er en del af det man skal huske.
+ */
+const maskFacit = (text: string) =>
+  text.replace(LETTERS, (word) => word[0] + '·'.repeat(word.length - 1));
+
+/**
  * Tekst hvor forskellene er farvet. Delene er indlejrede `<Text>` og ikke separate blokke,
  * så ordene stadig ombrydes som én sammenhængende sætning — et `flex-row`-layout ville
  * bryde linjen mellem hver eneste farvede stump.
@@ -101,6 +119,7 @@ export function QuizCard({
 }) {
   const [answer, setAnswer] = useState('');
   const [revealed, setRevealed] = useState(false);
+  const [hinted, setHinted] = useState(false);
 
   const seed = useQuizStore((s) => s.seed);
   const isRule = entry.kind === 'regel';
@@ -126,7 +145,14 @@ export function QuizCard({
   const diff = answered && !correct ? diffAnswer(answer.trim(), facit) : null;
 
   const reveal = () => setRevealed(true);
-  const next = () => onNext(isRule ? undefined : correct ? 'correct' : 'wrong');
+
+  /**
+   * Et hint koster svaret. Fik man det rigtigt bagefter, tæller det stadig som fejl — kortet
+   * kommer igen senere i runden, og det er hele pointen: kunne man det uden hjælp, havde man
+   * ikke trykket. Alternativet, at give point for et hjulpet svar, ville gøre resultatet
+   * ubrugeligt som mål for hvad man rent faktisk kan.
+   */
+  const next = () => onNext(isRule ? undefined : correct && !hinted ? 'correct' : 'wrong');
 
   return (
     <Card className="gap-4">
@@ -139,6 +165,12 @@ export function QuizCard({
         ) : (
           <AppText className="text-2xl font-bold leading-snug text-fg">{prompt}</AppText>
         )}
+        {/* Udtalen står frit fremme når SPØRGSMÅLET er spansk: teksten er der jo allerede,
+            så den røber ingenting — den hjælper bare med at læse den rigtigt højt. Er
+            FACIT spansk, ligger den bag hint-knappen i stedet. */}
+        {promptIsSpanish && entry.pron ? (
+          <PronText pron={entry.pron} className="text-base" />
+        ) : null}
         {promptIsSpanish ? (
           <View className="flex-row items-center gap-2 pt-1">
             <SpeakButton text={prompt} label="🔊 Hør hele" />
@@ -161,12 +193,47 @@ export function QuizCard({
         />
       )}
 
+      {isRule || revealed ? null : hinted ? (
+        <View className="gap-1.5 rounded-xl bg-element p-3">
+          <AppText variant="muted" className="text-xs uppercase">
+            Hint
+          </AppText>
+          {/* Monospace: ellers er prikkerne smallere end bogstaverne, og ordlængden —
+              halvdelen af hintet — bliver umulig at aflæse. */}
+          <AppText className="text-xl leading-snug text-fg" style={{ fontFamily: 'monospace' }}>
+            {maskFacit(facit)}
+          </AppText>
+          {facitIsSpanish && entry.pron ? (
+            <PronText pron={entry.pron} className="text-base" />
+          ) : null}
+          <AppText variant="muted" className="text-xs">
+            Tæller som fejl, også hvis du svarer rigtigt bagefter.
+          </AppText>
+        </View>
+      ) : (
+        <Button
+          title="💡 Hint"
+          variant="ghost"
+          className="self-start"
+          onPress={() => setHinted(true)}
+        />
+      )}
+
       {revealed ? (
         <View className="gap-3">
           {isRule ? null : (
             <AppText
-              className={cn('text-base font-semibold', correct ? 'text-success' : 'text-danger')}>
-              {!answered ? 'Ved ikke' : correct ? '✓ Rigtigt' : '✗ Forkert'}
+              className={cn(
+                'text-base font-semibold',
+                !correct ? 'text-danger' : hinted ? 'text-warning' : 'text-success'
+              )}>
+              {!answered
+                ? 'Ved ikke'
+                : !correct
+                  ? '✗ Forkert'
+                  : hinted
+                    ? '✓ Rigtigt — men med hint, så det tæller som fejl'
+                    : '✓ Rigtigt'}
             </AppText>
           )}
 
@@ -196,6 +263,9 @@ export function QuizCard({
             ) : (
               <AppText className="text-xl leading-snug text-fg">{facit}</AppText>
             )}
+            {facitIsSpanish && entry.pron ? (
+              <PronText pron={entry.pron} className="text-base" />
+            ) : null}
             <View className="flex-row items-center gap-2">
               {facitIsSpanish ? <SpeakButton text={facit} label="🔊 Hør hele" /> : null}
               <AppText variant="muted" className="text-xs">
