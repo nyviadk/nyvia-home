@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -7,8 +6,7 @@ import { ControlledField } from '@/components/ui/controlled-field';
 import { FormField } from '@/components/ui/form-field';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
-import { cn } from '@/lib/cn';
-import { Pressable, View } from '@/tw';
+import { View } from '@/tw';
 import {
   foodFormSchema,
   parseNumber,
@@ -19,13 +17,11 @@ import {
 import {
   FOOD_BASIS,
   MEAL_SLOTS,
-  PROTEIN_TAGS,
   serving,
   type FoodBasis,
   type MealSlot,
   type ProteinFood,
   type ProteinFoodInput,
-  type ProteinTag,
 } from '../types';
 
 export function FoodForm({
@@ -45,9 +41,6 @@ export function FoodForm({
     resolver: zodResolver(foodFormSchema),
     defaultValues: toFoodFormValues(food),
   });
-
-  // Tags styres uden for react-hook-form: det er en multi-select, ikke et tekstfelt.
-  const [tags, setTags] = useState<ProteinTag[]>(food?.tags ?? []);
 
   const basis = useWatch({ control, name: 'basis' }) as FoodBasis;
   const proteinValue = useWatch({ control, name: 'proteinValue' }) ?? '';
@@ -69,11 +62,8 @@ export function FoodForm({
   });
   const showPreview = preview.kcal > 0 || preview.proteinG > 0;
 
-  const toggleTag = (tag: ProteinTag) =>
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-
   const submit = handleSubmit(async (values) => {
-    await onSubmit(toFoodInput(values, tags));
+    await onSubmit(toFoodInput(values));
   });
 
   return (
@@ -157,29 +147,6 @@ export function FoodForm({
           </FormField>
         )}
       />
-
-      <FormField label="Proteinkilde (valgfri)">
-        <View className="flex-row flex-wrap gap-2">
-          {PROTEIN_TAGS.map((tag) => {
-            const on = tags.includes(tag);
-            return (
-              <Pressable
-                key={tag}
-                accessibilityRole="button"
-                onPress={() => toggleTag(tag)}
-                style={{ borderCurve: 'continuous' }}
-                className={cn(
-                  'rounded-full border px-3 py-1.5',
-                  on ? 'border-accent-protein bg-accent-protein/10' : 'border-border'
-                )}>
-                <AppText className={cn('text-sm', on ? 'text-accent-protein' : 'text-fg-muted')}>
-                  {tag}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </FormField>
 
       <Button title={submitLabel} onPress={submit} loading={isSubmitting} />
     </View>

@@ -3,28 +3,32 @@ import { DateTime } from 'luxon';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { OfflineNotice } from '@/components/ui/offline-notice';
 import { Screen } from '@/components/ui/screen';
-import { ScreenHeader } from '@/components/ui/screen-header';
 import { AppText } from '@/components/ui/text';
 import { APP_TIMEZONE } from '@/lib/datetime';
+import type { WithId } from '@/lib/firebase';
 import { confirmDelete } from '@/lib/undo/confirm-delete';
 import { Pressable, View } from '@/tw';
 import { assess, sumTotals } from '../balance';
-import { BalanceCard } from '../components/balance-card';
-import { GoalMeter } from '../components/goal-meter';
-import { LogRow } from '../components/log-row';
+import { DayHead } from '../components/day-head';
+import { MealSection } from '../components/meal-section';
 import { WeekBars } from '../components/week-bars';
-import { addLogEntry, deleteEntries, deleteLogEntry, setLogQty } from '../data/protein.repository';
-import { useLogStore, useProteinSettingsStore } from '../data/protein-stores';
+import {
+  addLogEntry,
+  deleteEntries,
+  deleteLogEntry,
+  setLogQty,
+} from '../data/protein.repository';
+import { useFoodsStore, useLogStore, useProteinSettingsStore } from '../data/protein-stores';
 import { currentMeal, dayKey, dayLabel } from '../day';
-import { MEAL_SLOTS, mealLabel } from '../types';
+import { MEAL_SLOTS, serving, type ProteinFood, type ProteinLogEntry } from '../types';
 
 export function ProteinScreen() {
   const [day, setDay] = useState(dayKey);
 
   const entries = useLogStore.useVisibleItems();
+  const foods = useFoodsStore.useVisibleItems();
   const loading = useLogStore((s) => s.loading);
   const fromCache = useLogStore((s) => s.fromCache);
   const proteinGoalG = useProteinSettingsStore((s) => s.proteinGoalG);
@@ -46,6 +50,19 @@ export function ProteinScreen() {
     setDay((d) => dayKey(DateTime.fromISO(d, { zone: APP_TIMEZONE }).plus({ days })));
   const isToday = day === dayKey();
 
+  const addFood = (food: WithId<ProteinFood>) => {
+    const per = serving(food);
+    void addLogEntry({
+      day,
+      name: food.name,
+      proteinG: per.proteinG,
+      kcal: per.kcal,
+      qty: 1,
+      meal: food.meal,
+      foodId: food.id,
+    });
+  };
+
   /**
    * Ét tryk = ét måltid. Måltidet gættes ud fra klokken, og tallene kommer fra
    * indstillingerne — skulle man vælge sektion og skrive tal, var knappen ikke hurtigere
@@ -62,6 +79,18 @@ export function ProteinScreen() {
       estimated: true,
     });
 
+  /**
+   * `−` trækker én portion fra. Er det den sidste, forsvinder posten.
+   *
+   * Ingen bekræftelse her: det er en tælleknap, ikke en sletning. Trykker man forkert,
+   * trykker man `+` igen — modsat de rigtige slet-handlinger, hvor man mister noget man
+   * ikke kan skrive tilbage på et sekund.
+   */
+  const removeOne = (entry: WithId<ProteinLogEntry>) => {
+    if (entry.qty > 1) void setLogQty(entry.id, entry.qty - 1);
+    else void deleteLogEntry(entry.id);
+  };
+
   const clearDay = () =>
     void confirmDelete({
       title: 'Ryd dagen',
@@ -74,116 +103,93 @@ export function ProteinScreen() {
       remove: () => deleteEntries(ofDay.map((e) => e.id)),
     });
 
-  const removeEntry = (id: string, name: string) =>
-    void confirmDelete({
-      title: 'Fjern post',
-      name,
-      markPending: () => useLogStore.pending.mark(id),
-      unmarkPending: () => useLogStore.pending.unmark(id),
-      remove: () => deleteLogEntry(id),
-    });
+  const hasSomething = foods.length > 0 || ofDay.length > 0;
 
   return (
     <Screen>
-      <ScreenHeader title="Protein" addHref="/protein/foods" addLabel="Katalog">
-        <Link href="/protein/settings" asChild>
-          <Button title="Mål" variant="secondary" className="h-10 px-4" />
-        </Link>
-      </ScreenHeader>
-
       <OfflineNotice fromCache={fromCache} />
 
-      <View className="flex-row items-center justify-between">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Forrige dag"
-          hitSlop={8}
-          onPress={() => shiftDay(-1)}
-          className="h-9 w-9 items-center justify-center rounded-lg bg-element active:opacity-70">
-          <AppText className="text-lg leading-none text-fg">{'\u2039'}</AppText>
-        </Pressable>
-        <AppText variant="label">{dayLabel(day)}</AppText>
-        {/* Fremad er spærret på dagen i dag: man logger ikke mad man ikke har spist. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Næste dag"
-          hitSlop={8}
-          disabled={isToday}
-          onPress={() => shiftDay(1)}
-          className="h-9 w-9 items-center justify-center rounded-lg bg-element active:opacity-70">
-          <AppText className={isToday ? 'text-lg leading-none text-fg-muted' : 'text-lg leading-none text-fg'}>
-            {'\u203A'}
+      <DayHead
+        day={day}
+        isToday={isToday}
+        onShiftDay={shiftDay}
+        totals={totals}
+        proteinGoal={proteinGoalG}
+        kcalGoal={kcalGoalKcal}
+        assessment={assessment}
+      />
+
+      {MEAL_SLOTS.map((slot) => (
+        <MealSection
+          key={slot.value}
+          slot={slot.value}
+          foods={foods}
+          entries={ofDay}
+          onAdd={addFood}
+          onRemoveOne={removeOne}
+        />
+      ))}
+
+      {!hasSomething && !loading ? (
+        <View className="gap-2 pt-6">
+          <AppText variant="label">Ingen retter endnu</AppText>
+          <AppText variant="muted" className="text-sm leading-relaxed">
+            Opret de retter du spiser jævnligt. Så står de her under deres måltid, og et tryk
+            tæller dem med.
           </AppText>
-        </Pressable>
-      </View>
-
-      <Card>
-        <View className="flex-row gap-5">
-          <GoalMeter label="Protein" value={totals.proteinG} goal={proteinGoalG} unit="g" tone="protein" />
-          <GoalMeter
-            label="Kalorier"
-            value={totals.kcal}
-            goal={kcalGoalKcal}
-            unit="kcal"
-            tone={assessment.state === 'over-kcal' ? 'over' : 'kcal'}
-          />
-        </View>
-      </Card>
-
-      <BalanceCard assessment={assessment} />
-
-      <View className="flex-row gap-2">
-        <View className="flex-1">
-          <Button title="+ Ukendt måltid" variant="secondary" onPress={logUnknown} />
-        </View>
-        <View className="flex-1">
-          <Link href="/protein/foods" asChild>
-            <Button title="Fra kataloget" />
-          </Link>
-        </View>
-      </View>
-
-      {ofDay.length === 0 ? (
-        loading ? null : (
-          <AppText variant="muted" className="py-6 text-center">
-            Intet logget {dayLabel(day).toLowerCase()}.
-          </AppText>
-        )
-      ) : (
-        MEAL_SLOTS.map((slot) => {
-          const rows = ofDay.filter((e) => e.meal === slot.value);
-          if (rows.length === 0) return null;
-          const sub = sumTotals(rows);
-          return (
-            <View key={slot.value} className="gap-1">
-              <View className="flex-row items-baseline justify-between">
-                <AppText variant="muted" className="text-xs uppercase">
-                  {mealLabel(slot.value)}
-                </AppText>
-                <AppText variant="muted" className="text-xs">
-                  {Math.round(sub.proteinG)} g · {Math.round(sub.kcal)} kcal
-                </AppText>
-              </View>
-              {rows.map((entry) => (
-                <LogRow
-                  key={entry.id}
-                  entry={entry}
-                  onQty={(qty) => void setLogQty(entry.id, qty)}
-                  onDelete={() => removeEntry(entry.id, entry.name)}
-                />
-              ))}
-            </View>
-          );
-        })
-      )}
-
-      <WeekBars entries={entries} goal={proteinGoalG} selected={day} onSelect={setDay} />
-
-      {ofDay.length > 0 ? (
-        <View className="items-center">
-          <Button title="Ryd dagen" variant="ghost" onPress={clearDay} />
         </View>
       ) : null}
+
+      <View className="flex-row items-center justify-between gap-3 border-t border-border pt-5">
+        <Link href="/protein/foods/new" asChild>
+          <Pressable accessibilityRole="button" hitSlop={6}>
+            <AppText className="text-xs font-semibold uppercase tracking-widest text-primary">
+              + Tilføj egen ret
+            </AppText>
+          </Pressable>
+        </Link>
+        <Button title="+ Ukendt måltid" variant="secondary" className="h-9 px-3" onPress={logUnknown} />
+      </View>
+
+      <WeekBars
+        entries={entries}
+        proteinGoal={proteinGoalG}
+        kcalGoal={kcalGoalKcal}
+        selected={day}
+        onSelect={setDay}
+      />
+
+      <View className="flex-row items-center justify-between pt-2">
+        <Link href="/protein/foods" asChild>
+          <Pressable accessibilityRole="button" hitSlop={6}>
+            <AppText variant="muted" className="text-xs uppercase tracking-widest">
+              Katalog
+            </AppText>
+          </Pressable>
+        </Link>
+        <Link href="/protein/settings" asChild>
+          <Pressable accessibilityRole="button" hitSlop={6}>
+            <AppText variant="muted" className="text-xs uppercase tracking-widest">
+              Mål
+            </AppText>
+          </Pressable>
+        </Link>
+        {ofDay.length > 0 ? (
+          <Pressable accessibilityRole="button" hitSlop={6} onPress={clearDay}>
+            <AppText variant="muted" className="text-xs uppercase tracking-widest">
+              Ryd dagen
+            </AppText>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View
+        className="mt-4 gap-2 rounded-r-lg border-l-2 border-l-accent-protein bg-accent-protein/5 p-3">
+        <AppText variant="muted" className="text-[13px] leading-relaxed">
+          Cirka-tal, ikke facit. Rammer du klodserne de fleste dage, er protein i hus —
+          ugegennemsnittet tæller, ikke den enkelte dag.
+        </AppText>
+      </View>
     </Screen>
   );
 }

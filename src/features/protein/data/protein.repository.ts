@@ -49,7 +49,7 @@ export const subscribeLog = log.subscribe;
 export const updateLogEntry = log.update;
 export const deleteLogEntry = log.remove;
 
-/** `omitUndefined`: `foodId`, `tags` og `estimated` er valgfri, og Firestore afviser undefined. */
+/** `omitUndefined`: `foodId` og `estimated` er valgfri, og Firestore afviser undefined. */
 export function addLogEntry(input: ProteinLogInput): Promise<string> {
   return log.create(omitUndefined(input));
 }

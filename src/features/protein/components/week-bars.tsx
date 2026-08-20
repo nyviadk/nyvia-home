@@ -7,68 +7,83 @@ import { dayKey, recentDays, weekdayShort } from '../day';
 import type { ProteinLogEntry } from '../types';
 
 /**
- * Ugens syv dage som søjler. Man kan trykke på en dag for at åbne den.
+ * Ugen med to søjler pr. dag: protein og kalorier ved siden af hinanden.
  *
- * Målet er en STREG hen over søjlerne og ikke søjlens top, fordi det er linjen man
- * sammenligner med: én dag under er ligegyldig, fem dage under er et mønster. Det er
- * gennemsnittet over ugen der tæller.
+ * Begge og ikke kun protein, fordi det er FORHOLDET mellem dem der er hele pointen. En dag
+ * hvor den ene søjle er høj og den anden lav, er en dag der er gået skævt — og det ser man
+ * kun hvis de står side om side.
+ *
+ * Højden er procent af hver sit mål, så de to er sammenlignelige selvom tallene ikke er.
+ * Begge er loftet ved 100 %: en dag på det dobbelte af kaloriemålet skal ikke trykke resten
+ * af ugen ned i bunden af grafen.
  */
 export function WeekBars({
   entries,
-  goal,
+  proteinGoal,
+  kcalGoal,
   selected,
   onSelect,
 }: {
   entries: readonly WithId<ProteinLogEntry>[];
-  goal: number;
+  proteinGoal: number;
+  kcalGoal: number;
   selected: string;
   onSelect: (day: string) => void;
 }) {
   const days = recentDays(7);
-  const totals = days.map((d) => sumTotals(entries.filter((e) => e.day === d)).proteinG);
-  // Skalaen følger den højeste dag når nogen er over målet — ellers ville en dag på 160 g
-  // se ud som en på 120, og man ville tro de var ens.
-  const scale = Math.max(goal, ...totals) * 1.05;
   const today = dayKey();
 
   return (
-    <View className="gap-1.5 pt-2">
-      <AppText variant="muted" className="text-xs uppercase">
-        Protein, 7 dage
-      </AppText>
-      <View className="relative h-20 flex-row items-end gap-1.5">
-        {/* Mål-stregen ligger bag søjlerne, så en høj dag krydser den synligt. */}
-        <View
-          className="absolute left-0 right-0 h-px bg-fg-muted"
-          style={{ bottom: `${(goal / scale) * 100}%` }}
-        />
-        {days.map((d, i) => (
-          <Pressable
-            key={d}
-            accessibilityRole="button"
-            accessibilityLabel={`${weekdayShort(d)}, ${Math.round(totals[i])} gram protein`}
-            onPress={() => onSelect(d)}
-            className="flex-1 justify-end">
-            <View
-              className={cn(
-                'w-full rounded-t',
-                totals[i] >= goal ? 'bg-accent-protein' : 'bg-element',
-                d === selected ? 'opacity-100' : 'opacity-60'
-              )}
-              style={{ height: `${Math.max(2, (totals[i] / scale) * 100)}%` }}
-            />
-          </Pressable>
-        ))}
+    <View className="gap-1.5 pt-6">
+      {/* Ingen `items-end` på rækken: den gør hver kolonne lige så høj som sit indhold, og
+          så har søjlens `height: X%` ingen kendt højde at regne imod — grafen bliver tom. */}
+      <View className="h-14 flex-row gap-1.5">
+        {days.map((d) => {
+          const t = sumTotals(entries.filter((e) => e.day === d));
+          const p = Math.min(100, (t.proteinG / Math.max(1, proteinGoal)) * 100);
+          const k = Math.min(100, (t.kcal / Math.max(1, kcalGoal)) * 100);
+          return (
+            <Pressable
+              key={d}
+              accessibilityRole="button"
+              accessibilityLabel={`${weekdayShort(d)}, ${Math.round(t.proteinG)} gram protein og ${Math.round(t.kcal)} kalorier`}
+              onPress={() => onSelect(d)}
+              className={cn('h-full flex-1 flex-row gap-0.5', d !== selected && 'opacity-60')}>
+              <View className="h-full flex-1 justify-end overflow-hidden rounded-sm border border-border bg-element">
+                <View className="w-full bg-accent-protein" style={{ height: `${p}%` }} />
+              </View>
+              <View className="h-full flex-1 justify-end overflow-hidden rounded-sm border border-border bg-element">
+                <View className="w-full bg-primary" style={{ height: `${k}%` }} />
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
+
       <View className="flex-row gap-1.5">
         {days.map((d) => (
           <AppText
             key={d}
             variant="muted"
-            className={cn('flex-1 text-center text-xs', d === today && 'font-semibold text-fg')}>
-            {weekdayShort(d)}
+            className={cn('flex-1 text-center text-[10px]', d === today && 'font-semibold text-fg')}>
+            {weekdayShort(d).replace('.', '')}
           </AppText>
         ))}
+      </View>
+
+      <View className="flex-row justify-center gap-4 pt-1">
+        <View className="flex-row items-center gap-1.5">
+          <View className="h-2 w-2 rounded-sm bg-accent-protein" />
+          <AppText variant="muted" className="text-[10px]">
+            protein
+          </AppText>
+        </View>
+        <View className="flex-row items-center gap-1.5">
+          <View className="h-2 w-2 rounded-sm bg-primary" />
+          <AppText variant="muted" className="text-[10px]">
+            kalorier
+          </AppText>
+        </View>
       </View>
     </View>
   );

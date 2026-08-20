@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { ProteinFood, ProteinFoodInput, ProteinTag } from '../types';
+import type { ProteinFood, ProteinFoodInput } from '../types';
 
 /**
  * Feltet valideres som TEKST og konverteres først i `toFoodInput`.
@@ -54,7 +54,7 @@ export function toFoodFormValues(food?: ProteinFood): FoodFormValues {
   };
 }
 
-export function toFoodInput(v: FoodFormValues, tags: ProteinTag[]): ProteinFoodInput {
+export function toFoodInput(v: FoodFormValues): ProteinFoodInput {
   return {
     name: v.name.trim(),
     basis: v.basis,
@@ -62,6 +62,5 @@ export function toFoodInput(v: FoodFormValues, tags: ProteinTag[]): ProteinFoodI
     kcalValue: parseNumber(v.kcalValue),
     ...(v.basis === 'per100g' ? { portionG: parseNumber(v.portionG) } : {}),
     meal: v.meal,
-    ...(tags.length ? { tags } : {}),
   };
 }

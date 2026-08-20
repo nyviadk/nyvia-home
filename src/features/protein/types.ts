@@ -11,20 +11,6 @@ export const MEAL_SLOTS: { value: MealSlot; label: string }[] = [
 export const mealLabel = (slot: MealSlot) =>
   MEAL_SLOTS.find((m) => m.value === slot)?.label ?? slot;
 
-/** Hovedkilden til proteinet. Bruges til "det har du allerede fået i dag"-påmindelsen. */
-export type ProteinTag = 'æg' | 'mejeri' | 'pulver' | 'brød' | 'kød' | 'fisk' | 'bælgfrugt' | 'nødder';
-
-export const PROTEIN_TAGS: ProteinTag[] = [
-  'æg',
-  'mejeri',
-  'pulver',
-  'brød',
-  'kød',
-  'fisk',
-  'bælgfrugt',
-  'nødder',
-];
-
 /**
  * Hvordan tallene på en ret er tastet ind.
  *
@@ -61,7 +47,6 @@ export type ProteinFood = {
   portionG?: number;
   /** Hvilken sektion retten foreslås under. Man kan logge den når som helst. */
   meal: MealSlot;
-  tags?: ProteinTag[];
   /**
    * Skjult fra kataloget. Startlisten er bred med vilje, og halvdelen af den passer ikke
    * til den enkelte — men at SLETTE en ret man måske spiser om et halvt år er en dårlig
@@ -74,7 +59,7 @@ export type ProteinFood = {
 
 export type ProteinFoodInput = Pick<
   ProteinFood,
-  'name' | 'basis' | 'proteinValue' | 'kcalValue' | 'portionG' | 'meal' | 'tags'
+  'name' | 'basis' | 'proteinValue' | 'kcalValue' | 'portionG' | 'meal'
 >;
 
 /** Hvad ÉN portion af retten indeholder. Det eneste tal resten af appen regner med. */
@@ -116,7 +101,6 @@ export type ProteinLogEntry = {
   /** Antal portioner. Tallene ovenfor er PR. PORTION. */
   qty: number;
   meal: MealSlot;
-  tags?: ProteinTag[];
   /** Sat når posten kom fra kataloget. Retten kan være slettet siden. */
   foodId?: string;
   /** Sat for hurtig-knappen "ukendt måltid", så gennemsnittene kan kendes fra rigtige tal. */
@@ -127,7 +111,7 @@ export type ProteinLogEntry = {
 
 export type ProteinLogInput = Pick<
   ProteinLogEntry,
-  'day' | 'name' | 'proteinG' | 'kcal' | 'qty' | 'meal' | 'tags' | 'foodId' | 'estimated'
+  'day' | 'name' | 'proteinG' | 'kcal' | 'qty' | 'meal' | 'foodId' | 'estimated'
 >;
 
 /** Målene. Redigerbare i appen — de er personlige og ændrer sig med vægt og træning. */

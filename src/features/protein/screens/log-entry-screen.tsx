@@ -62,7 +62,6 @@ export function LogEntryScreen({ id }: { id: string }) {
         kcal: toNum(kcal),
         qty: parsedQty,
         meal,
-        ...(item.tags?.length ? { tags: item.tags } : {}),
         ...(item.foodId ? { foodId: item.foodId } : {}),
         // Skønnet er ikke længere et skøn når man selv har rettet i tallene.
         ...(item.estimated && toNum(protein) === item.proteinG && toNum(kcal) === item.kcal
