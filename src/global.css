@@ -28,6 +28,7 @@
   --color-accent-planio: #5a5fa6; /* dæmpet indigo (My Planio) */
   --color-accent-wishlist: #b06a8f; /* dæmpet rosa (Ønskeliste) */
   --color-accent-spanish: #c06a4a; /* dæmpet terrakotta (Spansk) */
+  --color-accent-protein: #7a8b3f; /* dæmpet oliven (Protein) */
 
   /* Status */
   --color-danger: #b3261e;
@@ -75,6 +76,7 @@
   --color-accent-planio: var(--color-accent-planio);
   --color-accent-wishlist: var(--color-accent-wishlist);
   --color-accent-spanish: var(--color-accent-spanish);
+  --color-accent-protein: var(--color-accent-protein);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
   --color-star: var(--color-star);

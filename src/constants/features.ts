@@ -48,6 +48,7 @@ export const FEATURE_NAV: readonly FeatureNavItem[] = [
   { name: 'planio', href: '/planio', label: 'My Planio', accent: 'text-accent-planio', nativeHidden: true },
   { name: 'onskeliste', href: '/onskeliste', label: 'Ønskeliste', accent: 'text-accent-wishlist' },
   { name: 'spansk', href: '/spansk', label: 'Spansk', accent: 'text-accent-spanish' },
+  { name: 'protein', href: '/protein', label: 'Protein', accent: 'text-accent-protein' },
 ];
 
 /** Etiket for et rutenavn — draweren får kun navnet fra navigatorens state. */
