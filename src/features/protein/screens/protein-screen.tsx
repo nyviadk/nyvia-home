@@ -38,13 +38,14 @@ export function ProteinScreen() {
 
   const ofDay = entries.filter((e) => e.day === day);
   const totals = sumTotals(ofDay);
-  const assessment = assess(totals, {
+  const settings = {
     proteinGoalG,
     kcalGoalKcal,
     unknownProteinG,
     unknownKcal,
     updatedAt: '',
-  });
+  };
+  const assessment = assess(totals, settings);
 
   const shiftDay = (days: number) =>
     setDay((d) => dayKey(DateTime.fromISO(d, { zone: APP_TIMEZONE }).plus({ days })));
@@ -125,6 +126,8 @@ export function ProteinScreen() {
           slot={slot.value}
           foods={foods}
           entries={ofDay}
+          totals={totals}
+          settings={settings}
           onAdd={addFood}
           onRemoveOne={removeOne}
         />
@@ -183,13 +186,15 @@ export function ProteinScreen() {
         ) : null}
       </View>
 
-      <View
-        className="mt-4 gap-2 rounded-r-lg border-l-2 border-l-accent-protein bg-accent-protein/5 p-3">
-        <AppText variant="muted" className="text-[13px] leading-relaxed">
-          Cirka-tal, ikke facit. Rammer du klodserne de fleste dage, er protein i hus —
-          ugegennemsnittet tæller, ikke den enkelte dag.
+      <View className="flex-row items-center justify-center gap-4 pt-3">
+        <AppText variant="muted" className="text-[11px]">
+          <AppText className="text-[11px] text-success">{'▲'}</AppText> passer
+        </AppText>
+        <AppText variant="muted" className="text-[11px]">
+          <AppText className="text-[11px] text-danger">{'●'}</AppText> undgå
         </AppText>
       </View>
+
     </Screen>
   );
 }

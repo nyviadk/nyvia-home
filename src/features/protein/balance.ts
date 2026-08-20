@@ -148,3 +148,47 @@ export function assess(totals: Totals, settings: ProteinSettings): Assessment {
     advice: 'De to følges pænt ad. Spis som du plejer.',
   };
 }
+
+/** Gram protein pr. 100 kcal. Ét tal der siger om noget er magert eller fedt. */
+export const density = (food: { proteinG: number; kcal: number }): number =>
+  food.kcal <= 0 ? 0 : (food.proteinG * 100) / food.kcal;
+
+/**
+ * Hvad retten er værd lige nu.
+ *
+ * `undgå` er den eneste hårde: retten sprænger de kalorier der er tilbage, og så kan den
+ * ikke passe uanset resten. `skæv` er ikke en dom — retten trækker bare dagen ud af balance,
+ * og så skal man rette op et andet sted.
+ *
+ * Måles på DAGENS TAL, ikke på klokken. To dage kan se helt forskellige ud kl. 18, og et
+ * mærke der skiftede efter uret ville lyve om den ene af dem.
+ */
+export type FitMark = 'ok' | 'skæv' | 'undgå';
+
+/** Hvor skævt de to mål skal ligge, før den ene side regnes for bagud. */
+const FIT_SKEW = 0.05;
+/** Hvor meget en ret må stikke ud over det der er tilbage af kalorierne. */
+const FIT_SLACK = 0.05;
+
+export function fitMark(
+  food: { proteinG: number; kcal: number },
+  totals: Totals,
+  settings: ProteinSettings
+): FitMark {
+  const goalP = Math.max(1, settings.proteinGoalG);
+  const goalK = Math.max(1, settings.kcalGoalKcal);
+  const remainingP = goalP - totals.proteinG;
+  const remainingK = goalK - totals.kcal;
+
+  if (remainingK <= 0) return 'undgå';
+  if (food.kcal > remainingK + goalK * FIT_SLACK) return 'undgå';
+
+  const skew = remainingP / goalP - remainingK / goalK;
+  if (Math.abs(skew) < FIT_SKEW) return 'ok';
+
+  const dayDensity = (goalP * 100) / goalK;
+  const fits = skew > 0
+    ? density(food) >= dayDensity // proteinet er bagud → magert
+    : density(food) <= dayDensity; // kalorierne er bagud → fedt
+  return fits ? 'ok' : 'skæv';
+}

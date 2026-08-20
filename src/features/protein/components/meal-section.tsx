@@ -4,8 +4,10 @@ import { AppText } from '@/components/ui/text';
 import { cn } from '@/lib/cn';
 import type { WithId } from '@/lib/firebase';
 import { Pressable, View } from '@/tw';
+import { fitMark } from '../balance';
+import type { FitMark, Totals } from '../balance';
 import { dk } from '../format';
-import type { MealSlot, ProteinFood, ProteinLogEntry } from '../types';
+import type { MealSlot, ProteinFood, ProteinLogEntry, ProteinSettings } from '../types';
 import { mealLabel, serving } from '../types';
 
 /**
@@ -20,6 +22,7 @@ function Row({
   proteinG,
   kcal,
   count,
+  mark,
   onAdd,
   onRemove,
   href,
@@ -28,6 +31,8 @@ function Row({
   proteinG: number;
   kcal: number;
   count: number;
+  /** Kun sat på katalog-rækker; løse poster er allerede spist. */
+  mark?: FitMark;
   onAdd?: () => void;
   onRemove?: () => void;
   /** Sat på løse poster: de kan ikke tilføjes igen, men de kan redigeres. */
@@ -44,6 +49,17 @@ function Row({
         <View className="rounded-sm bg-accent-protein px-1.5 py-0.5">
           <AppText className="text-[11px] font-semibold text-card">×{count}</AppText>
         </View>
+      ) : null}
+      {/* Mærket står FØR tallene: det er det man skimmer efter, tallene slår man efter
+          bagefter. Intet mærke er den midterste tilstand og skal ikke fylde noget. */}
+      {mark === 'ok' ? (
+        <AppText accessibilityLabel="Passer" className="text-xs text-success">
+          {'▲'}
+        </AppText>
+      ) : mark === 'undgå' ? (
+        <AppText accessibilityLabel="Undgå" className="text-xs text-danger">
+          {'●'}
+        </AppText>
       ) : null}
       <View className="items-end">
         <AppText
@@ -108,12 +124,17 @@ export function MealSection({
   slot,
   foods,
   entries,
+  totals,
+  settings,
   onAdd,
   onRemoveOne,
 }: {
   slot: MealSlot;
   foods: readonly WithId<ProteinFood>[];
   entries: readonly WithId<ProteinLogEntry>[];
+  /** Dagens sum indtil nu — trekanten afhænger af hvad der er tilbage. */
+  totals: Totals;
+  settings: ProteinSettings;
   onAdd: (food: WithId<ProteinFood>) => void;
   onRemoveOne: (entry: WithId<ProteinLogEntry>) => void;
 }) {
@@ -151,6 +172,7 @@ export function MealSection({
             proteinG={per.proteinG}
             kcal={per.kcal}
             count={count}
+            mark={fitMark(per, totals, settings)}
             onAdd={() => onAdd(food)}
             // Den sidst tilføjede fjernes først — det er den man lige har trykket forkert på.
             onRemove={rows.length ? () => onRemoveOne(rows[rows.length - 1]) : undefined}
