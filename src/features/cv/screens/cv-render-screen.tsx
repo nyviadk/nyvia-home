@@ -12,6 +12,7 @@ import { OverrideSection } from '../components/override-editor';
 import { gemAnsoegning, gemRettelser, laesRettelser } from '../data/ansoegninger';
 import { useCvDraft } from '../data/cv-draft';
 import { useCvAnsoegninger, useCvSettings } from '../data/cv-stores';
+import { issue } from '../issues';
 import { useCvFrame } from '../hooks/use-cv-frame';
 import { useStandardCv } from '../hooks/use-standard-cv';
 import { countsOf, useCatalogue, useCatalogueLoading } from '../hooks/use-catalogue';
@@ -85,7 +86,17 @@ export function CvRenderScreen({ genaabn }: { genaabn?: string }) {
   const sel = parsed.selection;
   const formfejl = parsed.issues;
   const katalogfejl = sel && !formfejl.length ? validateSelection(sel, snapshot) : [];
-  const fejl = [...formfejl, ...katalogfejl];
+  /**
+   * Navnet står ikke i selectionen — det kommer fra `person` under Stil og person.
+   *
+   * Har man aldrig åbnet den skærm, er det tomt, og så printes et CV med et blankt felt
+   * øverst. Ingen fejl, ingen rød ramme; man opdager det når det er sendt. Derfor spærrer
+   * det her, og beskeden siger hvor man retter det.
+   */
+  const personfejl = person.navn.trim()
+    ? []
+    : [issue('Navn', 'Mangler — udfyld det under Stil og person, ellers står CV’et uden navn')];
+  const fejl = [...formfejl, ...katalogfejl, ...personfejl];
   const klar = !!sel && fejl.length === 0 && text.trim() !== '';
 
   /**
