@@ -49,6 +49,7 @@ export const FEATURE_NAV: readonly FeatureNavItem[] = [
   { name: 'onskeliste', href: '/onskeliste', label: 'Ønskeliste', accent: 'text-accent-wishlist' },
   { name: 'spansk', href: '/spansk', label: 'Spansk', accent: 'text-accent-spanish' },
   { name: 'protein', href: '/protein', label: 'Protein', accent: 'text-accent-protein' },
+  { name: 'cv', href: '/cv', label: 'CV', accent: 'text-accent-cv' },
 ];
 
 /** Etiket for et rutenavn — draweren får kun navnet fra navigatorens state. */

@@ -25,11 +25,19 @@ export function createDocStore<Doc, Data extends object>(opts: {
   empty: Data;
   map: (doc: Doc) => Data;
 }) {
-  type State = Data & { loading: boolean };
+  /**
+   * `exists` skelner "dokumentet findes ikke" fra "dokumentet er tomt".
+   *
+   * `map`/`empty` slår ellers de to sammen, og så må den der spørger gætte ud fra et felt
+   * — fx "har personen et navn?". Det gæt er forkert i det halve sekund før dokumentet er
+   * hentet, og en importrutine der bruger det, kan nå at skrive hen over rigtige data.
+   * Hverken `loading` eller `exists` persisteres; kun `empty`s nøgler gør.
+   */
+  type State = Data & { loading: boolean; exists: boolean };
 
   const useStore = create<State>()(
     persist(
-      () => ({ ...opts.empty, loading: true }),
+      () => ({ ...opts.empty, loading: true, exists: false }),
       persistOptions<State>(opts.persistName, Object.keys(opts.empty) as (keyof State)[])
     )
   );
@@ -39,14 +47,19 @@ export function createDocStore<Doc, Data extends object>(opts: {
   const start = () => {
     if (unsubscribe) return;
     unsubscribe = opts.subscribe(
-      (doc) => useStore.setState({ ...(doc ? opts.map(doc) : opts.empty), loading: false }),
+      (doc) =>
+        useStore.setState({
+          ...(doc ? opts.map(doc) : opts.empty),
+          loading: false,
+          exists: !!doc,
+        }),
       () => useStore.setState({ loading: false } as Partial<State>)
     );
   };
   const stop = () => {
     unsubscribe?.();
     unsubscribe = null;
-    useStore.setState({ ...opts.empty, loading: true });
+    useStore.setState({ ...opts.empty, loading: true, exists: false });
   };
 
   hotReloadSubscribe(opts.key, () => {

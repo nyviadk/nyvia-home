@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { IssueList } from '@/components/ui/issue-list';
 import { Screen } from '@/components/ui/screen';
 import { Segmented } from '@/components/ui/segmented';
 import { AppText } from '@/components/ui/text';
@@ -143,20 +144,10 @@ export function SpanishImportScreen() {
             </View>
           ) : null}
 
-          {skipped.length > 0 ? (
-            <View className="gap-1 border-t border-border pt-3">
-              <AppText variant="label" className="text-sm text-danger">
-                {skipped.length} {skipped.length === 1 ? 'linje' : 'linjer'} springes over
-              </AppText>
-              {/* Med årsag pr. linje — ellers står man med en tavs uoverensstemmelse
-                  mellem antal linjer indsat og antal poster oprettet. */}
-              {skipped.map((s, i) => (
-                <AppText key={i} variant="muted" className="text-xs">
-                  “{s.line}” — {s.reason}
-                </AppText>
-              ))}
-            </View>
-          ) : null}
+          <IssueList
+            title={skipped.length === 1 ? 'linje springes over' : 'linjer springes over'}
+            items={skipped.map((s) => ({ subject: s.line, reason: s.reason }))}
+          />
         </Card>
       ) : null}
 

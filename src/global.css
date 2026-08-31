@@ -29,6 +29,7 @@
   --color-accent-wishlist: #b06a8f; /* dæmpet rosa (Ønskeliste) */
   --color-accent-spanish: #c06a4a; /* dæmpet terrakotta (Spansk) */
   --color-accent-protein: #7a8b3f; /* dæmpet oliven (Protein) */
+  --color-accent-cv: #8a6a4a; /* dæmpet brun (CV) */
 
   /* Status */
   --color-danger: #b3261e;
@@ -77,6 +78,7 @@
   --color-accent-wishlist: var(--color-accent-wishlist);
   --color-accent-spanish: var(--color-accent-spanish);
   --color-accent-protein: var(--color-accent-protein);
+  --color-accent-cv: var(--color-accent-cv);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
   --color-star: var(--color-star);
