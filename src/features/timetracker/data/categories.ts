@@ -12,8 +12,25 @@ const PRESET_FUNCTIONS = [
   "Test",
   "Bugfix",
   "Dokumentation",
+  "Transport",
   "Andet",
 ];
+
+/**
+ * Er posten transport?
+ *
+ * Kategorier er fri tekst, så der findes ikke et flag at slå op — navnet ER kendetegnet.
+ * Derfor står "Transport" også i presets ovenfor: bruger man forslaget, staves det ens hver
+ * gang, og filteret rammer. Sammenligningen er bevidst EKSAKT (efter trim og små bogstaver)
+ * frem for "indeholder transport": et "Transport-API" er udvikling, ikke kørsel.
+ *
+ * Filteret viser hvor mange timer det skjuler, så en kategori der er stavet anderledes,
+ * afslører sig selv med det samme — den tæller bare ikke med.
+ */
+export const TRANSPORT_KATEGORI = "Transport";
+
+export const erTransport = (entry: { category: string }): boolean =>
+  entry.category.trim().toLowerCase() === TRANSPORT_KATEGORI.toLowerCase();
 
 /**
  * Forslag = presets ∪ funktioner brugt i eksisterende poster, fuzzy-filtreret på

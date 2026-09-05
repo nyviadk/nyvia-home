@@ -13,6 +13,7 @@ import type { WithId } from '@/lib/firebase';
 import { Switch, View } from '@/tw';
 import { TimeEntryRow } from '../components/time-entry-row';
 import { TimetrackerSummary } from '../components/timetracker-summary';
+import { erTransport } from '../data/categories';
 import { useTimetrackerSettingsStore } from '../data/timetracker-settings-store';
 import { useTimetrackerStore } from '../data/timetracker-store';
 import { formatDuration, rangeStartDate, type TimeRange } from '../time.utils';
@@ -48,6 +49,14 @@ export function TimetrackerScreen() {
   const [onlyAfterOfficial, setOnlyAfterOfficial] = useState(false);
   // Vis kun åbne (uden sluttid) — ignorerer tidsfilteret, så ingen gemmer sig.
   const [onlyOpen, setOnlyOpen] = useState(false);
+  /**
+   * Transport tælles med i registreringen, men sjældent i timerne.
+   *
+   * Slået TIL som standard: det almindelige spørgsmål er "hvor mange timer har jeg
+   * arbejdet", og dér er kørslen støj. Den bliver stadig logget og kan hentes frem — det er
+   * kun visningen der filtrerer, aldrig data.
+   */
+  const [udenTransport, setUdenTransport] = useState(true);
 
   const entries = useTimetrackerStore.useVisibleItems();
   const loading = useTimetrackerStore((s) => s.loading);
@@ -57,11 +66,20 @@ export function TimetrackerScreen() {
 
   const rangeStart = rangeStartDate(range);
   const openCount = entries.filter((e) => !pendingIds.has(e.id) && !e.endTime).length;
-  const visible = entries
+  const iPerioden = entries
     .filter((e) => !pendingIds.has(e.id))
     .filter((e) => (onlyOpen ? !e.endTime : rangeStart === null ? true : e.date >= rangeStart))
-    .filter((e) => (onlyAfterOfficial && officialStart ? e.date >= officialStart : true))
-    .sort((a, b) => (a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date)));
+    .filter((e) => (onlyAfterOfficial && officialStart ? e.date >= officialStart : true));
+
+  // Hvor meget filteret skjuler — vises på kontakten, så man kan se hvad man har fravalgt
+  // uden at slå det til og fra for at finde ud af det.
+  const transportMinutter = iPerioden
+    .filter(erTransport)
+    .reduce((sum, e) => sum + e.durationMinutes, 0);
+
+  const visible = (udenTransport ? iPerioden.filter((e) => !erTransport(e)) : iPerioden).sort(
+    (a, b) => (a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date))
+  );
 
   // Grupper i dage (bevarer rækkefølgen fra det sorterede array).
   const days: { date: string; entries: WithId<TimeEntry>[] }[] = [];
@@ -95,6 +113,15 @@ export function TimetrackerScreen() {
           <Switch value={onlyOpen} onValueChange={setOnlyOpen} />
         </View>
       ) : null}
+
+      {/* Står altid, også når der ikke er transport i perioden — ellers ville man ikke kunne
+          se AT timerne er filtreret, og et tal uden en forklaring er værre end ingen. */}
+      <View className="flex-row items-center justify-between">
+        <AppText variant="muted" className={udenTransport ? 'text-accent-moving' : undefined}>
+          Uden transport{transportMinutter > 0 ? ` (${formatDuration(transportMinutter)})` : ''}
+        </AppText>
+        <Switch value={udenTransport} onValueChange={setUdenTransport} />
+      </View>
 
       {officialStart ? (
         <View className="flex-row items-center justify-between">
