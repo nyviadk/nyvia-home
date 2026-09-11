@@ -16,16 +16,16 @@ import { TimetrackerSummary } from '../components/timetracker-summary';
 import { erTransport } from '../data/categories';
 import { useTimetrackerSettingsStore } from '../data/timetracker-settings-store';
 import { useTimetrackerStore } from '../data/timetracker-store';
-import { formatDuration, rangeStartDate, type TimeRange } from '../time.utils';
+import {
+  formatDuration,
+  rangeLabel,
+  rangeOptions,
+  rangeStartDate,
+  type TimeMode,
+  type TimeRange,
+} from '../time.utils';
 import type { TimeEntry } from '../types';
 
-const RANGE_OPTIONS = [
-  { value: 'today' as const, label: 'I dag' },
-  { value: '7d' as const, label: '7 dage' },
-  { value: '31d' as const, label: '31 dage' },
-  { value: '365d' as const, label: '365 dage' },
-  { value: 'all' as const, label: 'Alt' },
-];
 
 function DayGroup({ date, entries }: { date: string; entries: WithId<TimeEntry>[] }) {
   const total = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
@@ -46,6 +46,14 @@ function DayGroup({ date, entries }: { date: string; entries: WithId<TimeEntry>[
 
 export function TimetrackerScreen() {
   const [range, setRange] = useState<TimeRange>('7d');
+  /**
+   * Rullende eller faste perioder — samme fire trin, to betydninger.
+   *
+   * Starter på `fast`, fordi det almindelige spørgsmål er "hvor meget har jeg arbejdet i
+   * DENNE uge". Trinnet bliver stående når man slår om, så man lander samme sted i den
+   * anden udgave i stedet for at skulle finde det igen.
+   */
+  const [mode, setMode] = useState<TimeMode>('fast');
   const [onlyAfterOfficial, setOnlyAfterOfficial] = useState(false);
   // Vis kun åbne (uden sluttid) — ignorerer tidsfilteret, så ingen gemmer sig.
   const [onlyOpen, setOnlyOpen] = useState(false);
@@ -64,7 +72,7 @@ export function TimetrackerScreen() {
   const pendingIds = useTimetrackerStore.pending.useStore((s) => s.ids);
   const officialStart = useTimetrackerSettingsStore((s) => s.officialStartDate);
 
-  const rangeStart = rangeStartDate(range);
+  const rangeStart = rangeStartDate(range, mode);
   const openCount = entries.filter((e) => !pendingIds.has(e.id) && !e.endTime).length;
   const iPerioden = entries
     .filter((e) => !pendingIds.has(e.id))
@@ -100,10 +108,22 @@ export function TimetrackerScreen() {
       <OfflineNotice fromCache={fromCache} />
 
       {/* Oversigt øverst */}
-      {visible.length > 0 ? <TimetrackerSummary entries={visible} /> : null}
+      {visible.length > 0 ? (
+        <TimetrackerSummary entries={visible} periode={rangeLabel(range, mode)} />
+      ) : null}
 
       {/* Filtre under oversigten */}
-      <Segmented<TimeRange> value={range} options={RANGE_OPTIONS} onChange={setRange} />
+      <Segmented<TimeRange> value={range} options={rangeOptions(mode)} onChange={setRange} />
+
+      {/* Etiketterne på knapperne ovenfor skifter med kontakten, så man kan se hvad man har
+          valgt uden at læse en forklaring. Hvad perioden dækker i datoer, står på
+          oversigten øverst. */}
+      <View className="flex-row items-center justify-between">
+        <AppText variant="muted" className={mode === 'fast' ? 'text-accent-moving' : undefined}>
+          Faste perioder (kalenderens uge, måned, år)
+        </AppText>
+        <Switch value={mode === 'fast'} onValueChange={(v) => setMode(v ? 'fast' : 'rullende')} />
+      </View>
 
       {onlyOpen || openCount > 0 ? (
         <View className="flex-row items-center justify-between">

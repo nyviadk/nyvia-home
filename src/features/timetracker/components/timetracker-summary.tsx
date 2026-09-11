@@ -6,7 +6,15 @@ import { formatDuration } from '../time.utils';
 import type { TimeEntry } from '../types';
 
 /** Total + nedbrydning pr. funktion for de (allerede filtrerede) poster. */
-export function TimetrackerSummary({ entries }: { entries: WithId<TimeEntry>[] }) {
+export function TimetrackerSummary({
+  entries,
+  periode,
+}: {
+  entries: WithId<TimeEntry>[];
+  /** Hvad tallet dækker, fx "uge 36 · 31. aug.–6. sep.". Uden den kan man ikke se om
+   *  totalen er denne uge eller de seneste syv døgn — og de to ligner hinanden. */
+  periode?: string;
+}) {
   const total = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
   const openCount = entries.filter((e) => !e.endTime).length;
 
@@ -19,7 +27,9 @@ export function TimetrackerSummary({ entries }: { entries: WithId<TimeEntry>[] }
   return (
     <View className="gap-3">
       <Card className="gap-1 border-0 bg-accent-time">
-        <AppText className="text-on-primary/80">Tid i alt</AppText>
+        <AppText className="text-on-primary/80">
+          Tid i alt{periode ? ` · ${periode}` : ''}
+        </AppText>
         <AppText className="text-3xl font-bold text-on-primary">{formatDuration(total)}</AppText>
         {openCount > 0 ? (
           <AppText className="text-on-primary/90">
