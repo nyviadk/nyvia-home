@@ -78,6 +78,21 @@ TIL SIDST: kort tjekliste over hvad der er løst, hvad der bevidst er ladt stå 
 export const curated = (lessons: PlanioLesson[], spotId: string): PlanioLesson[] =>
   lessons.filter((l) => l.spot === spotId && (l.weight === 'kritisk' || l.weight === 'tilbagevendende'));
 
+/**
+ * Én linje: kør reglerne mod noget.
+ *
+ * Bevidst UDEN indhold. De andre prompts pakker regler og lektioner med, fordi de sendes til
+ * en Claude der ikke kender projektet. Denne er til den Claude der HAR koden og allerede
+ * læser AGENTS.md — så en fyldig prompt ville bare gentage noget den kan se selv, og gøre
+ * den kortere ting man gør oftest til den længste tekst på skærmen.
+ *
+ * Tomt scope betyder de ucommitterede ændringer. Det er det almindelige tilfælde ("jeg er
+ * færdig, holder det?"), og at skulle skrive et område for at spørge om dét ville være en
+ * forhindring uden formål.
+ */
+export const buildRuleCheck = (scope: string): string =>
+  `Kør vores regler mod: ${scope.trim() || 'uncommitted'}`;
+
 /** Pass 2 · blind-vinkel-sweep — samlet dynamisk af de kuraterede lektioner (fuld lesson + fix). */
 export const buildPass2 = (lessons: PlanioLesson[]): string => {
   const block = (s: (typeof SPOTS)[number]) => {
