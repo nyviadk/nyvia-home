@@ -25,17 +25,20 @@ import {
   type TimeRange,
 } from '../time.utils';
 import type { TimeEntry } from '../types';
+import { workMinutes } from '../work-time';
 
-
+/**
+ * Dagens arbejdstid (overlap talt én gang). Dagen er postens STARTdag, så natarbejde der
+ * overlapper næste dags poster tælles på begge dage — oversigtens periodetal er det præcise.
+ */
 function DayGroup({ date, entries }: { date: string; entries: WithId<TimeEntry>[] }) {
-  const total = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
   return (
     <View className="gap-2">
       <View className="flex-row items-baseline justify-between">
         <AppText variant="heading" className="capitalize">
           {formatDateCopenhagen(`${date}T00:00:00`)}
         </AppText>
-        <AppText variant="muted">{formatDuration(total)}</AppText>
+        <AppText variant="muted">{formatDuration(workMinutes(entries))} arbejdstid</AppText>
       </View>
       {entries.map((entry) => (
         <TimeEntryRow key={entry.id} entry={entry} />

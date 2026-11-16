@@ -4,8 +4,12 @@ import type { WithId } from '@/lib/firebase';
 import { View } from '@/tw';
 import { formatDuration } from '../time.utils';
 import type { TimeEntry } from '../types';
+import { formatParallelism, timeTotals } from '../work-time';
 
-/** Total + nedbrydning pr. funktion for de (allerede filtrerede) poster. */
+/**
+ * Arbejdstid (fakturerbar) + opgavetid og parallelitet + nedbrydning pr. funktion for de
+ * (allerede filtrerede) poster.
+ */
 export function TimetrackerSummary({
   entries,
   periode,
@@ -15,7 +19,7 @@ export function TimetrackerSummary({
    *  totalen er denne uge eller de seneste syv døgn — og de to ligner hinanden. */
   periode?: string;
 }) {
-  const total = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
+  const { workMinutes, taskMinutes, parallelism } = timeTotals(entries);
   const openCount = entries.filter((e) => !e.endTime).length;
 
   const byCategory = new Map<string, number>();
@@ -28,9 +32,19 @@ export function TimetrackerSummary({
     <View className="gap-3">
       <Card className="gap-1 border-0 bg-accent-time">
         <AppText className="text-on-primary/80">
-          Tid i alt{periode ? ` · ${periode}` : ''}
+          Arbejdstid{periode ? ` · ${periode}` : ''}
         </AppText>
-        <AppText className="text-3xl font-bold text-on-primary">{formatDuration(total)}</AppText>
+        <AppText className="text-3xl font-bold text-on-primary">
+          {formatDuration(workMinutes)}
+        </AppText>
+        <View className="flex-row flex-wrap gap-x-4">
+          <AppText className="text-on-primary/80">Opgavetid {formatDuration(taskMinutes)}</AppText>
+          {parallelism !== null ? (
+            <AppText className="text-on-primary/80">
+              Parallelitet {formatParallelism(parallelism)}
+            </AppText>
+          ) : null}
+        </View>
         {openCount > 0 ? (
           <AppText className="text-on-primary/90">
             ⚠ {openCount} {openCount === 1 ? 'post mangler' : 'poster mangler'} sluttid
@@ -38,9 +52,11 @@ export function TimetrackerSummary({
         ) : null}
       </Card>
 
+      {/* Bevidst UDEN total: summen af rækkerne er opgavetid, ikke arbejdstid, og en total
+          her ville ligne det fakturerbare tal. */}
       {rows.length > 0 ? (
         <Card className="gap-2">
-          <AppText variant="heading">Pr. funktion</AppText>
+          <AppText variant="heading">Opgavetid pr. funktion</AppText>
           {rows.map(([category, minutes]) => (
             <View key={category} className="flex-row items-baseline justify-between">
               <AppText variant="muted">{category}</AppText>
